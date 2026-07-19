@@ -1,0 +1,19 @@
+{
+  "name": "c2c-codex-mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "MCP server bridging Claude (architect/reviewer) and Codex (implementer) via Goal/Delta Contracts and Codex's thread-goal loop.",
+  "scripts": {
+    "start": "bun src/server.ts",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "bun-types": "^1.3.14",
+    "typescript": "^7.0.2"
+  }
+}
