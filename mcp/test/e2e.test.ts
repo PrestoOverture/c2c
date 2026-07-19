@@ -7,6 +7,8 @@ import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js"
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { ProgressNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 const mcpDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -28,6 +30,7 @@ async function pollUntilDone(client: Client, jobId: string, timeoutMs = 15_000):
 }
 
 test("implement → goal loop → handoff, then rework resumes the thread", async () => {
+  const stateDir = mkdtempSync(join(tmpdir(), "c2c-e2e-"));
   const transport = new StdioClientTransport({
     command: "bun",
     args: [join(mcpDir, "src", "server.ts")],
@@ -39,6 +42,7 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
       CODEX_QUIET_MS: "500",
       CODEX_JOB_TIMEOUT_MS: "10000",
       EXPECT_REASONING_EFFORT: "high",
+      C2C_STATE_DIR: stateDir,
     },
   });
   const client = new Client({ name: "e2e", version: "0.0.1" });
@@ -119,10 +123,12 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
     expect(reworkResult.handoff.valid).toBe(true);
   } finally {
     await client.close();
+    rmSync(stateDir, { recursive: true, force: true });
   }
 }, 30_000);
 
 test("codex_result on unknown job errors cleanly", async () => {
+  const stateDir = mkdtempSync(join(tmpdir(), "c2c-e2e-"));
   const transport = new StdioClientTransport({
     command: "bun",
     args: [join(mcpDir, "src", "server.ts")],
@@ -132,6 +138,7 @@ test("codex_result on unknown job errors cleanly", async () => {
       CODEX_BIN: "bun",
       CODEX_ARGS: join(mcpDir, "test", "mock-codex.ts"),
       EXPECT_REASONING_ABSENT: "1",
+      C2C_STATE_DIR: stateDir,
     },
   });
   const client = new Client({ name: "e2e2", version: "0.0.1" });
@@ -146,5 +153,6 @@ test("codex_result on unknown job errors cleanly", async () => {
     expect((await pollUntilDone(client, started.job_id)).state).toBe("done");
   } finally {
     await client.close();
+    rmSync(stateDir, { recursive: true, force: true });
   }
 });

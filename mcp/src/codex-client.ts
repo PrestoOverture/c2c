@@ -19,7 +19,7 @@ export interface CodexAppServerOptions {
   env?: Record<string, string | undefined>;
   onNotification?: (method: string, params: Json) => void;
   onLog?: (line: string) => void;
-  onExit?: (code: number | null) => void;
+  onExit?: (code: number | null, error: Error) => void;
 }
 
 export class CodexAppServer {
@@ -28,6 +28,7 @@ export class CodexAppServer {
   private pending = new Map<number, Pending>();
   private opts: CodexAppServerOptions;
   private stderrTail: string[] = [];
+  private exitError?: Error;
   exited = false;
 
   constructor(opts: CodexAppServerOptions) {
@@ -45,23 +46,25 @@ export class CodexAppServer {
       if (this.stderrTail.length > 50) this.stderrTail.shift();
       opts.onLog?.(line);
     });
-    this.proc.on("exit", (code) => {
-      this.exited = true;
-      for (const [, p] of this.pending) {
-        clearTimeout(p.timer);
-        p.reject(new Error(`codex app-server exited (code ${code}). stderr: ${this.stderrTail.slice(-10).join(" | ")}`));
-      }
-      this.pending.clear();
-      opts.onExit?.(code);
-    });
+    this.proc.on("exit", (code) => this.handleExit(code));
     this.proc.on("error", (err) => {
-      this.exited = true;
-      for (const [, p] of this.pending) {
-        clearTimeout(p.timer);
-        p.reject(new Error(`failed to spawn ${opts.bin}: ${err.message}`));
-      }
-      this.pending.clear();
+      this.handleExit(null, new Error(`failed to spawn ${opts.bin}: ${err.message}`));
     });
+  }
+
+  private handleExit(code: number | null, error?: Error) {
+    if (this.exited) return;
+    this.exited = true;
+    const stderr = this.stderrTail.slice(-10).join(" | ");
+    this.exitError = error ?? new Error(
+      `codex app-server exited (code ${code})${stderr ? `. stderr: ${stderr}` : ""}`,
+    );
+    for (const [, p] of this.pending) {
+      clearTimeout(p.timer);
+      p.reject(this.exitError);
+    }
+    this.pending.clear();
+    this.opts.onExit?.(code, this.exitError);
   }
 
   private handleLine(line: string) {
@@ -102,6 +105,9 @@ export class CodexAppServer {
   }
 
   request<T = any>(method: string, params?: Json, timeoutMs = 60_000): Promise<T> {
+    if (this.exited) {
+      return Promise.reject(this.exitError ?? new Error("codex app-server is not running"));
+    }
     const id = this.nextId++;
     return new Promise<T>((resolve, reject) => {
       const timer = setTimeout(() => {

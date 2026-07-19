@@ -6,6 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { CodexAppServer, type Json } from "./codex-client.ts";
 import { parseHandoff, type Handoff } from "./contracts.ts";
+import { createJobStore } from "./store.ts";
 
 export interface JobConfig {
   bin: string;
@@ -49,10 +50,11 @@ export interface Job {
   endedAt?: string;
 }
 
-const jobs = new Map<string, Job>();
+const store = createJobStore();
+const jobs = new Map(store.listJobs().map((job) => [job.id, job]));
 
 export function getJob(id: string): Job | undefined {
-  return jobs.get(id);
+  return jobs.get(id) ?? store.getJob(id);
 }
 
 export function listJobs(): Job[] {
@@ -87,6 +89,7 @@ export function startJob(opts: StartJobOptions): Job {
     startedAt: new Date().toISOString(),
   };
   jobs.set(job.id, job);
+  store.save(job);
   void runJob(job, opts).catch((err) => {
     finish(job, "error", undefined, String(err?.message ?? err));
   });
@@ -104,6 +107,7 @@ function finish(job: Job, state: JobState, client?: CodexAppServer, error?: stri
   job.error = error;
   job.endedAt = new Date().toISOString();
   if (job.finalMessage) job.handoff = parseHandoff(job.finalMessage);
+  store.save(job);
   client?.kill();
 }
 
@@ -147,9 +151,9 @@ async function runJob(job: Job, opts: StartJobOptions) {
     args: cfg.args,
     cwd: cfg.cwd,
     onLog: (line) => log(job, "log", line),
-    onExit: (code) => {
+    onExit: (_code, error) => {
       if (job.state === "starting" || job.state === "running") {
-        finish(job, "error", undefined, `codex app-server exited early (code ${code})`);
+        finish(job, "error", undefined, error.message);
       }
       settle();
     },
@@ -195,6 +199,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
       }
       case "thread/goal/updated": {
         job.goal = extractGoal(p);
+        store.save(job);
         log(job, "goal", `status=${job.goal.status} tokensUsed=${job.goal.tokensUsed ?? "?"}`);
         progress("goal_updated", `goal status=${job.goal.status ?? "unknown"}`);
         if (job.goal.status && TERMINAL_GOAL_STATUSES.has(job.goal.status) && !activeTurn) {
@@ -235,6 +240,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
       const res: any = await client.request("thread/goal/get", { threadId: job.threadId }, 15_000);
       if (res?.goal) {
         job.goal = extractGoal(res);
+        store.save(job);
         if (job.goal.status && TERMINAL_GOAL_STATUSES.has(job.goal.status)) {
           finish(job, "done", client);
           settle();
@@ -272,6 +278,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
       job.threadId = threadRes?.thread?.id ?? threadRes?.id;
     }
     if (!job.threadId) throw new Error(`could not determine thread id from ${JSON.stringify(threadRes).slice(0, 300)}`);
+    store.save(job);
     log(job, "thread", `thread ${job.threadId} ${opts.resumeThreadId ? "resumed" : "started"}`);
 
     if (opts.objective) {
@@ -283,6 +290,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
         });
         job.goalSet = true;
         job.goal = extractGoal(goalRes);
+        store.save(job);
         log(job, "goal", `goal set (status=${job.goal.status ?? "active"})`);
         progress("goal_updated", `goal status=${job.goal.status ?? "active"}`);
       } catch (err: any) {
@@ -293,6 +301,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
     }
 
     job.state = "running";
+    store.save(job);
     await client.request("turn/start", {
       threadId: job.threadId,
       input: [{ type: "text", text: opts.prompt }],
