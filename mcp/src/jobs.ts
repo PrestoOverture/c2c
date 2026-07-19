@@ -66,6 +66,14 @@ export interface StartJobOptions {
   tokenBudget?: number;
   resumeThreadId?: string;
   config: JobConfig;
+  reasoningEffort?: "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
+  onProgress?: (event: JobProgressEvent) => void;
+}
+
+export interface JobProgressEvent {
+  jobId: string;
+  event: "turn_started" | "turn_ended" | "goal_updated" | "agent_message";
+  message: string;
 }
 
 export function startJob(opts: StartJobOptions): Job {
@@ -131,6 +139,8 @@ async function runJob(job: Job, opts: StartJobOptions) {
   let quietTimer: ReturnType<typeof setTimeout> | undefined;
   let settle!: () => void;
   const doneSignal = new Promise<void>((res) => (settle = res));
+  const progress = (event: JobProgressEvent["event"], message: string) =>
+    opts.onProgress?.({ jobId: job.id, event, message });
 
   const client = new CodexAppServer({
     bin: cfg.bin,
@@ -163,6 +173,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
         job.turns += 1;
         clearTimeout(quietTimer);
         log(job, "turn", `turn ${job.turns} started`);
+        progress("turn_started", `turn ${job.turns} started`);
         break;
       }
       case "item/completed": {
@@ -173,6 +184,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
           if (text) {
             job.finalMessage = text;
             log(job, "message", text.slice(0, 200));
+            progress("agent_message", text.slice(0, 200));
           }
         } else if (/command/i.test(type)) {
           log(job, "command", String(item?.command ?? item?.detail ?? ""));
@@ -184,6 +196,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
       case "thread/goal/updated": {
         job.goal = extractGoal(p);
         log(job, "goal", `status=${job.goal.status} tokensUsed=${job.goal.tokensUsed ?? "?"}`);
+        progress("goal_updated", `goal status=${job.goal.status ?? "unknown"}`);
         if (job.goal.status && TERMINAL_GOAL_STATUSES.has(job.goal.status) && !activeTurn) {
           finish(job, "done", client);
           settle();
@@ -195,6 +208,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
         activeTurn = false;
         const status = p.turn?.status ?? (method === "turn/failed" ? "failed" : "completed");
         log(job, "turn", `turn ended (${status})`);
+        progress("turn_ended", `turn ended (${status})`);
         void onTurnEnded();
         break;
       }
@@ -246,6 +260,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
       approvalPolicy: cfg.approvalPolicy,
       ...(cfg.model ? { model: cfg.model } : {}),
       ...(cfg.permissions ? { permissions: cfg.permissions } : {}),
+      ...(opts.reasoningEffort ? { config: { model_reasoning_effort: opts.reasoningEffort } } : {}),
     };
     let threadRes: any;
     if (opts.resumeThreadId) {
@@ -269,6 +284,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
         job.goalSet = true;
         job.goal = extractGoal(goalRes);
         log(job, "goal", `goal set (status=${job.goal.status ?? "active"})`);
+        progress("goal_updated", `goal status=${job.goal.status ?? "active"}`);
       } catch (err: any) {
         // Goals can be feature-gated; degrade to single-turn mode rather than fail.
         log(job, "goal", `thread/goal/set failed (${err?.message ?? err}); continuing without goal loop`);
@@ -280,6 +296,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
     await client.request("turn/start", {
       threadId: job.threadId,
       input: [{ type: "text", text: opts.prompt }],
+      ...(opts.reasoningEffort ? { effort: opts.reasoningEffort } : {}),
     });
 
     await doneSignal;

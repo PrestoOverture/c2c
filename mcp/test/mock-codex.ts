@@ -67,7 +67,18 @@ rl.on("line", (line) => {
     case "initialize":
       send({ id, result: { userAgent: "mock-codex/0.0.1", codexHome: "/tmp/mock-codex" } });
       break;
+    case "config/read":
+      send({ id, result: { config: { model: "gpt-mock", model_reasoning_effort: "medium" } } });
+      break;
     case "thread/start":
+      if (process.env.EXPECT_REASONING_ABSENT && params.config?.model_reasoning_effort !== undefined) {
+        send({ id, error: { code: -32602, message: "unexpected thread reasoning effort" } });
+        break;
+      }
+      if (process.env.EXPECT_REASONING_EFFORT && params.config?.model_reasoning_effort !== process.env.EXPECT_REASONING_EFFORT) {
+        send({ id, error: { code: -32602, message: "missing expected thread reasoning effort config" } });
+        break;
+      }
       send({ id, result: { thread: { id: "thr_mock_1" } } });
       break;
     case "thread/resume":
@@ -84,6 +95,14 @@ rl.on("line", (line) => {
       send({ id, result: { goal } });
       break;
     case "turn/start": {
+      if (process.env.EXPECT_REASONING_ABSENT && "effort" in params) {
+        send({ id, error: { code: -32602, message: "unexpected turn effort" } });
+        break;
+      }
+      if (process.env.EXPECT_REASONING_EFFORT && params.effort !== process.env.EXPECT_REASONING_EFFORT) {
+        send({ id, error: { code: -32602, message: "missing expected turn effort" } });
+        break;
+      }
       send({ id, result: { turn: { id: "turn_1", status: "inProgress", items: [] } } });
       const continuation = goal === null; // rework without a fresh goal-set finishes in one turn
       setTimeout(() => runTurn(params.threadId, "turn_1", { continuation: goal ? false : true }), 50);

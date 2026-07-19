@@ -6,6 +6,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { ProgressNotificationSchema } from "@modelcontextprotocol/sdk/types.js";
 
 const mcpDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -37,6 +38,7 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
       CODEX_ARGS: join(mcpDir, "test", "mock-codex.ts"),
       CODEX_QUIET_MS: "500",
       CODEX_JOB_TIMEOUT_MS: "10000",
+      EXPECT_REASONING_EFFORT: "high",
     },
   });
   const client = new Client({ name: "e2e", version: "0.0.1" });
@@ -45,11 +47,21 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
   try {
     const tools = await client.listTools();
     expect(tools.tools.map((t) => t.name).sort()).toEqual([
+      "codex_config",
       "codex_implement",
       "codex_result",
       "codex_rework",
       "codex_status",
     ]);
+
+    const currentConfig = parsePayload(await client.callTool({ name: "codex_config", arguments: {} }));
+    expect(currentConfig.model).toBe("gpt-mock");
+    expect(currentConfig.version).toBe("mock-codex/0.0.1");
+
+    const progress: any[] = [];
+    client.setNotificationHandler(ProgressNotificationSchema, (notification) => {
+      progress.push(notification.params);
+    });
 
     // --- implement ---
     const started = parsePayload(
@@ -60,6 +72,7 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
           constraints: ["Do not modify docs/"],
           success_conditions: ["The thing exists — verified by the project's test command"],
           token_budget: 50000,
+          reasoning_effort: "high",
         },
       }),
     );
@@ -70,6 +83,10 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
     expect(status.thread_id).toBe("thr_mock_1");
     expect(status.goal.status).toBe("complete");
     expect(status.turns).toBe(2); // initial turn + one goal continuation
+    expect(progress.some((event) => event.message?.includes("turn_started"))).toBe(true);
+    expect(progress.some((event) => event.message?.includes("goal_updated"))).toBe(true);
+    expect(progress.some((event) => event.message?.includes("agent_message"))).toBe(true);
+    expect(progress.some((event) => event.message?.includes("turn_ended"))).toBe(true);
 
     const result = parsePayload(
       await client.callTool({ name: "codex_result", arguments: { job_id: started.job_id } }),
@@ -87,6 +104,7 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
           job_id: started.job_id,
           findings: ["thing.ts:12 — edge case unhandled"],
           failed_conditions: ["The thing exists — verified by the project's test command"],
+          reasoning_effort: "high",
         },
       }),
     );
@@ -109,13 +127,23 @@ test("codex_result on unknown job errors cleanly", async () => {
     command: "bun",
     args: [join(mcpDir, "src", "server.ts")],
     cwd: mcpDir,
-    env: { ...(process.env as Record<string, string>), CODEX_BIN: "bun", CODEX_ARGS: join(mcpDir, "test", "mock-codex.ts") },
+    env: {
+      ...(process.env as Record<string, string>),
+      CODEX_BIN: "bun",
+      CODEX_ARGS: join(mcpDir, "test", "mock-codex.ts"),
+      EXPECT_REASONING_ABSENT: "1",
+    },
   });
   const client = new Client({ name: "e2e2", version: "0.0.1" });
   await client.connect(transport);
   try {
     const res: any = await client.callTool({ name: "codex_result", arguments: { job_id: "nope" } });
     expect(res.isError).toBe(true);
+    const started = parsePayload(await client.callTool({
+      name: "codex_implement",
+      arguments: { goal: "Default effort", constraints: [], success_conditions: ["done"] },
+    }));
+    expect((await pollUntilDone(client, started.job_id)).state).toBe("done");
   } finally {
     await client.close();
   }

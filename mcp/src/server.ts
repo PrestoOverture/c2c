@@ -12,6 +12,7 @@ import {
   type GoalContract,
 } from "./contracts.ts";
 import { startJob, getJob, type Job, type JobConfig } from "./jobs.ts";
+import { readCodexConfig } from "./config.ts";
 
 function envInt(name: string, fallback: number): number {
   const v = process.env[name];
@@ -57,6 +58,22 @@ function textResult(obj: unknown, isError = false) {
 }
 
 const server = new McpServer({ name: "c2c-codex", version: "0.1.0" });
+const reasoningEffort = z.enum(["low", "medium", "high", "xhigh", "max", "ultra"]);
+
+function progressReporter() {
+  let sequence = 0;
+  return (event: { jobId: string; event: string; message: string }) => {
+    sequence += 1;
+    void server.server.notification({
+      method: "notifications/progress",
+      params: {
+        progressToken: event.jobId,
+        progress: sequence,
+        message: JSON.stringify(event),
+      },
+    }).catch(() => undefined);
+  };
+}
 
 server.registerTool(
   "codex_implement",
@@ -84,6 +101,7 @@ server.registerTool(
         .optional()
         .describe("Optional token budget for the Codex goal loop (thread/goal/set tokenBudget)."),
       cwd: z.string().optional().describe("Working directory for Codex. Defaults to the project directory."),
+      reasoning_effort: reasoningEffort.optional().describe("Optional Codex reasoning effort; omitted uses the Codex default."),
     },
   },
   async (input) => {
@@ -92,12 +110,15 @@ server.registerTool(
       constraints: input.constraints,
       success_conditions: input.success_conditions,
     };
+    const jobConfig = config(input.cwd);
     const job = startJob({
       kind: "implement",
-      prompt: renderGoalContract(contract),
+      prompt: await renderGoalContract(contract, jobConfig.cwd),
       objective: renderObjective(contract, OBJECTIVE_MAX),
       tokenBudget: input.token_budget,
-      config: config(input.cwd),
+      config: jobConfig,
+      reasoningEffort: input.reasoning_effort,
+      onProgress: progressReporter(),
     });
     return textResult({
       job_id: job.id,
@@ -127,6 +148,7 @@ server.registerTool(
         .describe("The specific Success Conditions from the original contract that did not pass."),
       constraints: z.array(z.string()).optional().describe("Additional constraints beyond the originals."),
       cwd: z.string().optional().describe("Working directory for Codex. Defaults to the project directory."),
+      reasoning_effort: reasoningEffort.optional().describe("Optional Codex reasoning effort; omitted uses the Codex default."),
     },
   },
   async (input) => {
@@ -148,6 +170,8 @@ server.registerTool(
       }),
       resumeThreadId: threadId,
       config: config(input.cwd),
+      reasoningEffort: input.reasoning_effort,
+      onProgress: progressReporter(),
     });
     return textResult({
       job_id: job.id,
@@ -156,6 +180,19 @@ server.registerTool(
       note: "Rework job started. Poll codex_status until state is 'done', then call codex_result.",
     });
   },
+);
+
+server.registerTool(
+  "codex_config",
+  {
+    title: "Read current Codex configuration",
+    description: "Read-only view of the Codex CLI model, default reasoning effort, version, and current configuration.",
+    inputSchema: {
+      cwd: z.string().optional().describe("Directory whose Codex configuration should be resolved."),
+    },
+    annotations: { readOnlyHint: true },
+  },
+  async (input) => textResult(await readCodexConfig(config(input.cwd))),
 );
 
 server.registerTool(

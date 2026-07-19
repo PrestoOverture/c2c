@@ -118,11 +118,12 @@ export class CodexAppServer {
   }
 
   async initialize() {
-    await this.request("initialize", {
+    const result = await this.request("initialize", {
       clientInfo: { name: "c2c-mcp", title: "Claude↔Codex Contract Bridge", version: "0.1.0" },
       capabilities: { experimentalApi: true },
     });
     this.notify("initialized", {});
+    return result;
   }
 
   kill() {
