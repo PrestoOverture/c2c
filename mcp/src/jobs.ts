@@ -19,6 +19,7 @@ export interface JobConfig {
   jobTimeoutMs: number;
   quietMs: number;
   retries?: number;
+  maxConcurrent: number;
 }
 
 export interface GoalState {
@@ -34,7 +35,7 @@ export interface TranscriptEntry {
   detail: string;
 }
 
-export type JobState = "starting" | "running" | "done" | "error" | "timeout";
+export type JobState = "queued" | "starting" | "running" | "done" | "error" | "timeout";
 
 export type TokenUsage = Record<string, number>;
 
@@ -80,15 +81,50 @@ export interface StartJobOptions {
 
 export interface JobProgressEvent {
   jobId: string;
-  event: "turn_started" | "turn_ended" | "goal_updated" | "agent_message";
+  event: "queued" | "dequeued" | "turn_started" | "turn_ended" | "goal_updated" | "agent_message";
   message: string;
 }
 
+interface QueueEntry {
+  job: Job;
+  opts: StartJobOptions;
+}
+
+const queue: QueueEntry[] = [];
+
+export function getQueuePosition(id: string): number | undefined {
+  const index = queue.findIndex((entry) => entry.job.id === id);
+  return index === -1 ? undefined : index + 1;
+}
+
+function activeJobCount() {
+  return [...jobs.values()].filter((job) => job.state === "starting" || job.state === "running").length;
+}
+
+function launch(job: Job, opts: StartJobOptions) {
+  void runJob(job, opts).catch((err) => {
+    finish(job, "error", undefined, String(err?.message ?? err));
+  });
+}
+
+function drainQueue() {
+  while (queue.length > 0 && activeJobCount() < queue[0].opts.config.maxConcurrent) {
+    const { job, opts } = queue.shift()!;
+    job.state = "starting";
+    log(job, "queue", "dequeued; starting job");
+    store.save(job);
+    writeLog("info", "job_dequeued", { job_id: job.id, kind: job.kind });
+    opts.onProgress?.({ jobId: job.id, event: "dequeued", message: "job dequeued; starting" });
+    launch(job, opts);
+  }
+}
+
 export function startJob(opts: StartJobOptions): Job {
+  const queued = activeJobCount() >= opts.config.maxConcurrent;
   const job: Job = {
     id: randomUUID().slice(0, 8),
     kind: opts.kind,
-    state: "starting",
+    state: queued ? "queued" : "starting",
     goalSet: false,
     usage: {},
     attempts: 1,
@@ -97,11 +133,18 @@ export function startJob(opts: StartJobOptions): Job {
     startedAt: new Date().toISOString(),
   };
   jobs.set(job.id, job);
+  if (queued) {
+    queue.push({ job, opts });
+    log(job, "queue", `enqueued at position ${queue.length}`);
+  }
   store.save(job);
   writeLog("info", "job_created", { job_id: job.id, kind: job.kind, state: job.state });
-  void runJob(job, opts).catch((err) => {
-    finish(job, "error", undefined, String(err?.message ?? err));
-  });
+  if (queued) {
+    writeLog("info", "job_enqueued", { job_id: job.id, kind: job.kind, queue_position: queue.length });
+    opts.onProgress?.({ jobId: job.id, event: "queued", message: `job queued at position ${queue.length}` });
+  } else {
+    launch(job, opts);
+  }
   return job;
 }
 
@@ -130,6 +173,7 @@ function finish(job: Job, state: JobState, client?: CodexAppServer, error?: stri
     usage: job.usage ?? {},
   });
   client?.kill();
+  drainQueue();
 }
 
 // Defensive field extraction: the app-server item shapes vary by type/version.

@@ -11,7 +11,7 @@ import {
   renderObjective,
   type GoalContract,
 } from "./contracts.ts";
-import { startJob, getJob, type Job, type JobConfig } from "./jobs.ts";
+import { startJob, getJob, getQueuePosition, type Job, type JobConfig } from "./jobs.ts";
 import { readCodexConfig } from "./config.ts";
 
 function envInt(name: string, fallback: number): number {
@@ -31,6 +31,7 @@ function config(cwd?: string): JobConfig {
     jobTimeoutMs: envInt("CODEX_JOB_TIMEOUT_MS", 1_800_000),
     quietMs: envInt("CODEX_QUIET_MS", 30_000),
     retries: Math.max(0, envInt("C2C_RETRIES", 1)),
+    maxConcurrent: Math.max(1, envInt("C2C_MAX_CONCURRENT", 2)),
   };
 }
 
@@ -49,6 +50,7 @@ function jobSummary(job: Job, transcriptTail = 15) {
     started_at: job.startedAt,
     ended_at: job.endedAt ?? null,
     error: job.error ?? null,
+    ...(job.state === "queued" ? { queue_position: getQueuePosition(job.id) ?? null } : {}),
     transcript_tail: job.transcript.slice(-transcriptTail),
   };
 }
@@ -126,7 +128,9 @@ server.registerTool(
     return textResult({
       job_id: job.id,
       state: job.state,
-      note: "Job started. Poll codex_status until state is 'done', then call codex_result.",
+      note: job.state === "queued"
+        ? "Job queued. Poll codex_status for its queue position and state."
+        : "Job started. Poll codex_status until state is 'done', then call codex_result.",
     });
   },
 );
@@ -180,7 +184,9 @@ server.registerTool(
       job_id: job.id,
       resumed_thread_id: threadId,
       state: job.state,
-      note: "Rework job started. Poll codex_status until state is 'done', then call codex_result.",
+      note: job.state === "queued"
+        ? "Rework job queued. Poll codex_status for its queue position and state."
+        : "Rework job started. Poll codex_status until state is 'done', then call codex_result.",
     });
   },
 );
@@ -203,8 +209,8 @@ server.registerTool(
   {
     title: "Check a Codex job",
     description:
-      "Status of a running or finished Codex job: state, thread id, goal state (status/tokens), " +
-      "turn count, and a tail of the activity transcript.",
+      "Status of a queued, running, or finished Codex job: state, queue position, thread id, " +
+      "goal state (status/tokens), turn count, and a tail of the activity transcript.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
     },
@@ -223,7 +229,7 @@ server.registerTool(
     description:
       "Final result of a finished job: Codex's final message, the parsed structured handoff " +
       "(Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is " +
-      "itself a review failure), and final goal state. Errors if the job is still running.",
+      "itself a review failure), and final goal state. Errors if the job is not finished.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
     },
@@ -231,7 +237,7 @@ server.registerTool(
   async (input) => {
     const job = getJob(input.job_id);
     if (!job) return textResult({ error: `unknown job_id ${input.job_id}` }, true);
-    if (job.state === "starting" || job.state === "running") {
+    if (job.state === "queued" || job.state === "starting" || job.state === "running") {
       return textResult({ error: `job ${job.id} is still ${job.state}; poll codex_status` }, true);
     }
     return textResult({

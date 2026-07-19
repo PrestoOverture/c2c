@@ -18,18 +18,22 @@ function job(id: string, state: Job["state"]): Job {
   };
 }
 
-test("job persistence round-trips and interrupts running jobs on load", () => {
+test("job persistence round-trips and interrupts active or queued jobs on load", () => {
   const dir = mkdtempSync(join(tmpdir(), "c2c-store-"));
   dirs.push(dir);
   const first = createJobStore(dir);
   first.save(job("done", "done"));
   first.save(job("running", "running"));
+  first.save(job("queued", "queued"));
 
   const fresh = createJobStore(dir);
   expect(fresh.getJob("done")).toEqual(first.getJob("done"));
   expect(fresh.getJob("running")?.state).toBe("error");
   expect(fresh.getJob("running")?.error).toContain("interrupted by server restart");
+  expect(fresh.getJob("queued")?.state).toBe("error");
+  expect(fresh.getJob("queued")?.error).toContain("interrupted by server restart");
   expect(createJobStore(dir).getJob("running")?.state).toBe("error");
+  expect(createJobStore(dir).getJob("queued")?.state).toBe("error");
 });
 
 test("job persistence retains only the 50 most recent records", () => {

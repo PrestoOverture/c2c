@@ -38,7 +38,7 @@ export function createJobStore(dir = defaultStateDir()): JobStore {
       try {
         const job = JSON.parse(readFileSync(join(dir, name), "utf8")) as Job;
         if (!job?.id || !job?.startedAt || !Array.isArray(job.transcript)) continue;
-        if (job.state === "starting" || job.state === "running") {
+        if (job.state === "queued" || job.state === "starting" || job.state === "running") {
           job.state = "error";
           job.error = "interrupted by server restart";
           job.endedAt = new Date().toISOString();
