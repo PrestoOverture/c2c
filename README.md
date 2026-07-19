@@ -51,6 +51,8 @@ Add a /health endpoint that returns 200 OK with the server version.
 
 **Why structure it this way?** Codex works best with unambiguous, verifiable instructions. Vague requests produce vague results. The contract format forces clarity: what to do, what not to do, and how to prove it worked.
 
+For a deeper, field-tested guide — contract anatomy, verification tricks, review discipline, calibration numbers, and anti-patterns, all distilled from building this repo's own features through the bridge — see **[PATTERNS.md](./PATTERNS.md)**.
+
 ## What is a Delta Contract?
 
 When Claude reviews Codex's output and finds problems, it doesn't start over — it sends a **Delta Contract** (a rework order) scoped to *only* what failed:
@@ -117,11 +119,14 @@ Add to your Claude Code MCP settings:
 
 | Tool | Description |
 |------|-------------|
-| `codex_implement` | Start a Codex job from a Goal Contract. Returns a job ID immediately. |
-| `codex_status` | Check job progress: state, turns, goal status, transcript. |
+| `codex_implement` | Start a Codex job from a Goal Contract. Supports `context_files` (read-first references, validated to exist) and `depends_on` (start only after a prior job succeeds). Returns a job ID immediately. |
+| `codex_status` | Check job progress: state, queue position, dependency, turns, goal status, token usage, time since last activity, transcript. |
 | `codex_result` | Fetch the finished job's structured handoff. |
-| `codex_rework` | Resume the Codex thread with a Delta Contract. |
+| `codex_rework` | Resume the Codex thread with a Delta Contract (also accepts `context_files`). |
+| `codex_estimate` | Read-only pre-job cost estimate: rendered-prompt size plus token statistics from your local completed jobs. |
 | `codex_config` | Read-only view of Codex's current model, version, and settings. |
+
+Jobs are persisted (`C2C_STATE_DIR`), so status, results, and rework survive server restarts. Jobs beyond the concurrency cap queue FIFO; a stall watchdog reports when a running job stops making progress. See [PATTERNS.md](./PATTERNS.md) for field-tested guidance on writing contracts that pass review on the first try.
 
 ## How the Goal Loop Works
 
@@ -147,6 +152,11 @@ Codex then enters its goal-continuation loop: after each turn, it checks "did I 
 | `CODEX_JOB_TIMEOUT_MS` | `1800000` | Maximum job duration (30 min) |
 | `CODEX_QUIET_MS` | `30000` | Quiet period before treating an active goal as finished |
 | `GOAL_OBJECTIVE_MAX` | `2000` | Maximum goal-objective string length |
+| `C2C_STATE_DIR` | `~/.claude2codex/jobs` | Persistent job registry (atomic per-job JSON files) |
+| `C2C_LOG_LEVEL` | `info` | Structured JSON logs on stderr: `silent`, `error`, `info`, `debug` |
+| `C2C_RETRIES` | `1` | Automatic retries for process failures before the first turn starts |
+| `C2C_MAX_CONCURRENT` | `2` | Max simultaneously active Codex jobs; overflow queues FIFO |
+| `C2C_STALL_WARN_MS` | `120000` | Stall watchdog threshold; emits stalled/resumed events; `0` disables |
 
 ## Development
 

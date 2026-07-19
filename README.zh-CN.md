@@ -51,6 +51,8 @@ Goal Contract 是一份结构化规格说明，精确告诉 Codex **要做什么
 
 **为什么要这样结构化？** Codex 在面对明确、可验证的指令时表现最佳。模糊的请求产生模糊的结果。契约格式强制你想清楚：做什么、不做什么、怎么证明做对了。
 
+更深入的实战指南——合同解剖、验证技巧、审查纪律、校准数字、反模式，全部提炼自"用这座桥构建本仓库自身功能"的真实过程——参见 **[PATTERNS.zh-CN.md](./PATTERNS.zh-CN.md)**。
+
 ## 什么是 Delta Contract（差量契约）？
 
 当 Claude 审查 Codex 的产出并发现问题时，不会从头来过 — 而是发送一份 **Delta Contract**（返工指令），只针对*失败的部分*：
@@ -117,11 +119,14 @@ npx claude2codex
 
 | 工具 | 说明 |
 |------|------|
-| `codex_implement` | 从 Goal Contract 启动一个 Codex 任务，立即返回 job ID。 |
-| `codex_status` | 查看任务进度：状态、轮次、目标状态、活动记录。 |
+| `codex_implement` | 从 Goal Contract 启动一个 Codex 任务。支持 `context_files`（先读参考文件，校验存在性）和 `depends_on`（前序任务成功后才启动）。立即返回 job ID。 |
+| `codex_status` | 查看任务进度：状态、队列位置、依赖、轮次、目标状态、token 用量、距上次活动的时间、活动记录。 |
 | `codex_result` | 获取已完成任务的结构化交接报告。 |
-| `codex_rework` | 用 Delta Contract 恢复 Codex 线程进行返工。 |
+| `codex_rework` | 用 Delta Contract 恢复 Codex 线程进行返工（同样支持 `context_files`）。 |
+| `codex_estimate` | 只读的任务前成本预估：渲染后的 prompt 规模 + 本机已完成任务的 token 统计。 |
 | `codex_config` | 只读查看 Codex 当前模型、版本和配置。 |
+
+任务会持久化（`C2C_STATE_DIR`），因此状态查询、结果获取和返工在 server 重启后依然可用。超出并发上限的任务按 FIFO 排队；停滞看门狗会在运行中的任务失去进展时主动上报。关于如何写出"一次过审"的合同，参见实战指南 [PATTERNS.zh-CN.md](./PATTERNS.zh-CN.md)。
 
 ## Goal Loop 的工作原理
 
@@ -147,6 +152,11 @@ npx claude2codex
 | `CODEX_JOB_TIMEOUT_MS` | `1800000` | 单任务最大时长（30 分钟） |
 | `CODEX_QUIET_MS` | `30000` | 判定活跃目标已完成前的静默等待时间 |
 | `GOAL_OBJECTIVE_MAX` | `2000` | 目标字符串最大长度 |
+| `C2C_STATE_DIR` | `~/.claude2codex/jobs` | 持久化任务注册表（每任务一个原子写入的 JSON 文件） |
+| `C2C_LOG_LEVEL` | `info` | stderr 上的结构化 JSON 日志：`silent`、`error`、`info`、`debug` |
+| `C2C_RETRIES` | `1` | 首个 turn 开始前的进程故障自动重试次数 |
+| `C2C_MAX_CONCURRENT` | `2` | 同时活跃的 Codex 任务上限；超出按 FIFO 排队 |
+| `C2C_STALL_WARN_MS` | `120000` | 停滞看门狗阈值；发出 stalled/resumed 事件；`0` 禁用 |
 
 ## 开发
 
