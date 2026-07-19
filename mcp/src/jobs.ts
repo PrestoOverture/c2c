@@ -53,6 +53,7 @@ export interface Job {
   finalMessage?: string;
   handoff?: Handoff;
   error?: string;
+  contextFiles?: string[];
   startedAt: string;
   endedAt?: string;
 }
@@ -73,6 +74,7 @@ export interface StartJobOptions {
   prompt: string;
   objective?: string; // set on implement; rework reuses the existing thread goal
   tokenBudget?: number;
+  contextFiles?: string[];
   resumeThreadId?: string;
   config: JobConfig;
   reasoningEffort?: "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
@@ -130,6 +132,7 @@ export function startJob(opts: StartJobOptions): Job {
     attempts: 1,
     turns: 0,
     transcript: [],
+    ...(opts.contextFiles ? { contextFiles: opts.contextFiles } : {}),
     startedAt: new Date().toISOString(),
   };
   jobs.set(job.id, job);

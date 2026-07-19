@@ -1,5 +1,6 @@
 // Goal/Delta Contract rendering and handoff parsing.
 
+import { statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -7,12 +8,19 @@ export interface GoalContract {
   goal: string;
   constraints: string[];
   success_conditions: string[];
+  context_files?: ContextFile[];
 }
 
 export interface DeltaContract {
   findings: string[];
   failed_conditions: string[];
   constraints?: string[];
+  context_files?: ContextFile[];
+}
+
+export interface ContextFile {
+  path: string;
+  note?: string;
 }
 
 export const PROTOCOL_INSTRUCTIONS = `## Protocol Instructions
@@ -56,6 +64,20 @@ async function optionalAgentsInstructions(cwd: string): Promise<string | undefin
   }
 }
 
+function renderContextFiles(contextFiles?: ContextFile[]): string[] {
+  if (!contextFiles?.length) return [];
+  return [
+    "### Context Files",
+    "Read these files before implementing. They are reference material, not necessarily files to modify.",
+    ...contextFiles.map((contextFile) => {
+      const directory = statSync(contextFile.path).isDirectory() ? " (directory)" : "";
+      const note = contextFile.note ? ` — ${contextFile.note}` : "";
+      return `- ${contextFile.path}${directory}${note}`;
+    }),
+    "",
+  ];
+}
+
 export async function renderGoalContract(c: GoalContract, cwd = process.cwd()): Promise<string> {
   const agents = await optionalAgentsInstructions(cwd);
   const lines = [
@@ -67,6 +89,7 @@ export async function renderGoalContract(c: GoalContract, cwd = process.cwd()): 
     "### Goal",
     c.goal.trim(),
     "",
+    ...renderContextFiles(c.context_files),
     "### Constraints",
     ...c.constraints.map((x) => `- ${x}`),
     "",
@@ -85,6 +108,7 @@ export function renderDeltaContract(d: DeltaContract): string {
     "### Findings",
     ...d.findings.map((x) => `- ${x}`),
     "",
+    ...renderContextFiles(d.context_files),
     "### Failed Success Conditions",
     ...d.failed_conditions.map((x) => `- [ ] ${x}`),
     "",

@@ -4,6 +4,8 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { stat } from "node:fs/promises";
+import { resolve } from "node:path";
 import { z } from "zod";
 import {
   renderGoalContract,
@@ -50,6 +52,7 @@ function jobSummary(job: Job, transcriptTail = 15) {
     started_at: job.startedAt,
     ended_at: job.endedAt ?? null,
     error: job.error ?? null,
+    ...(job.contextFiles ? { context_files: job.contextFiles } : {}),
     ...(job.state === "queued" ? { queue_position: getQueuePosition(job.id) ?? null } : {}),
     transcript_tail: job.transcript.slice(-transcriptTail),
   };
@@ -64,6 +67,34 @@ function textResult(obj: unknown, isError = false) {
 
 const server = new McpServer({ name: "c2c-codex", version: "0.1.0" });
 const reasoningEffort = z.enum(["low", "medium", "high", "xhigh", "max", "ultra"]);
+const contextFiles = z.array(z.object({
+  path: z.string().min(1),
+  note: z.string().optional(),
+}));
+
+async function resolveContextFiles(
+  files: { path: string; note?: string }[] | undefined,
+  cwd: string,
+) {
+  if (!files?.length) return { files: undefined, missing: [] as string[] };
+  const resolved = files.map((file) => ({ ...file, path: resolve(cwd, file.path) }));
+  const exists = await Promise.all(resolved.map(async (file) => {
+    try {
+      await stat(file.path);
+      return true;
+    } catch {
+      return false;
+    }
+  }));
+  return {
+    files: resolved,
+    missing: resolved.filter((_, index) => !exists[index]).map((file) => file.path),
+  };
+}
+
+function missingContextFiles(paths: string[]) {
+  return textResult({ error: `context_files not found:\n${paths.map((path) => `- ${path}`).join("\n")}` }, true);
+}
 
 function progressReporter() {
   let sequence = 0;
@@ -106,21 +137,26 @@ server.registerTool(
         .optional()
         .describe("Optional token budget for the Codex goal loop (thread/goal/set tokenBudget)."),
       cwd: z.string().optional().describe("Working directory for Codex. Defaults to the project directory."),
+      context_files: contextFiles.optional().describe("Files or directories Codex should read before implementing."),
       reasoning_effort: reasoningEffort.optional().describe("Optional Codex reasoning effort; omitted uses the Codex default."),
     },
   },
   async (input) => {
+    const jobConfig = config(input.cwd);
+    const resolvedContext = await resolveContextFiles(input.context_files, jobConfig.cwd);
+    if (resolvedContext.missing.length) return missingContextFiles(resolvedContext.missing);
     const contract: GoalContract = {
       goal: input.goal,
       constraints: input.constraints,
       success_conditions: input.success_conditions,
+      context_files: resolvedContext.files,
     };
-    const jobConfig = config(input.cwd);
     const job = startJob({
       kind: "implement",
       prompt: await renderGoalContract(contract, jobConfig.cwd),
       objective: renderObjective(contract, OBJECTIVE_MAX),
       tokenBudget: input.token_budget,
+      contextFiles: resolvedContext.files?.map((file) => file.path),
       config: jobConfig,
       reasoningEffort: input.reasoning_effort,
       onProgress: progressReporter(),
@@ -155,10 +191,14 @@ server.registerTool(
         .describe("The specific Success Conditions from the original contract that did not pass."),
       constraints: z.array(z.string()).optional().describe("Additional constraints beyond the originals."),
       cwd: z.string().optional().describe("Working directory for Codex. Defaults to the project directory."),
+      context_files: contextFiles.optional().describe("Files or directories Codex should read before implementing."),
       reasoning_effort: reasoningEffort.optional().describe("Optional Codex reasoning effort; omitted uses the Codex default."),
     },
   },
   async (input) => {
+    const jobConfig = config(input.cwd);
+    const resolvedContext = await resolveContextFiles(input.context_files, jobConfig.cwd);
+    if (resolvedContext.missing.length) return missingContextFiles(resolvedContext.missing);
     let threadId = input.thread_id;
     if (!threadId && input.job_id) {
       const prev = getJob(input.job_id);
@@ -174,9 +214,11 @@ server.registerTool(
         findings: input.findings,
         failed_conditions: input.failed_conditions,
         constraints: input.constraints,
+        context_files: resolvedContext.files,
       }),
       resumeThreadId: threadId,
-      config: config(input.cwd),
+      contextFiles: resolvedContext.files?.map((file) => file.path),
+      config: jobConfig,
       reasoningEffort: input.reasoning_effort,
       onProgress: progressReporter(),
     });

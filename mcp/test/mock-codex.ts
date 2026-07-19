@@ -106,6 +106,15 @@ rl.on("line", (line) => {
         send({ id, error: { code: -32602, message: "missing expected turn effort" } });
         break;
       }
+      const prompt = params.input?.map((item: any) => item.text ?? "").join("\n") ?? "";
+      const expectedContextPaths = process.env.EXPECT_CONTEXT_PATHS
+        ? JSON.parse(process.env.EXPECT_CONTEXT_PATHS)
+        : [];
+      const missingContextPaths = expectedContextPaths.filter((path: string) => !prompt.includes(path));
+      if (missingContextPaths.length) {
+        send({ id, error: { code: -32602, message: `prompt missing context paths: ${missingContextPaths.join(", ")}` } });
+        break;
+      }
       send({ id, result: { turn: { id: "turn_1", status: "inProgress", items: [] } } });
       const continuation = goal === null; // rework without a fresh goal-set finishes in one turn
       setTimeout(() => runTurn(params.threadId, "turn_1", { continuation: goal ? false : true }), 50);
