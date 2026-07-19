@@ -4,6 +4,14 @@ An MCP server that lets Claude Code delegate implementation work to OpenAI Codex
 
 *[中文版](./README.zh-CN.md)*
 
+## Demo
+
+One real contract round-trip, recorded live: Claude drafts the Goal Contract, `codex_estimate` prices it, Codex implements under its goal loop while `codex_status` streams progress, and Claude independently re-verifies the handoff.
+
+![c2c demo — a full Claude→Codex contract round-trip](./demo/demo.gif)
+
+*Real Codex run (13k tokens, 50s), waits compressed. Replay in your terminal: `asciinema play demo/demo.cast`*
+
 ## The Idea
 
 Software development has distinct roles: **planning** what to build, **building** it, and **reviewing** the result. This project splits those roles between two AI agents:

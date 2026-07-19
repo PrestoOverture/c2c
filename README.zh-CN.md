@@ -4,6 +4,14 @@
 
 *[English](./README.md)*
 
+## 演示
+
+一次真实的契约往返实录：Claude 起草 Goal Contract，`codex_estimate` 预估成本，Codex 在 goal loop 下自主实现（`codex_status` 实时流式进度），最后 Claude 独立复核 handoff。
+
+![c2c 演示 — 完整的 Claude→Codex 契约往返](./demo/demo.gif)
+
+*真实 Codex 运行（13k tokens，50 秒），等待时间已压缩。终端回放：`asciinema play demo/demo.cast`*
+
 ## 核心理念
 
 软件开发有不同的角色：**规划**做什么、**动手**写代码、**审查**结果。本项目把这些角色分配给两个 AI 智能体：
