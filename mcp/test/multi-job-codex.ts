@@ -8,6 +8,8 @@ let marker = "rework";
 let goal: { objective: string; status: string; tokensUsed: number } | null = null;
 
 function markerFor(objective: string) {
+  const explicitTokens = objective.match(/tokens-\d+/)?.[0];
+  if (explicitTokens) return explicitTokens;
   for (const candidate of ["alpha", "beta", "first", "second", "third", "seed", "blocker"]) {
     if (objective.includes(candidate)) return candidate;
   }
@@ -15,6 +17,7 @@ function markerFor(objective: string) {
 }
 
 function tokenTotal(name: string) {
+  if (name.startsWith("tokens-")) return Number(name.slice("tokens-".length));
   return 100 + ["alpha", "beta", "first", "second", "third", "seed", "blocker", "rework"].indexOf(name);
 }
 
@@ -76,7 +79,14 @@ rl.on("line", (line) => {
         }
         send({
           method: "turn/completed",
-          params: { turn: { status: "completed", usage: { inputTokens: tokenTotal(marker) - 90 } } },
+          params: {
+            turn: {
+              status: "completed",
+              usage: marker === "rework"
+                ? { totalTokens: 9999 }
+                : { inputTokens: tokenTotal(marker) - 90 },
+            },
+          },
         });
       }, Number(process.env.MULTI_JOB_DELAY_MS ?? 350));
       break;

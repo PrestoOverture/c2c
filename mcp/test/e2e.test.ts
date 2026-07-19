@@ -61,6 +61,7 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
     const tools = await client.listTools();
     expect(tools.tools.map((t) => t.name).sort()).toEqual([
       "codex_config",
+      "codex_estimate",
       "codex_implement",
       "codex_result",
       "codex_rework",

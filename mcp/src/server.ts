@@ -13,7 +13,7 @@ import {
   renderObjective,
   type GoalContract,
 } from "./contracts.ts";
-import { startJob, getJob, getQueuePosition, type Job, type JobConfig } from "./jobs.ts";
+import { startJob, getJob, listJobs, getQueuePosition, type Job, type JobConfig } from "./jobs.ts";
 import { readCodexConfig } from "./config.ts";
 
 function envInt(name: string, fallback: number): number {
@@ -104,6 +104,25 @@ function missingContextFiles(paths: string[]) {
   return textResult({ error: `context_files not found:\n${paths.map((path) => `- ${path}`).join("\n")}` }, true);
 }
 
+function implementHistory() {
+  const totals = listJobs()
+    .filter((job) => job.kind === "implement" && job.state === "done")
+    .map((job) => job.usage?.totalTokens)
+    .filter((total): total is number => typeof total === "number" && Number.isFinite(total))
+    .sort((a, b) => a - b);
+  if (!totals.length) return null;
+  const middle = Math.floor(totals.length / 2);
+  const median = totals.length % 2
+    ? totals[middle]
+    : (totals[middle - 1] + totals[middle]) / 2;
+  return {
+    samples: totals.length,
+    median_total_tokens: Math.round(median),
+    p90_total_tokens: Math.round(totals[Math.ceil(totals.length * 0.9) - 1]),
+    mean_total_tokens: Math.round(totals.reduce((sum, total) => sum + total, 0) / totals.length),
+  };
+}
+
 function dependencyValidationError(dependsOn: string | undefined) {
   if (!dependsOn) return undefined;
   const dependency = getJob(dependsOn);
@@ -192,6 +211,50 @@ server.registerTool(
         : job.state === "queued"
         ? "Job queued. Poll codex_status for its queue position and state."
         : "Job started. Poll codex_status until state is 'done', then call codex_result.",
+    });
+  },
+);
+
+server.registerTool(
+  "codex_estimate",
+  {
+    title: "Estimate a Goal Contract's token cost",
+    description:
+      "Read-only estimate made before starting a job. Measures the fully rendered Goal Contract prompt and " +
+      "returns approx_prompt_tokens using an approximate characters/4 heuristic, plus local completed-job history.",
+    inputSchema: {
+      goal: z.string().min(1).describe("What the code must do when this task is done."),
+      constraints: z
+        .array(z.string())
+        .describe("Technical boundaries: files to touch, patterns to follow, 'Do not modify' lists."),
+      success_conditions: z
+        .array(z.string())
+        .min(1)
+        .describe("Checkable criteria proving the goal is met. At least one must be a runnable command/test."),
+      cwd: z.string().optional().describe("Working directory used to render the prompt. Defaults to the project directory."),
+      context_files: contextFiles.optional().describe("Files or directories included in the rendered prompt."),
+    },
+    annotations: { readOnlyHint: true },
+  },
+  async (input) => {
+    const jobConfig = config(input.cwd);
+    const resolvedContext = await resolveContextFiles(input.context_files, jobConfig.cwd);
+    if (resolvedContext.missing.length) return missingContextFiles(resolvedContext.missing);
+    const prompt = await renderGoalContract({
+      goal: input.goal,
+      constraints: input.constraints,
+      success_conditions: input.success_conditions,
+      context_files: resolvedContext.files,
+    }, jobConfig.cwd);
+    const history = implementHistory();
+    return textResult({
+      prompt_chars: prompt.length,
+      approx_prompt_tokens: Math.ceil(prompt.length / 4),
+      history,
+      estimated_total_tokens: history?.median_total_tokens ?? null,
+      note: history
+        ? "Estimated total tokens are based on local history and vary with task complexity."
+        : "No completed implement job history is available; estimates based on local history vary with task complexity.",
     });
   },
 );
