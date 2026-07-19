@@ -6,6 +6,7 @@
 import { randomUUID } from "node:crypto";
 import { CodexAppServer, type Json } from "./codex-client.ts";
 import { parseHandoff, type Handoff } from "./contracts.ts";
+import { writeLog } from "./log.ts";
 import { createJobStore } from "./store.ts";
 
 export interface JobConfig {
@@ -17,6 +18,7 @@ export interface JobConfig {
   permissions?: string;
   jobTimeoutMs: number;
   quietMs: number;
+  retries?: number;
 }
 
 export interface GoalState {
@@ -34,6 +36,8 @@ export interface TranscriptEntry {
 
 export type JobState = "starting" | "running" | "done" | "error" | "timeout";
 
+export type TokenUsage = Record<string, number>;
+
 export interface Job {
   id: string;
   kind: "implement" | "rework";
@@ -41,6 +45,8 @@ export interface Job {
   threadId?: string;
   goal?: GoalState;
   goalSet: boolean;
+  usage?: TokenUsage;
+  attempts?: number;
   turns: number;
   transcript: TranscriptEntry[];
   finalMessage?: string;
@@ -84,12 +90,15 @@ export function startJob(opts: StartJobOptions): Job {
     kind: opts.kind,
     state: "starting",
     goalSet: false,
+    usage: {},
+    attempts: 1,
     turns: 0,
     transcript: [],
     startedAt: new Date().toISOString(),
   };
   jobs.set(job.id, job);
   store.save(job);
+  writeLog("info", "job_created", { job_id: job.id, kind: job.kind, state: job.state });
   void runJob(job, opts).catch((err) => {
     finish(job, "error", undefined, String(err?.message ?? err));
   });
@@ -103,11 +112,23 @@ function log(job: Job, kind: string, detail: string) {
 
 function finish(job: Job, state: JobState, client?: CodexAppServer, error?: string) {
   if (job.state === "done" || job.state === "error" || job.state === "timeout") return;
+  const previousState = job.state;
   job.state = state;
   job.error = error;
   job.endedAt = new Date().toISOString();
   if (job.finalMessage) job.handoff = parseHandoff(job.finalMessage);
   store.save(job);
+  writeLog(state === "error" || state === "timeout" ? "error" : "info", "job_state_changed", {
+    job_id: job.id,
+    from: previousState,
+    to: state,
+    ...(error ? { error } : {}),
+  });
+  writeLog("info", "job_usage", {
+    job_id: job.id,
+    state,
+    usage: job.usage ?? {},
+  });
   client?.kill();
 }
 
@@ -135,26 +156,112 @@ function extractGoal(params: any): GoalState {
   };
 }
 
+const usageAliases: Record<string, string> = {
+  input_tokens: "inputTokens",
+  input_token_count: "inputTokens",
+  output_tokens: "outputTokens",
+  output_token_count: "outputTokens",
+  total_tokens: "totalTokens",
+  total_token_count: "totalTokens",
+  tokensUsed: "totalTokens",
+  tokens_used: "totalTokens",
+};
+
+function extractUsage(params: any): TokenUsage | undefined {
+  const source = params?.turn?.usage ?? params?.usage ?? params?.turn?.tokenUsage ?? params?.tokenUsage;
+  if (!source || typeof source !== "object") return undefined;
+  const usage: TokenUsage = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (typeof value === "number" && Number.isFinite(value)) usage[usageAliases[key] ?? key] = value;
+  }
+  return Object.keys(usage).length ? usage : undefined;
+}
+
+function mergeUsage(job: Job, usage: TokenUsage | undefined, cumulative = false) {
+  if (!usage) return;
+  job.usage ??= {};
+  for (const [key, value] of Object.entries(usage)) {
+    job.usage[key] = cumulative ? value : (job.usage[key] ?? 0) + value;
+  }
+}
+
+function updateGoal(job: Job, params: any) {
+  job.goal = extractGoal(params);
+  if (typeof job.goal.tokensUsed === "number") {
+    mergeUsage(job, { totalTokens: job.goal.tokensUsed }, true);
+  }
+  store.save(job);
+}
+
 const TERMINAL_GOAL_STATUSES = new Set(["complete", "budget_limited", "budgetLimited"]);
 
+interface AttemptResult {
+  error?: Error;
+  processFailure: boolean;
+}
+
 async function runJob(job: Job, opts: StartJobOptions) {
+  const deadline = Date.now() + opts.config.jobTimeoutMs;
+  const maxAttempts = (opts.config.retries ?? 1) + 1;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    job.attempts = attempt;
+    log(job, "attempt", `attempt ${attempt} started`);
+    store.save(job);
+    writeLog("info", "job_attempt_started", { job_id: job.id, attempt });
+
+    const result = await runAttempt(job, opts, Math.max(0, deadline - Date.now()));
+    if (!result.error || job.state === "done" || job.state === "error" || job.state === "timeout") return;
+
+    const retryable = result.processFailure && job.state === "starting" && job.turns === 0;
+    if (!retryable || attempt === maxAttempts) {
+      finish(job, "error", undefined, result.error.message);
+      return;
+    }
+
+    log(job, "retry", `attempt ${attempt} failed before the first turn; retrying in 500ms`);
+    store.save(job);
+    writeLog("info", "job_retry_scheduled", {
+      job_id: job.id,
+      attempt,
+      next_attempt: attempt + 1,
+      delay_ms: 500,
+      error: result.error.message,
+    });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+}
+
+async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): Promise<AttemptResult> {
   const cfg = opts.config;
   let activeTurn = false;
+  let processError: Error | undefined;
   let quietTimer: ReturnType<typeof setTimeout> | undefined;
   let settle!: () => void;
   const doneSignal = new Promise<void>((res) => (settle = res));
   const progress = (event: JobProgressEvent["event"], message: string) =>
     opts.onProgress?.({ jobId: job.id, event, message });
 
+  if (!opts.resumeThreadId) job.goalSet = false;
+
   const client = new CodexAppServer({
     bin: cfg.bin,
     args: cfg.args,
     cwd: cfg.cwd,
     onLog: (line) => log(job, "log", line),
-    onExit: (_code, error) => {
-      if (job.state === "starting" || job.state === "running") {
-        finish(job, "error", undefined, error.message);
-      }
+    onSpawn: (pid) => writeLog("info", "codex_process_spawn", {
+      job_id: job.id,
+      attempt: job.attempts ?? 1,
+      ...(pid === undefined ? {} : { pid }),
+    }),
+    onExit: (code, error) => {
+      writeLog(job.state === "starting" || job.state === "running" ? "error" : "info", "codex_process_exit", {
+        job_id: job.id,
+        attempt: job.attempts ?? 1,
+        code,
+        error: error.message,
+      });
+      if (job.state === "starting" || job.state === "running") processError = error;
       settle();
     },
     onNotification: (method, params) => handleNotification(method, params),
@@ -170,13 +277,25 @@ async function runJob(job: Job, opts: StartJobOptions) {
   }
 
   function handleNotification(method: string, params: Json) {
+    writeLog("debug", "codex_notification", {
+      job_id: job.id,
+      attempt: job.attempts ?? 1,
+      method,
+      params: params ?? null,
+    });
     const p: any = params ?? {};
     switch (method) {
       case "turn/started": {
         activeTurn = true;
         job.turns += 1;
         clearTimeout(quietTimer);
+        if (job.state === "starting") {
+          job.state = "running";
+          store.save(job);
+          writeLog("info", "job_state_changed", { job_id: job.id, from: "starting", to: "running" });
+        }
         log(job, "turn", `turn ${job.turns} started`);
+        writeLog("info", "turn_started", { job_id: job.id, turn: job.turns });
         progress("turn_started", `turn ${job.turns} started`);
         break;
       }
@@ -198,11 +317,15 @@ async function runJob(job: Job, opts: StartJobOptions) {
         break;
       }
       case "thread/goal/updated": {
-        job.goal = extractGoal(p);
-        store.save(job);
-        log(job, "goal", `status=${job.goal.status} tokensUsed=${job.goal.tokensUsed ?? "?"}`);
-        progress("goal_updated", `goal status=${job.goal.status ?? "unknown"}`);
-        if (job.goal.status && TERMINAL_GOAL_STATUSES.has(job.goal.status) && !activeTurn) {
+        updateGoal(job, p);
+        log(job, "goal", `status=${job.goal?.status} tokensUsed=${job.goal?.tokensUsed ?? "?"}`);
+        writeLog("info", "goal_updated", {
+          job_id: job.id,
+          status: job.goal?.status ?? null,
+          tokens_used: job.goal?.tokensUsed ?? null,
+        });
+        progress("goal_updated", `goal status=${job.goal?.status ?? "unknown"}`);
+        if (job.goal?.status && TERMINAL_GOAL_STATUSES.has(job.goal.status) && !activeTurn) {
           finish(job, "done", client);
           settle();
         }
@@ -211,8 +334,11 @@ async function runJob(job: Job, opts: StartJobOptions) {
       case "turn/completed":
       case "turn/failed": {
         activeTurn = false;
+        mergeUsage(job, extractUsage(p));
+        store.save(job);
         const status = p.turn?.status ?? (method === "turn/failed" ? "failed" : "completed");
         log(job, "turn", `turn ended (${status})`);
+        writeLog("info", "turn_ended", { job_id: job.id, turn: job.turns, status });
         progress("turn_ended", `turn ended (${status})`);
         void onTurnEnded();
         break;
@@ -239,9 +365,8 @@ async function runJob(job: Job, opts: StartJobOptions) {
     try {
       const res: any = await client.request("thread/goal/get", { threadId: job.threadId }, 15_000);
       if (res?.goal) {
-        job.goal = extractGoal(res);
-        store.save(job);
-        if (job.goal.status && TERMINAL_GOAL_STATUSES.has(job.goal.status)) {
+        updateGoal(job, res);
+        if (job.goal?.status && TERMINAL_GOAL_STATUSES.has(job.goal.status)) {
           finish(job, "done", client);
           settle();
           return;
@@ -256,7 +381,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
   const overallTimer = setTimeout(() => {
     finish(job, "timeout", client, `job exceeded ${cfg.jobTimeoutMs}ms`);
     settle();
-  }, cfg.jobTimeoutMs);
+  }, timeoutMs);
 
   try {
     await client.initialize();
@@ -289,26 +414,28 @@ async function runJob(job: Job, opts: StartJobOptions) {
           ...(opts.tokenBudget ? { tokenBudget: opts.tokenBudget } : {}),
         });
         job.goalSet = true;
-        job.goal = extractGoal(goalRes);
-        store.save(job);
-        log(job, "goal", `goal set (status=${job.goal.status ?? "active"})`);
-        progress("goal_updated", `goal status=${job.goal.status ?? "active"}`);
+        updateGoal(job, goalRes);
+        log(job, "goal", `goal set (status=${job.goal?.status ?? "active"})`);
+        progress("goal_updated", `goal status=${job.goal?.status ?? "active"}`);
       } catch (err: any) {
-        // Goals can be feature-gated; degrade to single-turn mode rather than fail.
+        // A dead process is a transient failure (retryable); a feature-gated
+        // goal API degrades to single-turn mode rather than failing the job.
+        if (client.exited) throw err;
         log(job, "goal", `thread/goal/set failed (${err?.message ?? err}); continuing without goal loop`);
         job.goalSet = false;
       }
     }
 
-    job.state = "running";
-    store.save(job);
     await client.request("turn/start", {
       threadId: job.threadId,
       input: [{ type: "text", text: opts.prompt }],
       ...(opts.reasoningEffort ? { effort: opts.reasoningEffort } : {}),
     });
-
     await doneSignal;
+    return processError ? { error: processError, processFailure: true } : { processFailure: false };
+  } catch (error: any) {
+    const failure = processError ?? (error instanceof Error ? error : new Error(String(error)));
+    return { error: failure, processFailure: client.exited };
   } finally {
     clearTimeout(overallTimer);
     clearTimeout(quietTimer);

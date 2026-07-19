@@ -2,6 +2,7 @@ import { accessSync, constants, mkdirSync, readFileSync, readdirSync, renameSync
 import { homedir } from "node:os";
 import { join } from "node:path";
 import type { Job } from "./jobs.ts";
+import { writeLog } from "./log.ts";
 
 const MAX_JOBS = 50;
 let warned = false;
@@ -15,7 +16,9 @@ export interface JobStore {
 function warnOnce(error: unknown) {
   if (warned) return;
   warned = true;
-  console.error(`c2c: job persistence disabled: ${error instanceof Error ? error.message : String(error)}`);
+  writeLog("error", "persistence_degraded", {
+    error: error instanceof Error ? error.message : String(error),
+  });
 }
 
 export function defaultStateDir(): string {

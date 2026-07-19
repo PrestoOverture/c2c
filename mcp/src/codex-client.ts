@@ -19,6 +19,7 @@ export interface CodexAppServerOptions {
   env?: Record<string, string | undefined>;
   onNotification?: (method: string, params: Json) => void;
   onLog?: (line: string) => void;
+  onSpawn?: (pid: number | undefined) => void;
   onExit?: (code: number | null, error: Error) => void;
 }
 
@@ -46,6 +47,7 @@ export class CodexAppServer {
       if (this.stderrTail.length > 50) this.stderrTail.shift();
       opts.onLog?.(line);
     });
+    this.proc.on("spawn", () => opts.onSpawn?.(this.proc.pid));
     this.proc.on("exit", (code) => this.handleExit(code));
     this.proc.on("error", (err) => {
       this.handleExit(null, new Error(`failed to spawn ${opts.bin}: ${err.message}`));

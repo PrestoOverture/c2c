@@ -86,6 +86,8 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
     expect(status.state).toBe("done");
     expect(status.thread_id).toBe("thr_mock_1");
     expect(status.goal.status).toBe("complete");
+    expect(status.usage).toEqual({ inputTokens: 20, outputTokens: 600, totalTokens: 1234 });
+    expect(status.attempts).toBe(1);
     expect(status.turns).toBe(2); // initial turn + one goal continuation
     expect(progress.some((event) => event.message?.includes("turn_started"))).toBe(true);
     expect(progress.some((event) => event.message?.includes("goal_updated"))).toBe(true);
@@ -99,6 +101,7 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
     expect(result.handoff.valid).toBe(true);
     expect(result.handoff.missing).toEqual([]);
     expect(result.handoff.sections["Risks & Deviations"]).toContain("none");
+    expect(result.usage).toEqual({ inputTokens: 20, outputTokens: 600, totalTokens: 1234 });
 
     // --- rework ---
     const rework = parsePayload(

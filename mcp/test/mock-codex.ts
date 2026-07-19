@@ -53,7 +53,10 @@ function runTurn(threadId: string, turnId: string, opts: { continuation: boolean
       goal.tokensUsed = 1234;
       send({ method: "thread/goal/updated", params: { threadId, goal } });
     }
-    send({ method: "turn/completed", params: { turn: { id: turnId, status: "completed", usage: { outputTokens: 500 } } } });
+    send({
+      method: "turn/completed",
+      params: { turn: { id: turnId, status: "completed", usage: { input_tokens: 20, outputTokens: 500 } } },
+    });
   }
 }
 

@@ -68,7 +68,9 @@ test("spawn failure finalizes well before the request timeout", async () => {
   try {
     const start = Date.now();
     const started = payload(await client.callTool({ name: "codex_implement", arguments: contract }));
-    expect((await wait(client, started.job_id)).state).toBe("error");
+    const failed = await wait(client, started.job_id);
+    expect(failed.state).toBe("error");
+    expect(failed.attempts).toBe(2); // default C2C_RETRIES=1
     expect(Date.now() - start).toBeLessThan(5000);
   } finally {
     await client.close();
@@ -92,6 +94,8 @@ test("status, result, and rework resolve a persisted job after server restart", 
     const status = payload(await restarted.callTool({ name: "codex_status", arguments: { job_id: started.job_id } }));
     expect(status.state).toBe("done");
     expect(status.thread_id).toBe("thr_mock_1");
+    expect(status.attempts).toBe(1);
+    expect(status.usage).toEqual({ inputTokens: 20, outputTokens: 600, totalTokens: 1234 });
     const result = payload(await restarted.callTool({ name: "codex_result", arguments: { job_id: started.job_id } }));
     expect(result.handoff.valid).toBe(true);
     const rework = payload(await restarted.callTool({

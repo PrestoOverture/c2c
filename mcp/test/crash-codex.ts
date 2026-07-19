@@ -19,6 +19,7 @@ createInterface({ input: process.stdin }).on("line", (line) => {
   else if (method === "turn/start") {
     send({ id, result: { turn: { id: "turn" } } });
     if (shouldCrash) {
+      send({ method: "turn/started", params: { turn: { id: "turn" } } });
       process.stderr.write("fatal mock crash diagnostic\n");
       setTimeout(() => process.kill(process.pid, "SIGKILL"), 20);
     } else {

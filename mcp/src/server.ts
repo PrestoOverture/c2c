@@ -30,6 +30,7 @@ function config(cwd?: string): JobConfig {
     permissions: process.env.CODEX_PERMISSIONS || undefined,
     jobTimeoutMs: envInt("CODEX_JOB_TIMEOUT_MS", 1_800_000),
     quietMs: envInt("CODEX_QUIET_MS", 30_000),
+    retries: Math.max(0, envInt("C2C_RETRIES", 1)),
   };
 }
 
@@ -42,6 +43,8 @@ function jobSummary(job: Job, transcriptTail = 15) {
     state: job.state,
     thread_id: job.threadId ?? null,
     goal: job.goal ?? null,
+    usage: job.usage ?? {},
+    attempts: job.attempts ?? 1,
     turns: job.turns,
     started_at: job.startedAt,
     ended_at: job.endedAt ?? null,
