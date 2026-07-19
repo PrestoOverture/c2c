@@ -35,7 +35,7 @@ export interface TranscriptEntry {
   detail: string;
 }
 
-export type JobState = "queued" | "starting" | "running" | "done" | "error" | "timeout";
+export type JobState = "blocked" | "queued" | "starting" | "running" | "done" | "error" | "timeout";
 
 export type TokenUsage = Record<string, number>;
 
@@ -54,6 +54,7 @@ export interface Job {
   handoff?: Handoff;
   error?: string;
   contextFiles?: string[];
+  dependsOn?: string;
   startedAt: string;
   endedAt?: string;
 }
@@ -75,6 +76,7 @@ export interface StartJobOptions {
   objective?: string; // set on implement; rework reuses the existing thread goal
   tokenBudget?: number;
   contextFiles?: string[];
+  dependsOn?: string;
   resumeThreadId?: string;
   config: JobConfig;
   reasoningEffort?: "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
@@ -83,7 +85,16 @@ export interface StartJobOptions {
 
 export interface JobProgressEvent {
   jobId: string;
-  event: "queued" | "dequeued" | "turn_started" | "turn_ended" | "goal_updated" | "agent_message";
+  event:
+    | "blocked"
+    | "unblocked"
+    | "dependency_failed"
+    | "queued"
+    | "dequeued"
+    | "turn_started"
+    | "turn_ended"
+    | "goal_updated"
+    | "agent_message";
   message: string;
 }
 
@@ -93,6 +104,7 @@ interface QueueEntry {
 }
 
 const queue: QueueEntry[] = [];
+const blocked = new Map<string, QueueEntry[]>();
 
 export function getQueuePosition(id: string): number | undefined {
   const index = queue.findIndex((entry) => entry.job.id === id);
@@ -122,27 +134,42 @@ function drainQueue() {
 }
 
 export function startJob(opts: StartJobOptions): Job {
-  const queued = activeJobCount() >= opts.config.maxConcurrent;
+  const dependency = opts.dependsOn ? getJob(opts.dependsOn) : undefined;
+  if (opts.dependsOn && !dependency) throw new Error(`unknown depends_on job_id ${opts.dependsOn}`);
+  if (dependency?.state === "error" || dependency?.state === "timeout") {
+    throw new Error(dependencyFailureMessage(dependency));
+  }
+  const isBlocked = dependency !== undefined && dependency.state !== "done";
+  const queued = !isBlocked && (queue.length > 0 || activeJobCount() >= opts.config.maxConcurrent);
   const job: Job = {
     id: randomUUID().slice(0, 8),
     kind: opts.kind,
-    state: queued ? "queued" : "starting",
+    state: isBlocked ? "blocked" : queued ? "queued" : "starting",
     goalSet: false,
     usage: {},
     attempts: 1,
     turns: 0,
     transcript: [],
     ...(opts.contextFiles ? { contextFiles: opts.contextFiles } : {}),
+    ...(opts.dependsOn ? { dependsOn: opts.dependsOn } : {}),
     startedAt: new Date().toISOString(),
   };
   jobs.set(job.id, job);
-  if (queued) {
+  if (isBlocked) {
+    const dependents = blocked.get(opts.dependsOn!) ?? [];
+    dependents.push({ job, opts });
+    blocked.set(opts.dependsOn!, dependents);
+    log(job, "blocked", `blocked on dependency ${opts.dependsOn}`);
+  } else if (queued) {
     queue.push({ job, opts });
     log(job, "queue", `enqueued at position ${queue.length}`);
   }
   store.save(job);
   writeLog("info", "job_created", { job_id: job.id, kind: job.kind, state: job.state });
-  if (queued) {
+  if (isBlocked) {
+    writeLog("info", "job_blocked", { job_id: job.id, kind: job.kind, depends_on: opts.dependsOn });
+    opts.onProgress?.({ jobId: job.id, event: "blocked", message: `blocked on dependency ${opts.dependsOn}` });
+  } else if (queued) {
     writeLog("info", "job_enqueued", { job_id: job.id, kind: job.kind, queue_position: queue.length });
     opts.onProgress?.({ jobId: job.id, event: "queued", message: `job queued at position ${queue.length}` });
   } else {
@@ -176,7 +203,60 @@ function finish(job: Job, state: JobState, client?: CodexAppServer, error?: stri
     usage: job.usage ?? {},
   });
   client?.kill();
+  resolveDependents(job);
   drainQueue();
+}
+
+function dependencyFailureMessage(dependency: Job) {
+  return `dependency ${dependency.id} failed: ${dependency.error ?? `state ${dependency.state}`}`;
+}
+
+function resolveDependents(dependency: Job) {
+  const dependents = blocked.get(dependency.id);
+  if (!dependents?.length) return;
+  blocked.delete(dependency.id);
+
+  for (const { job, opts } of dependents) {
+    if (dependency.state === "done") {
+      log(job, "unblocked", `dependency ${dependency.id} completed; unblocked`);
+      store.save(job);
+      writeLog("info", "job_unblocked", { job_id: job.id, depends_on: dependency.id });
+      opts.onProgress?.({
+        jobId: job.id,
+        event: "unblocked",
+        message: `dependency ${dependency.id} completed; job unblocked`,
+      });
+      enqueueOrLaunch(job, opts);
+    } else {
+      const error = dependencyFailureMessage(dependency);
+      log(job, "dependency_failed", error);
+      store.save(job);
+      writeLog("info", "job_dependency_failed", {
+        job_id: job.id,
+        depends_on: dependency.id,
+        error,
+      });
+      opts.onProgress?.({ jobId: job.id, event: "dependency_failed", message: error });
+      finish(job, "error", undefined, error);
+    }
+  }
+}
+
+function enqueueOrLaunch(job: Job, opts: StartJobOptions) {
+  if (queue.length > 0 || activeJobCount() >= opts.config.maxConcurrent) {
+    job.state = "queued";
+    queue.push({ job, opts });
+    log(job, "queue", `enqueued at position ${queue.length} after dependency completed`);
+    store.save(job);
+    writeLog("info", "job_enqueued", { job_id: job.id, kind: job.kind, queue_position: queue.length });
+    opts.onProgress?.({ jobId: job.id, event: "queued", message: `job queued at position ${queue.length}` });
+    drainQueue();
+    return;
+  }
+
+  job.state = "starting";
+  store.save(job);
+  launch(job, opts);
 }
 
 // Defensive field extraction: the app-server item shapes vary by type/version.

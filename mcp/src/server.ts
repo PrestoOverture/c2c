@@ -53,6 +53,7 @@ function jobSummary(job: Job, transcriptTail = 15) {
     ended_at: job.endedAt ?? null,
     error: job.error ?? null,
     ...(job.contextFiles ? { context_files: job.contextFiles } : {}),
+    ...(job.dependsOn ? { depends_on: job.dependsOn } : {}),
     ...(job.state === "queued" ? { queue_position: getQueuePosition(job.id) ?? null } : {}),
     transcript_tail: job.transcript.slice(-transcriptTail),
   };
@@ -94,6 +95,16 @@ async function resolveContextFiles(
 
 function missingContextFiles(paths: string[]) {
   return textResult({ error: `context_files not found:\n${paths.map((path) => `- ${path}`).join("\n")}` }, true);
+}
+
+function dependencyValidationError(dependsOn: string | undefined) {
+  if (!dependsOn) return undefined;
+  const dependency = getJob(dependsOn);
+  if (!dependency) return `unknown depends_on job_id ${dependsOn}`;
+  if (dependency.state === "error" || dependency.state === "timeout") {
+    return `dependency ${dependency.id} failed: ${dependency.error ?? `state ${dependency.state}`}`;
+  }
+  return undefined;
 }
 
 function progressReporter() {
@@ -138,6 +149,7 @@ server.registerTool(
         .describe("Optional token budget for the Codex goal loop (thread/goal/set tokenBudget)."),
       cwd: z.string().optional().describe("Working directory for Codex. Defaults to the project directory."),
       context_files: contextFiles.optional().describe("Files or directories Codex should read before implementing."),
+      depends_on: z.string().min(1).optional().describe("Job id of a prior job that must succeed before this job starts."),
       reasoning_effort: reasoningEffort.optional().describe("Optional Codex reasoning effort; omitted uses the Codex default."),
     },
   },
@@ -151,12 +163,16 @@ server.registerTool(
       success_conditions: input.success_conditions,
       context_files: resolvedContext.files,
     };
+    const prompt = await renderGoalContract(contract, jobConfig.cwd);
+    const dependencyError = dependencyValidationError(input.depends_on);
+    if (dependencyError) return textResult({ error: dependencyError }, true);
     const job = startJob({
       kind: "implement",
-      prompt: await renderGoalContract(contract, jobConfig.cwd),
+      prompt,
       objective: renderObjective(contract, OBJECTIVE_MAX),
       tokenBudget: input.token_budget,
       contextFiles: resolvedContext.files?.map((file) => file.path),
+      dependsOn: input.depends_on,
       config: jobConfig,
       reasoningEffort: input.reasoning_effort,
       onProgress: progressReporter(),
@@ -164,7 +180,9 @@ server.registerTool(
     return textResult({
       job_id: job.id,
       state: job.state,
-      note: job.state === "queued"
+      note: job.state === "blocked"
+        ? `Job blocked on dependency ${job.dependsOn}. Poll codex_status for its state.`
+        : job.state === "queued"
         ? "Job queued. Poll codex_status for its queue position and state."
         : "Job started. Poll codex_status until state is 'done', then call codex_result.",
     });
@@ -251,7 +269,7 @@ server.registerTool(
   {
     title: "Check a Codex job",
     description:
-      "Status of a queued, running, or finished Codex job: state, queue position, thread id, " +
+      "Status of a blocked, queued, running, or finished Codex job: dependency, state, queue position, thread id, " +
       "goal state (status/tokens), turn count, and a tail of the activity transcript.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
@@ -279,7 +297,7 @@ server.registerTool(
   async (input) => {
     const job = getJob(input.job_id);
     if (!job) return textResult({ error: `unknown job_id ${input.job_id}` }, true);
-    if (job.state === "queued" || job.state === "starting" || job.state === "running") {
+    if (job.state === "blocked" || job.state === "queued" || job.state === "starting" || job.state === "running") {
       return textResult({ error: `job ${job.id} is still ${job.state}; poll codex_status` }, true);
     }
     return textResult({

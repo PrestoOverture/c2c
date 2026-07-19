@@ -21,7 +21,7 @@ createInterface({ input: process.stdin }).on("line", (line) => {
     if (shouldCrash) {
       send({ method: "turn/started", params: { turn: { id: "turn" } } });
       process.stderr.write("fatal mock crash diagnostic\n");
-      setTimeout(() => process.kill(process.pid, "SIGKILL"), 20);
+      setTimeout(() => process.kill(process.pid, "SIGKILL"), Number(process.env.CRASH_DELAY_MS ?? 20));
     } else {
       send({ method: "turn/started", params: { turn: { id: "turn" } } });
       send({ method: "item/completed", params: { item: { type: "agentMessage", text: "healthy result" } } });

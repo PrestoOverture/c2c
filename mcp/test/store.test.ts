@@ -18,13 +18,16 @@ function job(id: string, state: Job["state"]): Job {
   };
 }
 
-test("job persistence round-trips and interrupts active or queued jobs on load", () => {
+test("job persistence round-trips and interrupts active, queued, or blocked jobs on load", () => {
   const dir = mkdtempSync(join(tmpdir(), "c2c-store-"));
   dirs.push(dir);
   const first = createJobStore(dir);
   first.save(job("done", "done"));
   first.save(job("running", "running"));
   first.save(job("queued", "queued"));
+  const blocked = job("blocked", "blocked");
+  blocked.dependsOn = "running";
+  first.save(blocked);
 
   const fresh = createJobStore(dir);
   expect(fresh.getJob("done")).toEqual(first.getJob("done"));
@@ -32,8 +35,13 @@ test("job persistence round-trips and interrupts active or queued jobs on load",
   expect(fresh.getJob("running")?.error).toContain("interrupted by server restart");
   expect(fresh.getJob("queued")?.state).toBe("error");
   expect(fresh.getJob("queued")?.error).toContain("interrupted by server restart");
+  expect(fresh.getJob("blocked")?.state).toBe("error");
+  expect(fresh.getJob("blocked")?.dependsOn).toBe("running");
+  expect(fresh.getJob("blocked")?.error).toContain("interrupted by server restart");
+  expect(fresh.getJob("done")?.dependsOn).toBeUndefined();
   expect(createJobStore(dir).getJob("running")?.state).toBe("error");
   expect(createJobStore(dir).getJob("queued")?.state).toBe("error");
+  expect(createJobStore(dir).getJob("blocked")?.state).toBe("error");
 });
 
 test("job persistence retains only the 50 most recent records", () => {
