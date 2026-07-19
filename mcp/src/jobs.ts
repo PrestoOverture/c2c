@@ -18,6 +18,7 @@ export interface JobConfig {
   permissions?: string;
   jobTimeoutMs: number;
   quietMs: number;
+  stallWarnMs: number;
   retries?: number;
   maxConcurrent: number;
 }
@@ -56,6 +57,7 @@ export interface Job {
   contextFiles?: string[];
   dependsOn?: string;
   startedAt: string;
+  lastActivityAt?: string;
   endedAt?: string;
 }
 
@@ -94,7 +96,9 @@ export interface JobProgressEvent {
     | "turn_started"
     | "turn_ended"
     | "goal_updated"
-    | "agent_message";
+    | "agent_message"
+    | "stalled"
+    | "resumed";
   message: string;
 }
 
@@ -141,6 +145,7 @@ export function startJob(opts: StartJobOptions): Job {
   }
   const isBlocked = dependency !== undefined && dependency.state !== "done";
   const queued = !isBlocked && (queue.length > 0 || activeJobCount() >= opts.config.maxConcurrent);
+  const startedAt = new Date().toISOString();
   const job: Job = {
     id: randomUUID().slice(0, 8),
     kind: opts.kind,
@@ -152,7 +157,8 @@ export function startJob(opts: StartJobOptions): Job {
     transcript: [],
     ...(opts.contextFiles ? { contextFiles: opts.contextFiles } : {}),
     ...(opts.dependsOn ? { dependsOn: opts.dependsOn } : {}),
-    startedAt: new Date().toISOString(),
+    startedAt,
+    lastActivityAt: startedAt,
   };
   jobs.set(job.id, job);
   if (isBlocked) {
@@ -362,8 +368,10 @@ async function runJob(job: Job, opts: StartJobOptions) {
 async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): Promise<AttemptResult> {
   const cfg = opts.config;
   let activeTurn = false;
+  let stalled = false;
   let processError: Error | undefined;
   let quietTimer: ReturnType<typeof setTimeout> | undefined;
+  let stallTimer: ReturnType<typeof setTimeout> | undefined;
   let settle!: () => void;
   const doneSignal = new Promise<void>((res) => (settle = res));
   const progress = (event: JobProgressEvent["event"], message: string) =>
@@ -398,9 +406,55 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     clearTimeout(quietTimer);
     quietTimer = setTimeout(() => {
       log(job, "quiet", `no goal continuation within ${cfg.quietMs}ms; treating turn as final`);
-      finish(job, "done", client);
+      finalize("done");
       settle();
     }, cfg.quietMs);
+  }
+
+  function clearStallTimer() {
+    clearTimeout(stallTimer);
+    stallTimer = undefined;
+  }
+
+  function armStallTimer() {
+    clearStallTimer();
+    if (cfg.stallWarnMs === 0 || !activeTurn || stalled || !job.lastActivityAt) return;
+    const stalledForMs = Math.max(0, Date.now() - Date.parse(job.lastActivityAt));
+    stallTimer = setTimeout(checkForStall, Math.max(0, cfg.stallWarnMs - stalledForMs));
+  }
+
+  function checkForStall() {
+    stallTimer = undefined;
+    if (!activeTurn || stalled || !job.lastActivityAt) return;
+    const stalledForMs = Math.max(0, Date.now() - Date.parse(job.lastActivityAt));
+    if (stalledForMs < cfg.stallWarnMs) {
+      armStallTimer();
+      return;
+    }
+    stalled = true;
+    log(job, "stalled", `no Codex activity for ${stalledForMs}ms`);
+    store.save(job);
+    writeLog("info", "job_stalled", { job_id: job.id, stalled_for_ms: stalledForMs });
+    progress("stalled", `job stalled for ${stalledForMs}ms`);
+  }
+
+  function recordActivity() {
+    const now = new Date();
+    if (stalled && job.lastActivityAt) {
+      const stalledForMs = Math.max(0, now.getTime() - Date.parse(job.lastActivityAt));
+      stalled = false;
+      log(job, "resumed", `Codex activity resumed after ${stalledForMs}ms`);
+      writeLog("info", "job_resumed", { job_id: job.id, stalled_for_ms: stalledForMs });
+      progress("resumed", `job resumed after ${stalledForMs}ms`);
+    }
+    job.lastActivityAt = now.toISOString();
+    store.save(job);
+    if (activeTurn) armStallTimer();
+  }
+
+  function finalize(state: JobState, error?: string) {
+    clearStallTimer();
+    finish(job, state, client, error);
   }
 
   function handleNotification(method: string, params: Json) {
@@ -410,10 +464,12 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
       method,
       params: params ?? null,
     });
+    recordActivity();
     const p: any = params ?? {};
     switch (method) {
       case "turn/started": {
         activeTurn = true;
+        armStallTimer();
         job.turns += 1;
         clearTimeout(quietTimer);
         if (job.state === "starting") {
@@ -453,7 +509,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
         });
         progress("goal_updated", `goal status=${job.goal?.status ?? "unknown"}`);
         if (job.goal?.status && TERMINAL_GOAL_STATUSES.has(job.goal.status) && !activeTurn) {
-          finish(job, "done", client);
+          finalize("done");
           settle();
         }
         break;
@@ -461,6 +517,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
       case "turn/completed":
       case "turn/failed": {
         activeTurn = false;
+        clearStallTimer();
         mergeUsage(job, extractUsage(p));
         store.save(job);
         const status = p.turn?.status ?? (method === "turn/failed" ? "failed" : "completed");
@@ -478,12 +535,12 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
   async function onTurnEnded() {
     // No goal on the thread → single-turn mode; the turn's end is the job's end.
     if (!job.goalSet) {
-      finish(job, "done", client);
+      finalize("done");
       settle();
       return;
     }
     if (job.goal?.status && TERMINAL_GOAL_STATUSES.has(job.goal.status)) {
-      finish(job, "done", client);
+      finalize("done");
       settle();
       return;
     }
@@ -494,7 +551,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
       if (res?.goal) {
         updateGoal(job, res);
         if (job.goal?.status && TERMINAL_GOAL_STATUSES.has(job.goal.status)) {
-          finish(job, "done", client);
+          finalize("done");
           settle();
           return;
         }
@@ -506,7 +563,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
   }
 
   const overallTimer = setTimeout(() => {
-    finish(job, "timeout", client, `job exceeded ${cfg.jobTimeoutMs}ms`);
+    finalize("timeout", `job exceeded ${cfg.jobTimeoutMs}ms`);
     settle();
   }, timeoutMs);
 
@@ -566,6 +623,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
   } finally {
     clearTimeout(overallTimer);
     clearTimeout(quietTimer);
+    clearStallTimer();
     client.kill();
   }
 }

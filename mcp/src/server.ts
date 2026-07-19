@@ -32,6 +32,7 @@ function config(cwd?: string): JobConfig {
     permissions: process.env.CODEX_PERMISSIONS || undefined,
     jobTimeoutMs: envInt("CODEX_JOB_TIMEOUT_MS", 1_800_000),
     quietMs: envInt("CODEX_QUIET_MS", 30_000),
+    stallWarnMs: Math.max(0, envInt("C2C_STALL_WARN_MS", 120_000)),
     retries: Math.max(0, envInt("C2C_RETRIES", 1)),
     maxConcurrent: Math.max(1, envInt("C2C_MAX_CONCURRENT", 2)),
   };
@@ -52,6 +53,12 @@ function jobSummary(job: Job, transcriptTail = 15) {
     started_at: job.startedAt,
     ended_at: job.endedAt ?? null,
     error: job.error ?? null,
+    ...(!["done", "error", "timeout"].includes(job.state)
+      ? { last_activity_at: job.lastActivityAt ?? null }
+      : {}),
+    ...(job.state === "running" && job.lastActivityAt
+      ? { seconds_since_activity: Math.max(0, (Date.now() - Date.parse(job.lastActivityAt)) / 1000) }
+      : {}),
     ...(job.contextFiles ? { context_files: job.contextFiles } : {}),
     ...(job.dependsOn ? { depends_on: job.dependsOn } : {}),
     ...(job.state === "queued" ? { queue_position: getQueuePosition(job.id) ?? null } : {}),
