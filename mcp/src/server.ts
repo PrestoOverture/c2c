@@ -73,7 +73,7 @@ function textResult(obj: unknown, isError = false) {
   };
 }
 
-const server = new McpServer({ name: "c2c-codex", version: "0.1.0" });
+const server = new McpServer({ name: "c2c-codex", version: "0.3.0" });
 const reasoningEffort = z.enum(["low", "medium", "high", "xhigh", "max", "ultra"]);
 const contextFiles = z.array(z.object({
   path: z.string().min(1),

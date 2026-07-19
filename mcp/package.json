@@ -1,13 +1,15 @@
 {
   "name": "claude2codex",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "type": "module",
   "description": "MCP server bridging Claude (architect/reviewer) and Codex (implementer) via Goal/Delta Contracts and Codex's thread-goal loop.",
   "bin": {
     "claude2codex": "dist/server.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "PATTERNS.md",
+    "PATTERNS.zh-CN.md"
   ],
   "keywords": [
     "mcp",
@@ -28,7 +30,7 @@
     "start": "bun src/server.ts",
     "build": "tsup",
     "test": "bun test",
-    "prepack": "cp ../README.md ../README.zh-CN.md ."
+    "prepack": "cp ../README.md ../README.zh-CN.md ../PATTERNS.md ../PATTERNS.zh-CN.md ."
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
