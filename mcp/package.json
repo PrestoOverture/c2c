@@ -30,7 +30,8 @@
     "start": "bun src/server.ts",
     "build": "tsup",
     "test": "bun test",
-    "prepack": "cp ../README.md ../README.zh-CN.md ../PATTERNS.md ../PATTERNS.zh-CN.md ."
+    "prepack": "cp ../README.md ../README.zh-CN.md ../PATTERNS.md ../PATTERNS.zh-CN.md .",
+    "postpack": "rm -f README.md README.zh-CN.md PATTERNS.md PATTERNS.zh-CN.md"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
