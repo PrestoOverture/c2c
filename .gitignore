@@ -6,3 +6,9 @@ docs/
 CLAUDE.md 
 AGENTS.md 
 .claude/
+.gitignore
+interview-prep.md
+
+# Docs copied into the package dir by mcp's prepack script (canonical copies live at the repo root)
+mcp/*.md
+demo.md
