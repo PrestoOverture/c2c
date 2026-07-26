@@ -11,8 +11,7 @@ const contract = {
 };
 
 test("goal prompt embeds the complete project-independent protocol", async () => {
-  const cwd = await mkdtemp(join(tmpdir(), "c2c-no-agents-"));
-  const prompt = await renderGoalContract(contract, cwd);
+  const prompt = renderGoalContract(contract);
 
   expect(prompt).toContain("## Protocol Instructions");
   expect(prompt).toContain("Self-Verification");
@@ -27,18 +26,17 @@ test("goal prompt embeds the complete project-independent protocol", async () =>
   expect(prompt).not.toContain("### Context Files");
 });
 
-test("goal prompt inserts optional AGENTS.md between protocol and contract", async () => {
+test("goal prompt does not insert AGENTS.md content", async () => {
   const cwd = await mkdtemp(join(tmpdir(), "c2c-with-agents-"));
   await writeFile(join(cwd, "AGENTS.md"), "PROJECT-ONLY-INSTRUCTION");
 
-  const prompt = await renderGoalContract(contract, cwd);
+  const prompt = renderGoalContract(contract);
   const protocol = prompt.indexOf("## Protocol Instructions");
-  const agents = prompt.indexOf("PROJECT-ONLY-INSTRUCTION");
   const body = prompt.indexOf("## Goal Contract");
 
   expect(protocol).toBeGreaterThanOrEqual(0);
-  expect(agents).toBeGreaterThan(protocol);
-  expect(body).toBeGreaterThan(agents);
+  expect(prompt).not.toContain("PROJECT-ONLY-INSTRUCTION");
+  expect(body).toBeGreaterThan(protocol);
 });
 
 test("goal prompt renders context files between the goal and constraints", async () => {
@@ -48,13 +46,13 @@ test("goal prompt renders context files between the goal and constraints", async
   await writeFile(reference, "SECRET-INLINE-CONTENT");
   await mkdir(examples);
 
-  const prompt = await renderGoalContract({
+  const prompt = renderGoalContract({
     ...contract,
     context_files: [
       { path: reference, note: "Defines the expected behavior" },
       { path: examples, note: "Contains representative inputs" },
     ],
-  }, cwd);
+  });
 
   expect(prompt).toContain("### Context Files");
   expect(prompt).toContain("Read these files before implementing. They are reference material, not necessarily files to modify.");

@@ -90,15 +90,17 @@ flowchart TD
 
 ## 三层 Prompt 架构
 
-claude2codex 向 Codex 发送任务时，prompt 由三层组装而成：
+Codex 最终工作时的 prompt 由三层组成，但只有两层来自 claude2codex：
 
 1. **协议层**（内嵌在 MCP 服务器中）— 通用规则：如何自我验证、如何格式化交接报告、如何处理返工。无论什么项目都一样。
 
-2. **项目层**（可选，工作目录中的 `AGENTS.md`）— 项目特定的编码规范、工具链说明、架构约束。存在时自动注入。
+2. **项目层**（`AGENTS.md`）— 项目特定的编码规范、工具链说明、架构约束。**由 Codex 自己加载，不是本服务器注入的。** Codex 会在工作目录所属的仓库树中查找 `AGENTS.md`（以及 `AGENTS.override.md`），放进它自己的 instructions 层，并受其 `project_doc_max_bytes` 预算约束。claude2codex 过去会重复注入一遍，现已移除。
 
 3. **任务层**（Goal/Delta Contract 本身）— 这次要做的具体工作。
 
-这种分离意味着：MCP 服务器开箱即用（第 1 层始终存在），有项目上下文时更好（第 2 层），每次任务都有独特的规格说明（第 3 层）。
+这种分离意味着：MCP 服务器开箱即用（第 1 层始终存在），直接继承 Codex 已经加载的项目上下文（第 2 层），每次任务都有独特的规格说明（第 3 层）。
+
+注意：合同 prompt 和 **thread-goal objective** 是两个不同的字符串。objective 由 `goal` 加上每一条 `success_condition` 渲染而成，是 Codex `/goal` 循环在宣布目标达成前实际审查的对象，并有自己的 `GOAL_OBJECTIVE_MAX` 预算。详见 [PATTERNS.zh-CN.md](PATTERNS.zh-CN.md#objective-预算你的-success-conditions-有字符上限)。
 
 ## 安装
 

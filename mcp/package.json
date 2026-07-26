@@ -1,6 +1,6 @@
 {
   "name": "claude2codex",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "description": "MCP server bridging Claude (architect/reviewer) and Codex (implementer) via Goal/Delta Contracts and Codex's thread-goal loop.",
   "bin": {

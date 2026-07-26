@@ -67,7 +67,7 @@ test("estimate without history measures the rendered prompt and has no side effe
     success_conditions: ["Tests pass"],
     cwd: workspace,
   };
-  const expectedPrompt = await renderGoalContract(input, workspace);
+  const expectedPrompt = renderGoalContract(input);
   const expectedObjective = renderObjectiveDetails(input, 2000);
   const { client, stderr } = await connect(stateDir);
 
@@ -146,10 +146,10 @@ test("estimate uses statistics from completed implement jobs only", async () => 
       context_files: [{ path: "reference.md", note: "Required input" }],
       cwd: workspace,
     };
-    const expectedPrompt = await renderGoalContract({
+    const expectedPrompt = renderGoalContract({
       ...input,
       context_files: [{ path: join(workspace, "reference.md"), note: "Required input" }],
-    }, workspace);
+    });
     const result: any = await client.callTool({ name: "codex_estimate", arguments: input });
     const expectedObjective = renderObjectiveDetails(input, 2000);
 

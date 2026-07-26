@@ -1,8 +1,6 @@
 // Goal/Delta Contract rendering and handoff parsing.
 
 import { statSync } from "node:fs";
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 
 export interface GoalContract {
   goal: string;
@@ -55,15 +53,6 @@ End every task with exactly these sections:
 ### Rework
 For a Delta Contract, fix only its review findings and failed Success Conditions. Do not revisit work that passed review. Repeat the full Self-Verification and Required Handoff.`;
 
-async function optionalAgentsInstructions(cwd: string): Promise<string | undefined> {
-  try {
-    return await readFile(join(cwd, "AGENTS.md"), "utf8");
-  } catch (error: any) {
-    if (error?.code === "ENOENT") return undefined;
-    throw error;
-  }
-}
-
 function renderContextFiles(contextFiles?: ContextFile[]): string[] {
   if (!contextFiles?.length) return [];
   return [
@@ -78,11 +67,9 @@ function renderContextFiles(contextFiles?: ContextFile[]): string[] {
   ];
 }
 
-export async function renderGoalContract(c: GoalContract, cwd = process.cwd()): Promise<string> {
-  const agents = await optionalAgentsInstructions(cwd);
+export function renderGoalContract(c: GoalContract): string {
   const lines = [
     PROTOCOL_INSTRUCTIONS,
-    ...(agents ? ["", "## Project Instructions", "", agents.trim()] : []),
     "",
     "## Goal Contract",
     "",

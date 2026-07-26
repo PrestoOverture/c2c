@@ -76,7 +76,7 @@ function textResult(obj: unknown, isError = false) {
   };
 }
 
-const server = new McpServer({ name: "c2c-codex", version: "0.3.0" });
+const server = new McpServer({ name: "c2c-codex", version: "0.3.1" });
 const reasoningEffort = z.enum(["low", "medium", "high", "xhigh", "max", "ultra"]);
 const contextFiles = z.array(z.object({
   path: z.string().min(1),
@@ -192,7 +192,7 @@ server.registerTool(
       success_conditions: input.success_conditions,
       context_files: resolvedContext.files,
     };
-    const prompt = await renderGoalContract(contract, jobConfig.cwd);
+    const prompt = renderGoalContract(contract);
     const dependencyError = dependencyValidationError(input.depends_on);
     if (dependencyError) return textResult({ error: dependencyError }, true);
     const renderedObjective = renderObjectiveDetails(contract, OBJECTIVE_MAX);
@@ -243,7 +243,7 @@ server.registerTool(
         .array(z.string())
         .min(1)
         .describe(`Checkable criteria proving the goal is met. At least one must be a runnable command/test. ${objectiveBudgetDescription}`),
-      cwd: z.string().optional().describe("Working directory used to render the prompt. Defaults to the project directory."),
+      cwd: z.string().optional().describe("Working directory used to resolve relative context_files paths. Defaults to the project directory."),
       context_files: contextFiles.optional().describe("Files or directories included in the rendered prompt."),
     },
     annotations: { readOnlyHint: true },
@@ -258,7 +258,7 @@ server.registerTool(
       success_conditions: input.success_conditions,
       context_files: resolvedContext.files,
     };
-    const prompt = await renderGoalContract(contract, jobConfig.cwd);
+    const prompt = renderGoalContract(contract);
     const renderedObjective = renderObjectiveDetails(contract, OBJECTIVE_MAX);
     const history = implementHistory();
     return textResult({

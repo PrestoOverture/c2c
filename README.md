@@ -90,15 +90,17 @@ flowchart TD
 
 ## Three-Layer Prompt Architecture
 
-When claude2codex sends work to Codex, the prompt is assembled from three layers:
+The prompt Codex works from is assembled from three layers, but only two of them come from claude2codex:
 
 1. **Protocol layer** (embedded in the MCP server) — universal rules: how to self-verify work, how to format the handoff, how to handle rework. These never change regardless of project.
 
-2. **Project layer** (optional `AGENTS.md` in the working directory) — project-specific coding conventions, toolchain instructions, architectural constraints. Injected automatically when present.
+2. **Project layer** (`AGENTS.md`) — project-specific coding conventions, toolchain instructions, architectural constraints. **Loaded by Codex itself, not by this server.** Codex discovers `AGENTS.md` files across the working directory's repository tree (plus `AGENTS.override.md`) and places them in its instructions layer, subject to its own `project_doc_max_bytes` budget. claude2codex used to inject the file a second time and no longer does.
 
 3. **Task layer** (the Goal/Delta Contract itself) — the specific work to be done this time.
 
-This separation means the MCP server works out of the box (layer 1 is always there), benefits from project context when available (layer 2), and carries the unique task specification (layer 3).
+This separation means the MCP server works out of the box (layer 1 is always there), inherits whatever project context Codex already loads (layer 2), and carries the unique task specification (layer 3).
+
+Note that the contract prompt and the **thread-goal objective** are different strings. The objective — rendered from `goal` plus every `success_condition` — is what Codex's `/goal` loop audits before declaring the goal achieved, and it has its own `GOAL_OBJECTIVE_MAX` budget. See [PATTERNS.md](PATTERNS.md#the-objective-budget-your-success-conditions-have-a-character-limit).
 
 ## Installation
 
