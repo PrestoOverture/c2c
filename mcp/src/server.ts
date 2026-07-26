@@ -10,7 +10,7 @@ import { z } from "zod";
 import {
   renderGoalContract,
   renderDeltaContract,
-  renderObjective,
+  renderObjectiveDetails,
   type GoalContract,
 } from "./contracts.ts";
 import { startJob, getJob, listJobs, getQueuePosition, type Job, type JobConfig } from "./jobs.ts";
@@ -39,6 +39,9 @@ function config(cwd?: string): JobConfig {
 }
 
 const OBJECTIVE_MAX = envInt("GOAL_OBJECTIVE_MAX", 2000);
+const objectiveBudgetDescription =
+  `The rendered thread-goal objective has a GOAL_OBJECTIVE_MAX budget of ${OBJECTIVE_MAX} characters; ` +
+  "over-limit calls are rejected.";
 
 function jobSummary(job: Job, transcriptTail = 15) {
   return {
@@ -159,14 +162,14 @@ server.registerTool(
       "then fetch codex_result when done. Language-agnostic: verification commands come from the " +
       "contract's Success Conditions, not from this server.",
     inputSchema: {
-      goal: z.string().min(1).describe("What the code must do when this task is done."),
+      goal: z.string().min(1).describe(`What the code must do when this task is done. ${objectiveBudgetDescription}`),
       constraints: z
         .array(z.string())
         .describe("Technical boundaries: files to touch, patterns to follow, 'Do not modify' lists."),
       success_conditions: z
         .array(z.string())
         .min(1)
-        .describe("Checkable criteria proving the goal is met. At least one must be a runnable command/test."),
+        .describe(`Checkable criteria proving the goal is met. At least one must be a runnable command/test. ${objectiveBudgetDescription}`),
       token_budget: z
         .number()
         .int()
@@ -192,10 +195,19 @@ server.registerTool(
     const prompt = await renderGoalContract(contract, jobConfig.cwd);
     const dependencyError = dependencyValidationError(input.depends_on);
     if (dependencyError) return textResult({ error: dependencyError }, true);
+    const renderedObjective = renderObjectiveDetails(contract, OBJECTIVE_MAX);
+    if (renderedObjective.objectiveChars > OBJECTIVE_MAX) {
+      return textResult({
+        error:
+          `Rendered objective is ${renderedObjective.objectiveChars} characters, exceeding the ` +
+          `GOAL_OBJECTIVE_MAX limit of ${OBJECTIVE_MAX}. Shorten goal or success_conditions, or raise ` +
+          "GOAL_OBJECTIVE_MAX.",
+      }, true);
+    }
     const job = startJob({
       kind: "implement",
       prompt,
-      objective: renderObjective(contract, OBJECTIVE_MAX),
+      objective: renderedObjective.objective,
       tokenBudget: input.token_budget,
       contextFiles: resolvedContext.files?.map((file) => file.path),
       dependsOn: input.depends_on,
@@ -223,14 +235,14 @@ server.registerTool(
       "Read-only estimate made before starting a job. Measures the fully rendered Goal Contract prompt and " +
       "returns approx_prompt_tokens using an approximate characters/4 heuristic, plus local completed-job history.",
     inputSchema: {
-      goal: z.string().min(1).describe("What the code must do when this task is done."),
+      goal: z.string().min(1).describe(`What the code must do when this task is done. ${objectiveBudgetDescription}`),
       constraints: z
         .array(z.string())
         .describe("Technical boundaries: files to touch, patterns to follow, 'Do not modify' lists."),
       success_conditions: z
         .array(z.string())
         .min(1)
-        .describe("Checkable criteria proving the goal is met. At least one must be a runnable command/test."),
+        .describe(`Checkable criteria proving the goal is met. At least one must be a runnable command/test. ${objectiveBudgetDescription}`),
       cwd: z.string().optional().describe("Working directory used to render the prompt. Defaults to the project directory."),
       context_files: contextFiles.optional().describe("Files or directories included in the rendered prompt."),
     },
@@ -240,16 +252,21 @@ server.registerTool(
     const jobConfig = config(input.cwd);
     const resolvedContext = await resolveContextFiles(input.context_files, jobConfig.cwd);
     if (resolvedContext.missing.length) return missingContextFiles(resolvedContext.missing);
-    const prompt = await renderGoalContract({
+    const contract: GoalContract = {
       goal: input.goal,
       constraints: input.constraints,
       success_conditions: input.success_conditions,
       context_files: resolvedContext.files,
-    }, jobConfig.cwd);
+    };
+    const prompt = await renderGoalContract(contract, jobConfig.cwd);
+    const renderedObjective = renderObjectiveDetails(contract, OBJECTIVE_MAX);
     const history = implementHistory();
     return textResult({
       prompt_chars: prompt.length,
       approx_prompt_tokens: Math.ceil(prompt.length / 4),
+      objective_chars: renderedObjective.objectiveChars,
+      objective_max_chars: OBJECTIVE_MAX,
+      objective_over_limit: renderedObjective.objectiveChars > OBJECTIVE_MAX,
       history,
       estimated_total_tokens: history?.median_total_tokens ?? null,
       note: history

@@ -72,6 +72,27 @@ codex_implement 必须支持声明对先前 job 的依赖:被依赖的 job 成�
 
 缺失或不完整的 handoff 本身就是审查失败——你永远不需要为此争论,因为它就是一条成功条件。
 
+## objective 预算:你的 Success Conditions 有字符上限
+
+你发出去的合同,和 goal loop 实际审的 objective,**不是同一个字符串**。`codex_implement` 会从 `goal` 加上每一条 `success_condition` 渲染出一个精简的 objective,通过 `thread/goal/set` 设进去。Codex 的 `/goal` 循环在宣布目标达成前,审的是这个 objective,而不是完整的合同 prompt。Constraints 和 context files 根本进不去 —— 它们只存在于 turn prompt 里。
+
+它有一条硬预算:`GOAL_OBJECTIVE_MAX`,默认 **2000 字符**,其中约 213 是固定的渲染样板。剩下约 1787 字符由你的 goal 正文和所有 success conditions 拼接而成。
+
+两个后果:
+
+- **散文最烧预算。** 十条普通英文句子写成的 success conditions,落点大约在 1700–2000 字符。加入这条检查的那份合同,初稿实测 1987/2000 —— 只剩 13 字符余量,纯属侥幸。
+- **发之前先量。** `codex_estimate` 会返回 `objective_chars`、`objective_max_chars`、`objective_over_limit`,且不创建 job。超限的 `codex_implement` 调用会在提交时被拒 —— 不建 job、不起进程、不烧 token —— 错误里直接给出实际字符数。
+
+Success conditions 要写成断言,不要写成段落:
+
+```markdown
+差(124 字符):The implementation should make sure that whenever a contract
+              exceeds the configured limit, the tool refuses to create a job.
+好( 76 字符):Over-limit contracts return isError and create no job (state dir unchanged).
+```
+
+如果某个任务确实需要更长的 objective,那就有意识地调高 `GOAL_OBJECTIVE_MAX`。但通常正确的答案是:十条精悍的条件胜过六条啰嗦的 —— 而且精悍的那种审查起来也更省事。
+
 ## 审查:永不轻信,永远重跑
 
 handoff 说 `bun test` 过了。你还是要自己跑一遍 `bun test`。在本仓库的实战中,每一份 handoff 碰巧都是诚实的——而这恰恰是你不能假设的事,因为哪天有一份不诚实,你的重跑就是唯一的防线。行之有效的审查循环:

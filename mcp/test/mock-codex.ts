@@ -3,6 +3,9 @@
 // then a two-turn goal-continuation loop ending with goal status "complete".
 
 import { createInterface } from "node:readline";
+import { writeFileSync } from "node:fs";
+
+if (process.env.SPAWN_MARKER_FILE) writeFileSync(process.env.SPAWN_MARKER_FILE, "spawned");
 
 function send(obj: Record<string, unknown>) {
   process.stdout.write(JSON.stringify(obj) + "\n");
@@ -90,6 +93,7 @@ rl.on("line", (line) => {
       if (goal) goal.status = "active";
       break;
     case "thread/goal/set":
+      if (process.env.OBJECTIVE_FILE) writeFileSync(process.env.OBJECTIVE_FILE, params.objective);
       goal = { objective: params.objective, status: "active", tokensUsed: 0, tokenBudget: params.tokenBudget };
       send({ id, result: { goal } });
       send({ method: "thread/goal/updated", params: { threadId: params.threadId, goal } });

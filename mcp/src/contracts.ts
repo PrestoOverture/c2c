@@ -123,12 +123,22 @@ export function renderDeltaContract(d: DeltaContract): string {
 // the full contract goes in the turn prompt; the objective is what the /goal
 // loop audits against before declaring "Goal achieved".
 export function renderObjective(c: GoalContract, maxLen: number): string {
+  return renderObjectiveDetails(c, maxLen).objective;
+}
+
+export function renderObjectiveDetails(c: GoalContract, maxLen: number): {
+  objective: string;
+  objectiveChars: number;
+} {
   const conditions = c.success_conditions.map((x) => `(${x})`).join(" ");
   const text =
     `Fulfill this Goal Contract: ${c.goal.trim()} ` +
     `The goal is achieved only when every Success Condition is verified: ${conditions} ` +
     `and a structured handoff (Changed Files / Validation / Success Conditions / Risks & Deviations) has been delivered.`;
-  return text.length <= maxLen ? text : text.slice(0, maxLen - 1) + "…";
+  return {
+    objective: text.length <= maxLen ? text : text.slice(0, maxLen - 1) + "…",
+    objectiveChars: text.length,
+  };
 }
 
 export const HANDOFF_SECTIONS = [

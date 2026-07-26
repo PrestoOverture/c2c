@@ -5,7 +5,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { renderGoalContract } from "../src/contracts.ts";
+import { renderGoalContract, renderObjectiveDetails } from "../src/contracts.ts";
 
 const mcpDir = join(dirname(fileURLToPath(import.meta.url)), "..");
 const dirs: string[] = [];
@@ -68,6 +68,7 @@ test("estimate without history measures the rendered prompt and has no side effe
     cwd: workspace,
   };
   const expectedPrompt = await renderGoalContract(input, workspace);
+  const expectedObjective = renderObjectiveDetails(input, 2000);
   const { client, stderr } = await connect(stateDir);
 
   try {
@@ -81,6 +82,9 @@ test("estimate without history measures the rendered prompt and has no side effe
     expect(payload(result)).toEqual({
       prompt_chars: expectedPrompt.length,
       approx_prompt_tokens: Math.ceil(expectedPrompt.length / 4),
+      objective_chars: expectedObjective.objectiveChars,
+      objective_max_chars: 2000,
+      objective_over_limit: false,
       history: null,
       estimated_total_tokens: null,
       note: expect.any(String),
@@ -147,11 +151,15 @@ test("estimate uses statistics from completed implement jobs only", async () => 
       context_files: [{ path: join(workspace, "reference.md"), note: "Required input" }],
     }, workspace);
     const result: any = await client.callTool({ name: "codex_estimate", arguments: input });
+    const expectedObjective = renderObjectiveDetails(input, 2000);
 
     expect(result.isError ?? false).toBe(false);
     expect(payload(result)).toEqual({
       prompt_chars: expectedPrompt.length,
       approx_prompt_tokens: Math.ceil(expectedPrompt.length / 4),
+      objective_chars: expectedObjective.objectiveChars,
+      objective_max_chars: 2000,
+      objective_over_limit: false,
       history: {
         samples: 5,
         median_total_tokens: 400,

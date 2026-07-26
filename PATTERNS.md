@@ -73,6 +73,27 @@ And the meta-rule for the handoff: **require it in the contract.** Every contrac
 
 A missing or incomplete handoff is itself a review failure — you never have to argue about it, because it was a success condition.
 
+## The objective budget: your success conditions have a character limit
+
+The contract you send and the objective the goal loop audits are **not the same string**. `codex_implement` renders a compact objective from your `goal` plus every `success_condition` and sets it via `thread/goal/set`. That objective — not the full contract prompt — is what Codex's `/goal` loop checks before declaring the goal achieved. Constraints and context files never reach it; they live only in the turn prompt.
+
+It has a hard budget: `GOAL_OBJECTIVE_MAX`, default **2000 characters**, of which ~213 are fixed rendering boilerplate. The remaining ~1787 are your goal text plus the concatenation of every success condition.
+
+Two consequences:
+
+- **Prose burns the budget fast.** A ten-condition contract of ordinary English sentences lands around 1700–2000 characters. The contract that added this very check measured 1987/2000 on its first draft — 13 characters of margin, entirely by accident.
+- **Measure before you send.** `codex_estimate` reports `objective_chars`, `objective_max_chars`, and `objective_over_limit` without creating a job. Over-limit calls to `codex_implement` are rejected at submit time — no job, no process, no tokens spent — with the actual count in the error.
+
+Write success conditions as assertions, not paragraphs:
+
+```markdown
+Bad  (124 chars): The implementation should make sure that whenever a contract
+                  exceeds the configured limit, the tool refuses to create a job.
+Good  (76 chars): Over-limit contracts return isError and create no job (state dir unchanged).
+```
+
+If a task genuinely needs a longer objective, raise `GOAL_OBJECTIVE_MAX` deliberately. The usual right answer is that ten crisp conditions beat six verbose ones — and the crisp ones review better anyway.
+
 ## Review: never trust, always re-run
 
 The handoff says `bun test` passed. Run `bun test` anyway. In this repo's run every handoff happened to be truthful — and that is exactly what you can't assume, because the day one isn't, the re-run is your only defense. The review loop that worked:

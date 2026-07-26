@@ -131,7 +131,7 @@ Add to your Claude Code MCP settings:
 | `codex_status` | Check job progress: state, queue position, dependency, turns, goal status, token usage, time since last activity, transcript. |
 | `codex_result` | Fetch the finished job's structured handoff. |
 | `codex_rework` | Resume the Codex thread with a Delta Contract (also accepts `context_files`). |
-| `codex_estimate` | Read-only pre-job cost estimate: rendered-prompt size plus token statistics from your local completed jobs. |
+| `codex_estimate` | Read-only pre-job cost estimate: rendered-prompt size, thread-goal objective size against `GOAL_OBJECTIVE_MAX`, plus token statistics from your local completed jobs. |
 | `codex_config` | Read-only view of Codex's current model, version, and settings. |
 
 Jobs are persisted (`C2C_STATE_DIR`), so status, results, and rework survive server restarts. Jobs beyond the concurrency cap queue FIFO; a stall watchdog reports when a running job stops making progress. See [PATTERNS.md](./PATTERNS.md) for field-tested guidance on writing contracts that pass review on the first try.
@@ -159,7 +159,7 @@ Codex then enters its goal-continuation loop: after each turn, it checks "did I 
 | `CODEX_PERMISSIONS` | Unset | Permissions profile passed to Codex |
 | `CODEX_JOB_TIMEOUT_MS` | `1800000` | Maximum job duration (30 min) |
 | `CODEX_QUIET_MS` | `30000` | Quiet period before treating an active goal as finished |
-| `GOAL_OBJECTIVE_MAX` | `2000` | Maximum goal-objective string length |
+| `GOAL_OBJECTIVE_MAX` | `2000` | Maximum rendered goal-objective length; `codex_implement` rejects over-limit contracts at submit time |
 | `C2C_STATE_DIR` | `~/.claude2codex/jobs` | Persistent job registry (atomic per-job JSON files) |
 | `C2C_LOG_LEVEL` | `info` | Structured JSON logs on stderr: `silent`, `error`, `info`, `debug` |
 | `C2C_RETRIES` | `1` | Automatic retries for process failures before the first turn starts |
