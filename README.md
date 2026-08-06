@@ -125,6 +125,22 @@ Add to your Claude Code MCP settings:
 }
 ```
 
+### Skill (optional)
+
+The package includes a Claude Code Skill that teaches Claude the full contract workflow — drafting Goal Contracts, delegating to Codex, reviewing handoffs, and reworking failures. Install it to use `/c2c` from any project:
+
+```sh
+mkdir -p ~/.claude/skills
+cp "$(npm root -g)/claude2codex/c2c.skill.md" ~/.claude/skills/c2c.md
+```
+
+Or download directly:
+
+```sh
+mkdir -p ~/.claude/skills
+curl -fsSL https://raw.githubusercontent.com/PrestoOverture/c2c/main/c2c.skill.md -o ~/.claude/skills/c2c.md
+```
+
 ## Tools Provided
 
 | Tool | Description |

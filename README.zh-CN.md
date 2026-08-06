@@ -6,11 +6,11 @@
 
 ## 演示
 
-一次真实的契约往返实录：Claude 起草 Goal Contract，`codex_estimate` 预估成本，Codex 在 goal loop 下自主实现（`codex_status` 实时流式进度），最后 Claude 独立复核 handoff。
+一次完整的workflow实践过程：Claude 起草 Goal Contract，`codex_estimate` 预估成本，Codex 在 goal loop 下自主实现（`codex_status` 实时流式进度），最后 Claude 独立复核 handoff。
 
 ![c2c 演示 — 完整的 Claude→Codex 契约往返](./demo/demo.gif)
 
-*真实 Codex 运行（13k tokens，50 秒），等待时间已压缩。终端回放：`asciinema play demo/demo.cast`*
+*Codex 运行（13k tokens，50 秒），等待时间已压缩。终端回放：`asciinema play demo/demo.cast`*
 
 ## 核心理念
 
@@ -123,6 +123,22 @@ npx claude2codex
     }
   }
 }
+```
+
+### Skill（可选）
+
+包内附带一个 Claude Code Skill，教 Claude 完整的契约工作流——起草 Goal Contract、委派给 Codex、审查 handoff、失败时返工。安装后可在任何项目中使用 `/c2c`：
+
+```sh
+mkdir -p ~/.claude/skills
+cp "$(npm root -g)/claude2codex/c2c.skill.md" ~/.claude/skills/c2c.md
+```
+
+或直接下载：
+
+```sh
+mkdir -p ~/.claude/skills
+curl -fsSL https://raw.githubusercontent.com/PrestoOverture/c2c/main/c2c.skill.md -o ~/.claude/skills/c2c.md
 ```
 
 ## 提供的工具
