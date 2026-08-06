@@ -12,14 +12,15 @@ One real contract round-trip, recorded live: Claude drafts the Goal Contract, `c
 
 *Real Codex run (13k tokens, 50s), waits compressed. Replay in your terminal: `asciinema play demo/demo.cast`*
 
-## The Idea
+## Why
 
-Software development has distinct roles: **planning** what to build, **building** it, and **reviewing** the result. This project splits those roles between two AI agents:
+In 2025, AI-assisted coding meant writing detailed prompts that told the model *how* to implement things — which files to edit, what patterns to follow, sometimes nearly pseudocode. The engineer was a director; the AI was a typist that needed constant guidance.
 
-- **Claude Code** — the architect and reviewer. Plans the work, writes specifications, reviews results.
-- **OpenAI Codex** — the implementer. Receives specifications, writes code, runs tests, reports back.
+That has changed. In 2026, models are [strong enough at implementation](https://www.anthropic.com/institute/recursive-self-improvement) that micromanaging the how is no longer the best use of a human's time. The bottleneck has shifted: when implementation is cheap, the expensive mistakes are **defining the wrong problem** and **failing to catch a bad result**. Getting the implementation steps right matters far less than getting the goal right.
 
-You (the user) are the **commander** — you decide what to build and give final approval. Claude drafts the plan, Codex executes it, Claude verifies the output.
+This is why Goal Contracts are structured the way they are. They don't explain how to write the code — they define **what the code must do** (the Goal) and **how to prove it worked** (Success Conditions). The engineer's role becomes problem definition, context provision, and verification — the same things that make a good engineering manager effective at delegation.
+
+This project is built on that premise: split planning and review (where human judgment still dominates) from implementation (where models now excel), and connect them with a contract format that forces clarity on the parts that matter most.
 
 ```mermaid
 flowchart LR
@@ -29,6 +30,10 @@ flowchart LR
     Claude -->|review verdict| User
     Claude -.->|Delta Contract if review fails| Codex
 ```
+
+- **You** — decide what to build and give final approval.
+- **Claude Code** — the architect and reviewer. Defines the problem, writes the contract, verifies the result.
+- **OpenAI Codex** — the implementer. Receives the contract, writes code, runs tests, reports back.
 
 ## What is a Goal Contract?
 
