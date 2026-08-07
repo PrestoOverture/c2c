@@ -7,12 +7,23 @@ import { writeLog } from "./log.ts";
 const MAX_JOBS = 50;
 let warned = false;
 
+/**
+ * Interface defining operations for managing persistent job state records.
+ */
 export interface JobStore {
+  /** Looks up a job record by its unique identifier */
   getJob(id: string): Job | undefined;
+  /** Returns an array of all currently stored job records */
   listJobs(): Job[];
+  /** Saves or updates a job record in the persistent store */
   save(job: Job): void;
 }
 
+/**
+ * Emits a single degradation warning log when disk persistence fails, logging at most once per process lifetime.
+ *
+ * @param error - The error instance or error message describing the persistence failure
+ */
 function warnOnce(error: unknown) {
   if (warned) return;
   warned = true;
@@ -21,10 +32,21 @@ function warnOnce(error: unknown) {
   });
 }
 
+/**
+ * Resolves the default directory path used for persisting job state JSON files.
+ *
+ * @returns Absolute directory path for stored job state files
+ */
 export function defaultStateDir(): string {
   return process.env.C2C_STATE_DIR ?? join(homedir(), ".claude2codex", "jobs");
 }
 
+/**
+ * Creates and initializes a persistent job store instance that handles loading, saving, and pruning job state files.
+ *
+ * @param dir - Directory path for storing persistent job files, defaulting to defaultStateDir()
+ * @returns JobStore instance providing lookup, listing, and save methods
+ */
 export function createJobStore(dir = defaultStateDir()): JobStore {
   const records = new Map<string, Job>();
   let enabled = true;
@@ -57,8 +79,26 @@ export function createJobStore(dir = defaultStateDir()): JobStore {
   }
 
   return {
+    /**
+     * Retrieves a job from memory by its unique identifier.
+     *
+     * @param id - Unique job identifier to look up
+     * @returns The matching Job object, or undefined if not found
+     */
     getJob: (id) => records.get(id),
+
+    /**
+     * Returns a list of all currently cached jobs.
+     *
+     * @returns Array of cached Job objects
+     */
     listJobs: () => [...records.values()],
+
+    /**
+     * Persists job state and transcript history to memory cache and atomic disk storage.
+     *
+     * @param job - Job object to be saved
+     */
     save(job) {
       const record = { ...job, transcript: job.transcript.slice(-200) };
       records.set(job.id, record);
@@ -74,6 +114,12 @@ export function createJobStore(dir = defaultStateDir()): JobStore {
   };
 }
 
+/**
+ * Writes job state to a temporary file before atomically renaming it, preventing corrupt or partial writes on disk.
+ *
+ * @param dir - Target directory path for file storage
+ * @param job - Job object to serialize and save
+ */
 function atomicWrite(dir: string, job: Job) {
   const target = join(dir, `${job.id}.json`);
   const temp = join(dir, `.${job.id}.${process.pid}.${Date.now()}.tmp`);
@@ -81,6 +127,12 @@ function atomicWrite(dir: string, job: Job) {
   renameSync(temp, target);
 }
 
+/**
+ * Sorts jobs by timestamp and deletes old job files exceeding the maximum retention limit.
+ *
+ * @param dir - Directory path containing persisted job files
+ * @param records - Map of active in-memory job records
+ */
 function prune(dir: string, records: Map<string, Job>) {
   const entries = [...records.values()].sort((a, b) =>
     Date.parse(b.endedAt ?? b.startedAt) - Date.parse(a.endedAt ?? a.startedAt),

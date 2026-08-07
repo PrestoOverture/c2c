@@ -9,30 +9,57 @@ import { parseHandoff, type Handoff } from "./contracts.ts";
 import { writeLog } from "./log.ts";
 import { createJobStore } from "./store.ts";
 
+/**
+ * Configuration options governing Codex execution, timeouts, retries, and concurrency.
+ */
 export interface JobConfig {
+  /** Executable binary name or path for Codex */
   bin: string;
+  /** CLI arguments passed when launching Codex app-server */
   args: string[];
+  /** Working directory path for Codex job execution */
   cwd: string;
+  /** Optional model override name passed to Codex */
   model?: string;
+  /** Approval policy setting (e.g. "never" for autonomous mode) */
   approvalPolicy: string;
+  /** Optional permission grants string for Codex execution */
   permissions?: string;
+  /** Overall maximum job timeout duration in milliseconds */
   jobTimeoutMs: number;
+  /** Quiet period duration in milliseconds before concluding single-turn jobs */
   quietMs: number;
+  /** Inactivity warning threshold duration in milliseconds for stall detection */
   stallWarnMs: number;
+  /** Optional maximum number of retry attempts for pre-turn process failures */
   retries?: number;
+  /** Maximum number of jobs allowed to run concurrently */
   maxConcurrent: number;
 }
 
+/**
+ * Status and resource consumption metrics for a Codex thread goal.
+ */
 export interface GoalState {
+  /** Current status of the goal (e.g., "active", "complete", "budget_limited") */
   status?: string;
+  /** Total tokens consumed by Codex toward fulfilling this goal */
   tokensUsed?: number;
+  /** Optional token budget limit allocated for the goal */
   tokenBudget?: number;
+  /** Total elapsed execution time in seconds */
   timeUsedSeconds?: number;
 }
 
+/**
+ * Log entry capturing a single event in a job's execution history.
+ */
 export interface TranscriptEntry {
+  /** ISO timestamp string recording when the event occurred */
   at: string;
+  /** Category or event type indicator */
   kind: string;
+  /** Detailed description text for the event */
   detail: string;
 }
 
@@ -40,53 +67,103 @@ export type JobState = "blocked" | "queued" | "starting" | "running" | "done" | 
 
 export type TokenUsage = Record<string, number>;
 
+/**
+ * Core job state record representing an implementation or rework task.
+ */
 export interface Job {
+  /** Unique 8-character identifier assigned to the job */
   id: string;
+  /** Job type classification: "implement" for new contracts or "rework" for delta contracts */
   kind: "implement" | "rework";
+  /** Current lifecycle status of the job */
   state: JobState;
+  /** Associated Codex thread identifier if thread has been initialized */
   threadId?: string;
+  /** Goal status and resource consumption metrics */
   goal?: GoalState;
+  /** Flag indicating whether thread goal was successfully established */
   goalSet: boolean;
+  /** Aggregated token usage statistics mapped by token type */
   usage?: TokenUsage;
+  /** Current attempt count for this job */
   attempts?: number;
+  /** Number of completed turn iterations */
   turns: number;
+  /** Chronological transcript of job execution log entries */
   transcript: TranscriptEntry[];
+  /** Raw final agent message text received from Codex */
   finalMessage?: string;
+  /** Parsed handoff structure extracted from final message */
   handoff?: Handoff;
+  /** Error description string if job ended in error or timeout state */
   error?: string;
+  /** Resolved list of context file absolute paths */
   contextFiles?: string[];
+  /** Identifier of prerequisite job that must complete before this job runs */
   dependsOn?: string;
+  /** ISO timestamp string when the job was created */
   startedAt: string;
+  /** ISO timestamp string of the most recent Codex activity */
   lastActivityAt?: string;
+  /** ISO timestamp string when the job reached a terminal state */
   endedAt?: string;
 }
 
 const store = createJobStore();
 const jobs = new Map(store.listJobs().map((job) => [job.id, job]));
 
+/**
+ * Looks up a job by its unique identifier, checking memory cache first before attempting disk restoration.
+ *
+ * @param id - Unique job identifier to find
+ * @returns The matching Job object, or undefined if it does not exist
+ */
 export function getJob(id: string): Job | undefined {
   return jobs.get(id) ?? store.getJob(id);
 }
 
+/**
+ * Returns a list of all jobs currently registered in memory.
+ *
+ * @returns Array of all registered Job objects
+ */
 export function listJobs(): Job[] {
   return [...jobs.values()];
 }
 
+/**
+ * Options provided when submitting a new job for execution.
+ */
 export interface StartJobOptions {
+  /** Job type classification: "implement" or "rework" */
   kind: "implement" | "rework";
+  /** Rendered prompt string containing protocol instructions and contract body */
   prompt: string;
+  /** Compact objective string set on the thread goal for implement jobs */
   objective?: string; // set on implement; rework reuses the existing thread goal
+  /** Optional token budget limit for goal execution */
   tokenBudget?: number;
+  /** Optional list of context file paths for Codex reference */
   contextFiles?: string[];
+  /** Identifier of prerequisite job that must complete first */
   dependsOn?: string;
+  /** Existing thread identifier to resume for rework jobs */
   resumeThreadId?: string;
+  /** Job execution configuration settings */
   config: JobConfig;
+  /** Optional reasoning effort level override for Codex */
   reasoningEffort?: "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
+  /** Optional callback for streaming job progress events */
   onProgress?: (event: JobProgressEvent) => void;
 }
 
+/**
+ * Real-time progress event emitted during job execution.
+ */
 export interface JobProgressEvent {
+  /** Identifier of the job emitting the progress event */
   jobId: string;
+  /** Specific event type describing the lifecycle state transition or activity */
   event:
     | "blocked"
     | "unblocked"
@@ -99,32 +176,58 @@ export interface JobProgressEvent {
     | "agent_message"
     | "stalled"
     | "resumed";
+  /** Human-readable message detailing the progress event */
   message: string;
 }
 
+/**
+ * Queue item entry representing a job waiting in the execution queue.
+ */
 interface QueueEntry {
+  /** The queued job instance */
   job: Job;
+  /** Options and configuration supplied when the job was started */
   opts: StartJobOptions;
 }
 
 const queue: QueueEntry[] = [];
 const blocked = new Map<string, QueueEntry[]>();
 
+/**
+ * Calculates the 1-based queue position for a waiting job in the FIFO queue.
+ *
+ * @param id - Job identifier to query queue position for
+ * @returns 1-based queue index position, or undefined if the job is not in the queue
+ */
 export function getQueuePosition(id: string): number | undefined {
   const index = queue.findIndex((entry) => entry.job.id === id);
   return index === -1 ? undefined : index + 1;
 }
 
+/**
+ * Counts the number of currently active jobs in starting or running state.
+ *
+ * @returns Total count of jobs currently starting or running
+ */
 function activeJobCount() {
   return [...jobs.values()].filter((job) => job.state === "starting" || job.state === "running").length;
 }
 
+/**
+ * Asynchronously launches execution for a job in the background and catches unhandled errors.
+ *
+ * @param job - Job instance to launch
+ * @param opts - Job start options and configuration
+ */
 function launch(job: Job, opts: StartJobOptions) {
   void runJob(job, opts).catch((err) => {
     finish(job, "error", undefined, String(err?.message ?? err));
   });
 }
 
+/**
+ * Inspects the waiting queue and dequeues the next job for execution whenever concurrency slots are available.
+ */
 function drainQueue() {
   while (queue.length > 0 && activeJobCount() < queue[0].opts.config.maxConcurrent) {
     const { job, opts } = queue.shift()!;
@@ -137,6 +240,12 @@ function drainQueue() {
   }
 }
 
+/**
+ * Creates a new implementation or rework job, handles dependency checking and queueing, and launches or enqueues it.
+ *
+ * @param opts - Options for job creation including contract prompt, dependency id, and configuration
+ * @returns The newly created Job object
+ */
 export function startJob(opts: StartJobOptions): Job {
   const dependency = opts.dependsOn ? getJob(opts.dependsOn) : undefined;
   if (opts.dependsOn && !dependency) throw new Error(`unknown depends_on job_id ${opts.dependsOn}`);
@@ -184,11 +293,26 @@ export function startJob(opts: StartJobOptions): Job {
   return job;
 }
 
+/**
+ * Appends a log entry to the job transcript while maintaining the maximum transcript size limit.
+ *
+ * @param job - Job object receiving the transcript log entry
+ * @param kind - Category label for the transcript log entry
+ * @param detail - Detailed description text for the event
+ */
 function log(job: Job, kind: string, detail: string) {
   job.transcript.push({ at: new Date().toISOString(), kind, detail: detail.slice(0, 500) });
   if (job.transcript.length > 200) job.transcript.splice(0, job.transcript.length - 200);
 }
 
+/**
+ * Sets a job to a terminal state (done/error/timeout), parses handoff, kills the Codex client, and resolves dependent jobs.
+ *
+ * @param job - Target job to finish
+ * @param state - Final state to set for the job
+ * @param client - Associated Codex client instance to kill (optional)
+ * @param error - Error message string if finishing with error or timeout (optional)
+ */
 function finish(job: Job, state: JobState, client?: CodexAppServer, error?: string) {
   if (job.state === "done" || job.state === "error" || job.state === "timeout") return;
   const previousState = job.state;
@@ -213,10 +337,21 @@ function finish(job: Job, state: JobState, client?: CodexAppServer, error?: stri
   drainQueue();
 }
 
+/**
+ * Generates a formatted error message when an upstream dependency job fails.
+ *
+ * @param dependency - The upstream dependency job that failed
+ * @returns Formatted error string describing the dependency failure
+ */
 function dependencyFailureMessage(dependency: Job) {
   return `dependency ${dependency.id} failed: ${dependency.error ?? `state ${dependency.state}`}`;
 }
 
+/**
+ * Notifies all blocked downstream jobs when an upstream dependency finishes, unblocking or failing them accordingly.
+ *
+ * @param dependency - The finished upstream dependency job
+ */
 function resolveDependents(dependency: Job) {
   const dependents = blocked.get(dependency.id);
   if (!dependents?.length) return;
@@ -248,6 +383,12 @@ function resolveDependents(dependency: Job) {
   }
 }
 
+/**
+ * Determines whether an unblocked job should enter the waiting queue or launch immediately based on concurrency limits.
+ *
+ * @param job - The unblocked job to schedule
+ * @param opts - Job execution options
+ */
 function enqueueOrLaunch(job: Job, opts: StartJobOptions) {
   if (queue.length > 0 || activeJobCount() >= opts.config.maxConcurrent) {
     job.state = "queued";
@@ -265,7 +406,12 @@ function enqueueOrLaunch(job: Job, opts: StartJobOptions) {
   launch(job, opts);
 }
 
-// Defensive field extraction: the app-server item shapes vary by type/version.
+/**
+ * Safely extracts text content from various item formats returned by Codex notifications.
+ *
+ * @param item - Raw notification item object from Codex
+ * @returns Extracted text string, or undefined if extraction fails
+ */
 function extractText(item: any): string | undefined {
   if (typeof item?.text === "string") return item.text;
   if (typeof item?.message === "string") return item.message;
@@ -279,6 +425,12 @@ function extractText(item: any): string | undefined {
   return undefined;
 }
 
+/**
+ * Extracts normalized goal status and token usage fields from Codex goal update notification parameters.
+ *
+ * @param params - Raw notification parameters containing goal state information
+ * @returns Normalized GoalState object
+ */
 function extractGoal(params: any): GoalState {
   const g = params?.goal ?? params ?? {};
   return {
@@ -300,6 +452,12 @@ const usageAliases: Record<string, string> = {
   tokens_used: "totalTokens",
 };
 
+/**
+ * Extracts token usage statistics from turn notifications and normalizes usage key aliases.
+ *
+ * @param params - Notification parameters containing token usage fields
+ * @returns Normalized TokenUsage object, or undefined if no usage statistics are found
+ */
 function extractUsage(params: any): TokenUsage | undefined {
   const source = params?.turn?.usage ?? params?.usage ?? params?.turn?.tokenUsage ?? params?.tokenUsage;
   if (!source || typeof source !== "object") return undefined;
@@ -310,6 +468,13 @@ function extractUsage(params: any): TokenUsage | undefined {
   return Object.keys(usage).length ? usage : undefined;
 }
 
+/**
+ * Merges extracted token usage stats into the job's total token usage map via cumulative overwrite or additive sum.
+ *
+ * @param job - Target job object to update
+ * @param usage - Token usage object to merge
+ * @param cumulative - If true, overwrites existing values; if false, adds to existing values. Defaults to false
+ */
 function mergeUsage(job: Job, usage: TokenUsage | undefined, cumulative = false) {
   if (!usage) return;
   job.usage ??= {};
@@ -318,6 +483,12 @@ function mergeUsage(job: Job, usage: TokenUsage | undefined, cumulative = false)
   }
 }
 
+/**
+ * Updates goal state, merges token usage statistics, and persists the updated job to disk.
+ *
+ * @param job - Target job object to update
+ * @param params - Notification parameters containing updated goal information
+ */
 function updateGoal(job: Job, params: any) {
   job.goal = extractGoal(params);
   if (typeof job.goal.tokensUsed === "number") {
@@ -328,11 +499,22 @@ function updateGoal(job: Job, params: any) {
 
 const TERMINAL_GOAL_STATUSES = new Set(["complete", "budget_limited", "budgetLimited"]);
 
+/**
+ * Result outcome returned by a single job attempt execution.
+ */
 interface AttemptResult {
+  /** Error object if the attempt encountered an exception or process failure */
   error?: Error;
+  /** Flag indicating whether the failure was caused by a process exit or spawn failure */
   processFailure: boolean;
 }
 
+/**
+ * Manages job attempts, overall execution deadline, and automatic retries for pre-first-turn process crashes.
+ *
+ * @param job - Target job object to run
+ * @param opts - Job start configuration options
+ */
 async function runJob(job: Job, opts: StartJobOptions) {
   const deadline = Date.now() + opts.config.jobTimeoutMs;
   const maxAttempts = (opts.config.retries ?? 1) + 1;
@@ -365,6 +547,14 @@ async function runJob(job: Job, opts: StartJobOptions) {
   }
 }
 
+/**
+ * Executes a single job attempt: spawns Codex process, initializes thread and goal, and listens to notifications.
+ *
+ * @param job - Active job object for this attempt
+ * @param opts - Job configuration options
+ * @param timeoutMs - Maximum execution time allowed for this attempt in milliseconds
+ * @returns Promise resolving to an AttemptResult containing error info and process failure flag
+ */
 async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): Promise<AttemptResult> {
   const cfg = opts.config;
   let activeTurn = false;
@@ -402,6 +592,9 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     onNotification: (method, params) => handleNotification(method, params),
   });
 
+  /**
+   * Resets and starts the quiet timer; if no further Codex activity occurs within quietMs, finalizes the job as done.
+   */
   function armQuietTimer() {
     clearTimeout(quietTimer);
     quietTimer = setTimeout(() => {
@@ -411,11 +604,17 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     }, cfg.quietMs);
   }
 
+  /**
+   * Clears any active stall detection timer.
+   */
   function clearStallTimer() {
     clearTimeout(stallTimer);
     stallTimer = undefined;
   }
 
+  /**
+   * Arm or reset the stall detection timer to monitor if Codex produces events within the warning threshold.
+   */
   function armStallTimer() {
     clearStallTimer();
     if (cfg.stallWarnMs === 0 || !activeTurn || stalled || !job.lastActivityAt) return;
@@ -423,6 +622,9 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     stallTimer = setTimeout(checkForStall, Math.max(0, cfg.stallWarnMs - stalledForMs));
   }
 
+  /**
+   * Evaluates if Codex inactivity has exceeded the warning threshold, emitting stall events and notifications if triggered.
+   */
   function checkForStall() {
     stallTimer = undefined;
     if (!activeTurn || stalled || !job.lastActivityAt) return;
@@ -438,6 +640,9 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     progress("stalled", `job stalled for ${stalledForMs}ms`);
   }
 
+  /**
+   * Updates the job's last activity timestamp, emitting resumed events if previously stalled and resetting stall timers.
+   */
   function recordActivity() {
     const now = new Date();
     if (stalled && job.lastActivityAt) {
@@ -452,11 +657,23 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     if (activeTurn) armStallTimer();
   }
 
+  /**
+   * Clears timers and finalizes the job with the specified terminal state and error message.
+   *
+   * @param state - Terminal job state
+   * @param error - Error description string (optional)
+   */
   function finalize(state: JobState, error?: string) {
     clearStallTimer();
     finish(job, state, client, error);
   }
 
+  /**
+   * Handles incoming JSON-RPC notifications from the Codex child process (turn events, agent messages, goal updates).
+   *
+   * @param method - RPC notification method name
+   * @param params - Notification parameters payload
+   */
   function handleNotification(method: string, params: Json) {
     writeLog("debug", "codex_notification", {
       job_id: job.id,
@@ -532,6 +749,9 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     }
   }
 
+  /**
+   * Called when a turn completes to verify if the thread goal is terminal, or arm a quiet timer for continuation turns.
+   */
   async function onTurnEnded() {
     // No goal on the thread → single-turn mode; the turn's end is the job's end.
     if (!job.goalSet) {

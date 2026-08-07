@@ -16,12 +16,25 @@ import {
 import { startJob, getJob, listJobs, getQueuePosition, type Job, type JobConfig } from "./jobs.ts";
 import { readCodexConfig } from "./config.ts";
 
+/**
+ * Reads an integer configuration value from environment variables, falling back to a default value if missing or invalid.
+ *
+ * @param name - Name of the environment variable
+ * @param fallback - Default integer value to use if parsing fails
+ * @returns Parsed integer value or default fallback
+ */
 function envInt(name: string, fallback: number): number {
   const v = process.env[name];
   const n = v ? Number.parseInt(v, 10) : NaN;
   return Number.isFinite(n) ? n : fallback;
 }
 
+/**
+ * Reads environment variables to construct and return a complete Codex job execution configuration object.
+ *
+ * @param cwd - Target working directory path for job execution (optional)
+ * @returns Configured JobConfig object containing timeouts, concurrency caps, and retry parameters
+ */
 function config(cwd?: string): JobConfig {
   return {
     bin: process.env.CODEX_BIN ?? "codex",
@@ -43,6 +56,13 @@ const objectiveBudgetDescription =
   `The rendered thread-goal objective has a GOAL_OBJECTIVE_MAX budget of ${OBJECTIVE_MAX} characters; ` +
   "over-limit calls are rejected.";
 
+/**
+ * Extracts core job status, token usage statistics, and recent activity logs into a concise summary object.
+ *
+ * @param job - Job object to summarize
+ * @param transcriptTail - Number of recent transcript log entries to include, defaulting to 15
+ * @returns Formatted job status summary object suitable for client consumption
+ */
 function jobSummary(job: Job, transcriptTail = 15) {
   return {
     job_id: job.id,
@@ -69,6 +89,13 @@ function jobSummary(job: Job, transcriptTail = 15) {
   };
 }
 
+/**
+ * Formats a data object into an MCP text result payload structure.
+ *
+ * @param obj - Data object to include in the content payload
+ * @param isError - Flag indicating if this payload represents an error result, defaulting to false
+ * @returns Formatted MCP text result object
+ */
 function textResult(obj: unknown, isError = false) {
   return {
     content: [{ type: "text" as const, text: JSON.stringify(obj, null, 2) }],
@@ -83,6 +110,13 @@ const contextFiles = z.array(z.object({
   note: z.string().optional(),
 }));
 
+/**
+ * Validates and resolves relative file paths in a context file list to absolute paths, verifying disk existence.
+ *
+ * @param files - Optional list of context file objects containing path and note
+ * @param cwd - Base working directory for resolving relative paths
+ * @returns Object containing lists of resolved valid file paths and missing file paths
+ */
 async function resolveContextFiles(
   files: { path: string; note?: string }[] | undefined,
   cwd: string,
@@ -103,10 +137,21 @@ async function resolveContextFiles(
   };
 }
 
+/**
+ * Constructs an MCP error result listing missing context file paths.
+ *
+ * @param paths - Array of missing file paths
+ * @returns Formatted MCP error text result
+ */
 function missingContextFiles(paths: string[]) {
   return textResult({ error: `context_files not found:\n${paths.map((path) => `- ${path}`).join("\n")}` }, true);
 }
 
+/**
+ * Aggregates token usage statistics from completed implement jobs, calculating median, 90th percentile, and mean tokens.
+ *
+ * @returns Object containing historical usage metrics, or null if no completed implement jobs exist
+ */
 function implementHistory() {
   const totals = listJobs()
     .filter((job) => job.kind === "implement" && job.state === "done")
@@ -126,6 +171,12 @@ function implementHistory() {
   };
 }
 
+/**
+ * Validates specified job dependency existence and state before starting a dependent job.
+ *
+ * @param dependsOn - Identifier of the prerequisite job (optional)
+ * @returns Error message string if dependency validation fails, or undefined if valid
+ */
 function dependencyValidationError(dependsOn: string | undefined) {
   if (!dependsOn) return undefined;
   const dependency = getJob(dependsOn);
@@ -136,6 +187,11 @@ function dependencyValidationError(dependsOn: string | undefined) {
   return undefined;
 }
 
+/**
+ * Creates a sequential progress reporting callback that sends job progress events as MCP notifications to the client.
+ *
+ * @returns Progress reporting callback function
+ */
 function progressReporter() {
   let sequence = 0;
   return (event: { jobId: string; event: string; message: string }) => {

@@ -2,22 +2,41 @@
 
 import { statSync } from "node:fs";
 
+/**
+ * Contract specifying the primary goal, technical constraints, and success criteria for an implementation task.
+ */
 export interface GoalContract {
+  /** Detailed description of what the code implementation must achieve */
   goal: string;
+  /** Technical boundaries, files to touch, and patterns to strictly follow or avoid */
   constraints: string[];
+  /** Checkable criteria proving the task objective is fully met */
   success_conditions: string[];
+  /** Optional list of reference files or directories for Codex to read before starting */
   context_files?: ContextFile[];
 }
 
+/**
+ * Contract specifying code review findings and failed conditions for a rework task.
+ */
 export interface DeltaContract {
+  /** Specific review findings, flaws, or issues identified during code review */
   findings: string[];
+  /** List of success conditions from the original contract that failed verification */
   failed_conditions: string[];
+  /** Additional constraints or guidelines for fixing the reported issues */
   constraints?: string[];
+  /** Optional list of reference files or directories relevant to the rework task */
   context_files?: ContextFile[];
 }
 
+/**
+ * Represents a reference file or directory provided to Codex as context.
+ */
 export interface ContextFile {
+  /** Relative or absolute filesystem path to the reference file or directory */
   path: string;
+  /** Optional note or explanation describing why this file is provided as context */
   note?: string;
 }
 
@@ -53,6 +72,12 @@ End every task with exactly these sections:
 ### Rework
 For a Delta Contract, fix only its review findings and failed Success Conditions. Do not revisit work that passed review. Repeat the full Self-Verification and Required Handoff.`;
 
+/**
+ * Formats a list of reference context files into a Markdown section for Codex to read before coding.
+ *
+ * @param contextFiles - List of files or directories for Codex to reference (optional)
+ * @returns Array of formatted Markdown lines
+ */
 function renderContextFiles(contextFiles?: ContextFile[]): string[] {
   if (!contextFiles?.length) return [];
   return [
@@ -67,6 +92,12 @@ function renderContextFiles(contextFiles?: ContextFile[]): string[] {
   ];
 }
 
+/**
+ * Combines protocol instructions and a Goal Contract into a complete prompt string for Codex execution.
+ *
+ * @param c - Goal contract containing the primary goal, constraints, and success conditions
+ * @returns Fully rendered prompt string ready to send to Codex
+ */
 export function renderGoalContract(c: GoalContract): string {
   const lines = [
     PROTOCOL_INSTRUCTIONS,
@@ -86,6 +117,12 @@ export function renderGoalContract(c: GoalContract): string {
   return lines.join("\n");
 }
 
+/**
+ * Formats a Delta Contract (review findings and failed conditions) into a prompt for targeted rework.
+ *
+ * @param d - Delta contract containing review findings, failed conditions, and optional extra constraints
+ * @returns Fully rendered rework prompt string
+ */
 export function renderDeltaContract(d: DeltaContract): string {
   const lines = [
     PROTOCOL_INSTRUCTIONS,
@@ -106,13 +143,24 @@ export function renderDeltaContract(d: DeltaContract): string {
   return lines.join("\n");
 }
 
-// Objective string for Codex's thread goal (`thread/goal/set`). Kept compact:
-// the full contract goes in the turn prompt; the objective is what the /goal
-// loop audits against before declaring "Goal achieved".
+/**
+ * Extracts key points from a Goal Contract into a concise objective string for Codex's goal loop auditing.
+ *
+ * @param c - Goal contract containing the goal and success conditions
+ * @param maxLen - Maximum allowed character length for the objective string
+ * @returns Truncated objective string within the character budget
+ */
 export function renderObjective(c: GoalContract, maxLen: number): string {
   return renderObjectiveDetails(c, maxLen).objective;
 }
 
+/**
+ * Renders a compact objective string for goal auditing and calculates its raw length for budget validation.
+ *
+ * @param c - Goal contract containing the goal and success conditions
+ * @param maxLen - Maximum allowed character length for the objective string
+ * @returns Object containing the formatted objective string and its raw character length before truncation
+ */
 export function renderObjectiveDetails(c: GoalContract, maxLen: number): {
   objective: string;
   objectiveChars: number;
@@ -135,14 +183,24 @@ export const HANDOFF_SECTIONS = [
   "Risks & Deviations",
 ] as const;
 
+/**
+ * Structured summary extracted from Codex's final completion message.
+ */
 export interface Handoff {
+  /** True if all mandatory handoff sections were present in Codex's final message */
   valid: boolean;
+  /** List of required section titles that were missing from Codex's output */
   missing: string[];
+  /** Map of section titles to their parsed text content string */
   sections: Record<string, string>;
 }
 
-// Parses Codex's final message for the mandatory handoff sections.
-// Accepts ##/### headings, optional trailing colon, case-insensitive.
+/**
+ * Parses the final message from Codex to extract mandatory handoff sections and validate completeness.
+ *
+ * @param text - Complete final message string output by Codex
+ * @returns Object indicating validation status, list of missing sections, and extracted section contents
+ */
 export function parseHandoff(text: string): Handoff {
   const sections: Record<string, string> = {};
   const headingRe = /^#{2,4}\s+(.+?):?\s*$/gm;
