@@ -2,7 +2,6 @@
 // resumes) a persisted thread, sets the thread goal, sends the contract as a
 // turn, and lets Codex's server-side goal-continuation loop run until the goal
 // is terminal (complete / budget_limited) or the thread goes quiet.
-
 import { randomUUID } from "node:crypto";
 import { CodexAppServer, type Json } from "./codex-client.ts";
 import { parseHandoff, type Handoff } from "./contracts.ts";
@@ -165,17 +164,17 @@ export interface JobProgressEvent {
   jobId: string;
   /** Specific event type describing the lifecycle state transition or activity */
   event:
-    | "blocked"
-    | "unblocked"
-    | "dependency_failed"
-    | "queued"
-    | "dequeued"
-    | "turn_started"
-    | "turn_ended"
-    | "goal_updated"
-    | "agent_message"
-    | "stalled"
-    | "resumed";
+  | "blocked"
+  | "unblocked"
+  | "dependency_failed"
+  | "queued"
+  | "dequeued"
+  | "turn_started"
+  | "turn_ended"
+  | "goal_updated"
+  | "agent_message"
+  | "stalled"
+  | "resumed";
   /** Human-readable message detailing the progress event */
   message: string;
 }

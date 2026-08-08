@@ -1,7 +1,6 @@
 // MCP server: Claude (architect/reviewer) delegates implementation to Codex
 // (implementer) through typed Goal/Delta Contract tools. Codex runs each
 // contract under its thread-goal loop (`/goal`) until the objective is met.
-
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { stat } from "node:fs/promises";
@@ -277,8 +276,8 @@ server.registerTool(
       note: job.state === "blocked"
         ? `Job blocked on dependency ${job.dependsOn}. Poll codex_status for its state.`
         : job.state === "queued"
-        ? "Job queued. Poll codex_status for its queue position and state."
-        : "Job started. Poll codex_status until state is 'done', then call codex_result.",
+          ? "Job queued. Poll codex_status for its queue position and state."
+          : "Job started. Poll codex_status until state is 'done', then call codex_result.",
     });
   },
 );

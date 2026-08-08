@@ -1,5 +1,4 @@
 // Goal/Delta Contract rendering and handoff parsing.
-
 import { statSync } from "node:fs";
 
 /**

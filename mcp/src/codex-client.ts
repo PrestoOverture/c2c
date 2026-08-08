@@ -1,6 +1,5 @@
 // Minimal JSON-RPC client for `codex app-server` (stdio transport, JSONL).
 // Per the app-server docs, the `"jsonrpc":"2.0"` header is omitted on the wire.
-
 import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { createInterface } from "node:readline";
 
