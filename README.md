@@ -18,7 +18,7 @@ In 2025, AI-assisted coding meant writing detailed prompts that told the model *
 
 That has changed. In 2026, models are [strong enough at implementation](https://www.anthropic.com/institute/recursive-self-improvement) that micromanaging the how is no longer the best use of a human's time. The bottleneck has shifted: when implementation is cheap, the expensive mistakes are **defining the wrong problem** and **failing to catch a bad result**. Getting the implementation steps right matters far less than getting the goal right.
 
-This is why Goal Contracts are structured the way they are. They don't explain how to write the code — they define **what the code must do** (the Goal) and **how to prove it worked** (Success Conditions). The engineer's role becomes problem definition, context provision, and verification — the same things that make a good engineering manager effective at delegation.
+This is why Goal Contracts are structured the way they are. They don't explain how to write the code — they define **what the code must do** (the Goal), **what to avoid** (Constraints), and **how to prove it worked** (Success Conditions). The engineer's role becomes problem definition, context provision, and verification — the same things that make a good engineering manager effective at delegation.
 
 This project is built on that premise: split planning and review (where human judgment still dominates) from implementation (where models now excel), and connect them with a contract format that forces clarity on the parts that matter most.
 
