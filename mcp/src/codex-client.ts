@@ -183,7 +183,7 @@ export class CodexAppServer {
    */
   async initialize() {
     const result = await this.request("initialize", {
-      clientInfo: { name: "claude2codex", title: "Claude↔Codex Contract Bridge", version: "0.3.1" },
+      clientInfo: { name: "claude2codex", title: "Claude↔Codex Contract Bridge", version: "0.3.2" },
       capabilities: { experimentalApi: true },
     });
     this.notify("initialized", {});
