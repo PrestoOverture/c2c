@@ -130,9 +130,13 @@ npx claude2codex
 }
 ```
 
-### Skill（可选）
+### 工作流 Prompt（自动）
 
-包内附带一个 Claude Code Skill，教 Claude 完整的契约工作流——起草 Goal Contract、委派给 Codex、审查 handoff、失败时返工。安装后可在任何项目中使用 `/c2c`：
+服务器注册了一个 MCP Prompt（`c2c-workflow`），教 Claude 完整的契约工作流——角色分配、Goal/Delta Contract 格式、审查协议。**连接 MCP 服务器后自动加载。** 无需额外安装。
+
+### Skill（备选）
+
+如果你更喜欢通过 `/c2c` 显式调用工作流，可以将其安装为 Claude Code Skill：
 
 ```sh
 mkdir -p ~/.claude/skills
@@ -145,6 +149,59 @@ cp "$(npm root -g)/claude2codex/c2c.skill.md" ~/.claude/skills/c2c.md
 mkdir -p ~/.claude/skills
 curl -fsSL https://raw.githubusercontent.com/PrestoOverture/c2c/main/c2c.skill.md -o ~/.claude/skills/c2c.md
 ```
+
+### 项目配置：CLAUDE.md 和 AGENTS.md
+
+MCP 服务器负责工作流协议。你的项目文件只需要放**项目特有的上下文**——不要重复服务器已经提供的内容。
+
+**`CLAUDE.md`**（给 Claude——架构师/审查者）：
+
+```markdown
+# Claude Code Guidelines
+
+契约工作流由 MCP Prompt `c2c-workflow` 提供。
+
+## 会话启动
+开始时阅读 README.md 和 docs/design.md。
+
+## 审查补充
+- 标记安全问题（OWASP top 10）。
+- 每个任务完成后跑一遍 staging 的集成测试。
+
+## 约束
+- 未经明确批准不得修改 migrations。
+```
+
+**`AGENTS.md`**（给 Codex——实现者）：
+
+```markdown
+# Codex Guidelines
+
+你是实现者。契约协议由 c2c bridge 提供。
+
+## 工具链
+Python 3.12，Poetry。从项目根目录运行。
+- `poetry run pytest` — 测试套件
+- `poetry run ruff check .` — 代码检查
+- `poetry run mypy .` — 类型检查
+
+## 边界
+- 不要直接修改 alembic migrations。
+- 未经合同约束不得添加运行时依赖。
+```
+
+**什么放哪里：**
+
+| | MCP 服务器（自动） | CLAUDE.md | AGENTS.md |
+|---|---|---|---|
+| 角色定义 | ✓ | — | — |
+| 工作流步骤 | ✓ | — | — |
+| 契约格式 | ✓ | — | — |
+| 审查协议 | ✓ | — | — |
+| 会话启动 | — | ✓ | ✓ |
+| 项目特有的审查规则 | — | ✓ | — |
+| 工具链与构建命令 | — | — | ✓ |
+| 文件/依赖边界 | — | — | ✓ |
 
 ## 提供的工具
 

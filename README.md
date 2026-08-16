@@ -130,9 +130,13 @@ Add to your Claude Code MCP settings:
 }
 ```
 
-### Skill (optional)
+### Workflow Prompt (automatic)
 
-The package includes a Claude Code Skill that teaches Claude the full contract workflow — drafting Goal Contracts, delegating to Codex, reviewing handoffs, and reworking failures. Install it to use `/c2c` from any project:
+The server registers an MCP Prompt (`c2c-workflow`) that teaches Claude the full contract workflow — role assignment, Goal/Delta Contract formats, review protocol. **This is loaded automatically when the MCP server is connected.** No extra installation needed.
+
+### Skill (alternative)
+
+If you prefer to invoke the workflow explicitly via `/c2c`, install it as a Claude Code Skill instead:
 
 ```sh
 mkdir -p ~/.claude/skills
@@ -145,6 +149,59 @@ Or download directly:
 mkdir -p ~/.claude/skills
 curl -fsSL https://raw.githubusercontent.com/PrestoOverture/c2c/main/c2c.skill.md -o ~/.claude/skills/c2c.md
 ```
+
+### Project Setup: CLAUDE.md and AGENTS.md
+
+The MCP server handles the workflow protocol. Your project files only need to carry **project-specific context** — don't repeat what the server already provides.
+
+**`CLAUDE.md`** (for Claude — the architect/reviewer):
+
+```markdown
+# Claude Code Guidelines
+
+The contract workflow is delivered by the MCP Prompt `c2c-workflow`.
+
+## Session Startup
+Read README.md and docs/design.md at session start.
+
+## Review Additions
+- Flag security issues (OWASP top 10).
+- Run integration tests against staging after each task.
+
+## Constraints
+- Do not modify migrations without explicit approval.
+```
+
+**`AGENTS.md`** (for Codex — the implementer):
+
+```markdown
+# Codex Guidelines
+
+You are the implementer. The contract protocol is delivered by the c2c bridge.
+
+## Toolchain
+Python 3.12, Poetry. Run from project root.
+- `poetry run pytest` — test suite
+- `poetry run ruff check .` — lint
+- `poetry run mypy .` — typecheck
+
+## Boundaries
+- Do not modify alembic migrations directly.
+- Do not add runtime dependencies without a contract constraint.
+```
+
+**What goes where:**
+
+| | MCP server (automatic) | CLAUDE.md | AGENTS.md |
+|---|---|---|---|
+| Role definition | ✓ | — | — |
+| Workflow steps | ✓ | — | — |
+| Contract formats | ✓ | — | — |
+| Review protocol | ✓ | — | — |
+| Session startup | — | ✓ | ✓ |
+| Project-specific review rules | — | ✓ | — |
+| Toolchain & build commands | — | — | ✓ |
+| File/dependency boundaries | — | — | ✓ |
 
 ## Tools Provided
 
