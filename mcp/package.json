@@ -9,8 +9,7 @@
   "files": [
     "dist",
     "PATTERNS.md",
-    "PATTERNS.zh-CN.md",
-    "c2c.skill.md"
+    "PATTERNS.zh-CN.md"
   ],
   "keywords": [
     "mcp",
@@ -31,8 +30,8 @@
     "start": "bun src/server.ts",
     "build": "tsup",
     "test": "bun test",
-    "prepack": "cp ../README.md ../README.zh-CN.md ../PATTERNS.md ../PATTERNS.zh-CN.md ../c2c.skill.md .",
-    "postpack": "rm -f README.md README.zh-CN.md PATTERNS.md PATTERNS.zh-CN.md c2c.skill.md"
+    "prepack": "cp ../README.md ../README.zh-CN.md ../PATTERNS.md ../PATTERNS.zh-CN.md .",
+    "postpack": "rm -f README.md README.zh-CN.md PATTERNS.md PATTERNS.zh-CN.md"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

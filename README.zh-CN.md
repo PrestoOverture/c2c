@@ -134,22 +134,6 @@ npx claude2codex
 
 服务器注册了一个 MCP Prompt（`c2c-workflow`），教 Claude 完整的契约工作流——角色分配、Goal/Delta Contract 格式、审查协议。**连接 MCP 服务器后自动加载。** 无需额外安装。
 
-### Skill（备选）
-
-如果你更喜欢通过 `/c2c` 显式调用工作流，可以将其安装为 Claude Code Skill：
-
-```sh
-mkdir -p ~/.claude/skills
-cp "$(npm root -g)/claude2codex/c2c.skill.md" ~/.claude/skills/c2c.md
-```
-
-或直接下载：
-
-```sh
-mkdir -p ~/.claude/skills
-curl -fsSL https://raw.githubusercontent.com/PrestoOverture/c2c/main/c2c.skill.md -o ~/.claude/skills/c2c.md
-```
-
 ### 项目配置：CLAUDE.md 和 AGENTS.md
 
 MCP 服务器负责工作流协议。你的项目文件只需要放**项目特有的上下文**——不要重复服务器已经提供的内容。

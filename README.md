@@ -134,22 +134,6 @@ Add to your Claude Code MCP settings:
 
 The server registers an MCP Prompt (`c2c-workflow`) that teaches Claude the full contract workflow — role assignment, Goal/Delta Contract formats, review protocol. **This is loaded automatically when the MCP server is connected.** No extra installation needed.
 
-### Skill (alternative)
-
-If you prefer to invoke the workflow explicitly via `/c2c`, install it as a Claude Code Skill instead:
-
-```sh
-mkdir -p ~/.claude/skills
-cp "$(npm root -g)/claude2codex/c2c.skill.md" ~/.claude/skills/c2c.md
-```
-
-Or download directly:
-
-```sh
-mkdir -p ~/.claude/skills
-curl -fsSL https://raw.githubusercontent.com/PrestoOverture/c2c/main/c2c.skill.md -o ~/.claude/skills/c2c.md
-```
-
 ### Project Setup: CLAUDE.md and AGENTS.md
 
 The MCP server handles the workflow protocol. Your project files only need to carry **project-specific context** — don't repeat what the server already provides.
