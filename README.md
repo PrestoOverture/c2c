@@ -230,6 +230,10 @@ Codex then enters its goal-continuation loop: after each turn, it checks "did I 
 | `C2C_MAX_CONCURRENT` | `2` | Max simultaneously active Codex jobs; overflow queues FIFO |
 | `C2C_STALL_WARN_MS` | `120000` | Stall watchdog threshold; emits stalled/resumed events; `0` disables |
 
+## No Codex? Use c2c-lite
+
+If Codex is unavailable (subscription expired, API down, rate limited), **[c2c-lite](https://github.com/PrestoOverture/c2c-lite)** gives you the same contract workflow with zero dependencies — Claude delegates to a Claude subagent instead of Codex, using the built-in `Agent` tool. Same Goal/Delta Contract format, same review discipline, no MCP server needed. Just one Skill file.
+
 ## Development
 
 ```sh
