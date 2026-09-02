@@ -483,6 +483,7 @@ Only what Codex would get wrong without being told. One line of
 
 ### Success Conditions
 - [ ] Assertions, not paragraphs. At least one is a command whose exit code decides.
+- [ ] Each must be falsifiable: describe how it fails when the defect exists. If you can't, replace it.
 - [ ] Handoff includes: Changed Files, Validation, Success Conditions, Risks & Deviations.
 \`\`\`
 
@@ -505,9 +506,10 @@ Only what Codex would get wrong without being told. One line of
 
 1. Handoff must be complete (all four sections). Missing handoff = review failure.
 2. Re-run every verification command yourself — do not trust the handoff's claims.
-3. Run the project's own typecheck/build/test/lint.
-4. Flag security issues and constraint violations.
-5. Report findings to the user. Fix small issues (typos, imports) directly; do not rewrite the implementation.
+3. Verify falsifiability: each success condition must fail when the defect is present. A check that passes regardless is a review failure.
+4. Run the project's own typecheck/build/test/lint.
+5. Flag security issues and constraint violations.
+6. Report findings to the user. Fix small issues (typos, imports) directly; do not rewrite the implementation.
 ` },
   }],
 }));
