@@ -1,6 +1,6 @@
 # claude2codex
 
-一个让 Claude Code 通过结构化契约将实现工作委派给 OpenAI Codex 的 MPC 服务器。
+一个让 Claude Code 通过结构化契约将实现工作委派给 OpenAI Codex 的 MCP 服务器。
 
 *[English](./README.md)*
 
