@@ -258,6 +258,26 @@ Python 3.12，Poetry。从项目根目录运行。
 
 Codex 不可用（欠费、API 故障、限流）的时候，**[c2c-lite](https://github.com/PrestoOverture/c2c-lite)** 提供同样的合同工作流，零依赖——Claude 把活儿派给另一个 Claude 子代理 (建议Sonnet)，用的是 Claude Code 内置的 `Agent` 工具。同样的 Goal/Delta Contract 格式，同样的审查流程，不需要 MCP 服务器，只要一个 Skill 文件。
 
+## 与 codex-plugin-cc 的关系
+
+OpenAI 维护了一个官方的 [Codex plugin for Claude Code](https://github.com/openai/codex-plugin-cc)（`codex-plugin-cc`）。两个项目**互补而非竞争**——它们服务于不同的工作流，可以在同一环境中共存。
+
+| | claude2codex | codex-plugin-cc |
+|---|---|---|
+| **集成方式** | MCP 服务器 | Claude Code 插件 |
+| **委派模型** | 结构化 Goal/Delta Contract，强制交接格式 | 自由文本 prompt 原样转发给 Codex |
+| **审查循环** | Claude 按 success conditions 审查 Codex 产出；失败触发限定范围的 Delta Contract | 无结构化审查循环；结果原样返回 |
+| **代码审查** | 不包含 | Codex 审查 Claude 的代码（原生 + 对抗式） |
+| **并发** | 并行任务 + FIFO 队列 + 依赖链 | 单任务 |
+| **可观测性** | Token 追踪、成本预估、停滞看门狗 | 基本任务状态 |
+
+**何时用哪个：**
+
+- **claude2codex** — 需要契约纪律时：清晰的目标定义、可机器验证的成功条件、结构化交接报告、以及针对失败项收敛的返工循环。适合需要把规格说明想清楚的实质性实现任务。
+- **codex-plugin-cc** — 需要快速调用 Codex 时：即时代码审查、快速 rescue 任务、Claude 与 Codex 之间的会话转移。适合轻量级委派和审查场景。
+
+两者底层都使用 `codex app-server`。安装其中一个不会影响另一个。
+
 ## 开发
 
 ```sh

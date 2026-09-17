@@ -234,6 +234,26 @@ Codex then enters its goal-continuation loop: after each turn, it checks "did I 
 
 If Codex is unavailable (subscription expired, API down, rate limited), **[c2c-lite](https://github.com/PrestoOverture/c2c-lite)** gives you the same contract workflow with zero dependencies — Claude delegates to a Claude subagent instead of Codex, using the built-in `Agent` tool. Same Goal/Delta Contract format, same review discipline, no MCP server needed. Just one Skill file.
 
+## Relationship to codex-plugin-cc
+
+OpenAI maintains an official [Codex plugin for Claude Code](https://github.com/openai/codex-plugin-cc) (`codex-plugin-cc`). The two projects are **complementary, not competing** — they serve different workflows and can coexist in the same environment.
+
+| | claude2codex | codex-plugin-cc |
+|---|---|---|
+| **Integration** | MCP server | Claude Code plugin |
+| **Delegation model** | Structured Goal/Delta Contracts with mandatory handoff format | Free-form prompts forwarded to Codex as-is |
+| **Review cycle** | Claude reviews Codex's output against success conditions; failures trigger scoped Delta Contracts | No structured review loop; results returned verbatim |
+| **Code review** | Not included | Codex reviews Claude's code (native + adversarial) |
+| **Concurrency** | Parallel jobs with FIFO queue and dependency chaining | Single task at a time |
+| **Observability** | Token tracking, cost estimation, stall watchdog | Basic job status |
+
+**When to use which:**
+
+- **claude2codex** — when you want contract discipline: clearly defined goals, machine-checkable success conditions, structured handoffs, and a rework loop that converges on failures. Best for substantial implementation tasks where getting the specification right matters more than getting started fast.
+- **codex-plugin-cc** — when you want quick Codex access: ad-hoc code reviews, fast rescue runs, session transfers between Claude and Codex. Best for lightweight delegation and review workflows.
+
+Both use `codex app-server` under the hood. Installing one does not interfere with the other.
+
 ## Development
 
 ```sh
