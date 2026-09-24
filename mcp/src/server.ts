@@ -524,7 +524,7 @@ Only what Codex would get wrong without being told. One line of
 3. Verify falsifiability: each command-based success condition must fail when the defect is present. A check that passes regardless is a review failure.
 4. Run the project's own typecheck/build/test/lint.
 5. Flag security issues and constraint violations.
-6. Report findings to the user. Fix small issues (typos, imports) directly; do not rewrite the implementation.
+6. Report findings to the user. Fix small issues (typos, imports, test gaps found by your own falsifiability check) directly; do not rewrite the implementation.
 ` },
   }],
 }));
