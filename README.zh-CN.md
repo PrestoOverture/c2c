@@ -121,6 +121,8 @@ Codex 最终工作时的 prompt 由三层组成，但只有两层来自 claude2c
 
 需要 [Codex CLI](https://github.com/openai/codex) 和 Node.js 18+。
 
+**模型与推理强度。** c2c 直接沿用 Codex CLI 的配置（`~/.codex/config.toml`），自身不设任何默认值。调用 `codex_config` 可查看任务实际将使用的模型和强度。如需覆盖：在 MCP server 的 `env` 中设置 `CODEX_MODEL`（作用于所有任务），或在单个任务中传入 `reasoning_effort`。
+
 ```sh
 npx claude2codex
 ```

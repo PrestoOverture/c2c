@@ -111,6 +111,8 @@ Note that the contract prompt and the **thread-goal objective** are different st
 
 Requires [Codex CLI](https://github.com/openai/codex) and Node.js 18+.
 
+**Model & effort.** c2c uses whatever model and reasoning effort your Codex CLI is configured with (`~/.codex/config.toml`); it has no defaults of its own. Call `codex_config` to see what jobs will run with. To override, set `CODEX_MODEL` in the MCP server's `env` (all jobs) or pass `reasoning_effort` per job.
+
 ```sh
 npx claude2codex
 ```
