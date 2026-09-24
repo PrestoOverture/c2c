@@ -174,7 +174,8 @@ export interface JobProgressEvent {
   | "goal_updated"
   | "agent_message"
   | "stalled"
-  | "resumed";
+  | "resumed"
+  | "codex_error";
   /** Human-readable message detailing the progress event */
   message: string;
 }
@@ -499,6 +500,29 @@ function updateGoal(job: Job, params: any) {
 const TERMINAL_GOAL_STATUSES = new Set(["complete", "budget_limited", "budgetLimited"]);
 
 /**
+ * Extracts a readable message from a Codex `TurnError` (`{ message, codexErrorInfo }`).
+ * Upstream API errors arrive as a JSON string inside `message`
+ * (`{"type":"error","status":400,"error":{"message":"..."}}`); those are unwrapped.
+ *
+ * @param err - The `error` field of an `error` notification or a failed turn
+ * @returns The readable message, or undefined when none is present
+ */
+function codexErrorMessage(err: any): string | undefined {
+  const raw = typeof err === "string" ? err : err?.message;
+  if (typeof raw !== "string" || !raw.trim()) return undefined;
+  try {
+    const parsed = JSON.parse(raw);
+    const inner = parsed?.error?.message;
+    if (typeof inner === "string" && inner) {
+      return typeof parsed.status === "number" ? `${inner} (HTTP ${parsed.status})` : inner;
+    }
+  } catch {
+    // Not JSON — use the message as-is.
+  }
+  return raw;
+}
+
+/**
  * Result outcome returned by a single job attempt execution.
  */
 interface AttemptResult {
@@ -559,6 +583,8 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
   let activeTurn = false;
   let stalled = false;
   let processError: Error | undefined;
+  // Last non-retried Codex `error` notification; fallback text if a failed turn carries none.
+  let lastCodexError: string | undefined;
   let quietTimer: ReturnType<typeof setTimeout> | undefined;
   let stallTimer: ReturnType<typeof setTimeout> | undefined;
   let settle!: () => void;
@@ -740,7 +766,26 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
         log(job, "turn", `turn ended (${status})`);
         writeLog("info", "turn_ended", { job_id: job.id, turn: job.turns, status });
         progress("turn_ended", `turn ended (${status})`);
+        // A failed turn blocks the goal and no continuation follows; without this the
+        // quiet timer would later finalize the job as "done" with no error.
+        if (status === "failed") {
+          const reason = codexErrorMessage(p.turn?.error) ?? lastCodexError ?? "no error message from Codex";
+          finalize("error", `Codex turn failed: ${reason}`);
+          settle();
+          break;
+        }
         void onTurnEnded();
+        break;
+      }
+      case "error": {
+        const message = codexErrorMessage(p.error);
+        if (!message) break;
+        const willRetry = p.willRetry === true;
+        if (!willRetry) lastCodexError = message;
+        const detail = willRetry ? `${message} (Codex will retry)` : message;
+        log(job, "error", detail);
+        writeLog(willRetry ? "info" : "error", "codex_error", { job_id: job.id, message, will_retry: willRetry });
+        progress("codex_error", detail.slice(0, 200));
         break;
       }
       default:

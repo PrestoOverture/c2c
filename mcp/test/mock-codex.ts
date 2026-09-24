@@ -30,8 +30,37 @@ const HANDOFF = [
 
 let goal: { objective: string; status: string; tokensUsed: number; tokenBudget?: number } | null = null;
 
+// Upstream API error as the real app-server reports it: a JSON string inside `message`.
+function upstreamError(message: string) {
+  return {
+    message: JSON.stringify({ type: "error", status: 400, error: { type: "invalid_request_error", message } }),
+    codexErrorInfo: "other",
+  };
+}
+
 function runTurn(threadId: string, turnId: string, opts: { continuation: boolean }) {
   send({ method: "turn/started", params: { turn: { id: turnId, status: "inProgress" } } });
+  if (process.env.FAIL_TURN_MESSAGE) {
+    // Mirrors a real failed turn (captured from codex-cli 0.156.1): the goal blocks,
+    // an `error` notification arrives, then `turn/completed` with status "failed".
+    const error = upstreamError(process.env.FAIL_TURN_MESSAGE);
+    if (goal) {
+      goal.status = "blocked";
+      send({ method: "thread/goal/updated", params: { threadId, goal } });
+    }
+    send({ method: "error", params: { error, willRetry: false, threadId, turnId } });
+    send({
+      method: "turn/completed",
+      params: { threadId, turn: { id: turnId, status: "failed", error: process.env.FAIL_TURN_NO_ERROR ? null : error } },
+    });
+    return;
+  }
+  if (process.env.RETRYABLE_ERROR_MESSAGE && !opts.continuation) {
+    send({
+      method: "error",
+      params: { error: upstreamError(process.env.RETRYABLE_ERROR_MESSAGE), willRetry: true, threadId, turnId },
+    });
+  }
   send({
     method: "item/completed",
     params: { item: { id: `${turnId}-cmd`, type: "commandExecution", command: "mock-test" } },
