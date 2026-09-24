@@ -146,9 +146,12 @@ npx claude2codex
 
 
 
-### 工作流 Prompt（自动）
+### 工作流：Instructions + Prompt
 
-服务器注册了一个 MCP Prompt（`c2c-workflow`），教 Claude 完整的契约工作流——角色分配、Goal/Delta Contract 格式、审查协议。**连接 MCP 服务器后自动加载。** 无需额外安装。
+工作流分两层送达 Claude，都无需额外安装。
+
+- **服务器 instructions（自动）。** 连接时服务器会发送一段简短说明（不超过 1000 字符），Claude Code 会把它加入系统提示。它只在你要求把工作交给 Codex 时生效：Claude 会起草 Goal Contract 供你批准，然后估算、提交、轮询，并亲自重跑验证命令。不委派的任务照常处理。
+- **`c2c-workflow` Prompt（按需调用，完整规则）。** Goal/Delta Contract 格式和完整审查协议（含可证伪性检查）。MCP Prompt 需要用户手动调用：在要委派的 session 开头输入 `/mcp__codex__c2c-workflow`（中间一段是你在 MCP 配置里给服务器起的名字）。
 
 ### 项目配置：CLAUDE.md 和 [AGENTS.md](http://AGENTS.md)
 
@@ -193,7 +196,7 @@ Python 3.12，Poetry。从项目根目录运行。
 **什么放哪里：**
 
 
-|           | MCP 服务器（自动） | CLAUDE.md | AGENTS.md |
+|           | MCP 服务器     | CLAUDE.md | AGENTS.md |
 | --------- | ----------- | --------- | --------- |
 | 角色定义      | ✓           | —         | —         |
 | 工作流步骤     | ✓           | —         | —         |

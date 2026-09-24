@@ -132,9 +132,12 @@ Add to your Claude Code MCP settings:
 }
 ```
 
-### Workflow Prompt (automatic)
+### Workflow: Instructions + Prompt
 
-The server registers an MCP Prompt (`c2c-workflow`) that teaches Claude the full contract workflow — role assignment, Goal/Delta Contract formats, review protocol. **This is loaded automatically when the MCP server is connected.** No extra installation needed.
+The workflow reaches Claude in two layers. Neither needs extra installation.
+
+- **Server instructions (automatic).** On connect, the server sends a short instruction block (under 1,000 chars) that Claude Code adds to its system prompt. It activates only when you ask to delegate work to Codex: Claude then drafts a Goal Contract for your approval, estimates, implements, polls, and re-runs verification itself. Tasks you don't delegate are handled as usual.
+- **`c2c-workflow` Prompt (opt-in, full rules).** Goal/Delta Contract formats and the complete review protocol, including falsifiability checks. MCP Prompts are user-invoked: type `/mcp__codex__c2c-workflow` at the start of a delegating session (the middle segment is whatever you named the server in your MCP config).
 
 ### Project Setup: CLAUDE.md and AGENTS.md
 
@@ -178,7 +181,7 @@ Python 3.12, Poetry. Run from project root.
 
 **What goes where:**
 
-| | MCP server (automatic) | CLAUDE.md | AGENTS.md |
+| | MCP server | CLAUDE.md | AGENTS.md |
 |---|---|---|---|
 | Role definition | ✓ | — | — |
 | Workflow steps | ✓ | — | — |

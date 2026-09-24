@@ -102,7 +102,22 @@ function textResult(obj: unknown, isError = false) {
   };
 }
 
-const server = new McpServer({ name: "c2c-codex", version: "0.3.3" });
+/**
+ * Server instructions, injected into the client's system prompt on connect.
+ * Unlike the `c2c-workflow` Prompt (user-invoked slash command), these are always
+ * in context — so they must stay short and must only activate on Codex delegation.
+ */
+const SERVER_INSTRUCTIONS = `When the user asks to delegate work to Codex (or to use c2c), act as architect and reviewer, not implementer:
+1. Draft a Goal Contract and get the user's approval (show the user the contract) before calling codex_implement.
+2. codex_estimate, then codex_implement; poll codex_status and report progress.
+3. Review via codex_result: re-run every verification command yourself; never trust the handoff alone. On failure, send a Delta Contract via codex_rework.
+If a Codex job itself fails (error, 0 tokens, no handoff), report it and wait; don't implement the task yourself unless the user explicitly asks.
+Full formats: the c2c-workflow prompt.`;
+
+const server = new McpServer(
+  { name: "c2c-codex", version: "0.3.3" },
+  { instructions: SERVER_INSTRUCTIONS },
+);
 const reasoningEffort = z.enum(["low", "medium", "high", "xhigh", "max", "ultra"]);
 const contextFiles = z.array(z.object({
   path: z.string().min(1),
