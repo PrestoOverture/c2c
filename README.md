@@ -143,6 +143,11 @@ The workflow reaches Claude in two layers. Neither needs extra installation.
 
 The MCP server handles the workflow protocol. Your project files only need to carry **project-specific context** — don't repeat what the server already provides.
 
+To see exactly what the server already provides, read the verbatim prompts (generated from the code, so they never drift):
+
+- **[What Claude sees](https://github.com/PrestoOverture/c2c/blob/main/prompts/what-claude-sees.md)** — server instructions, the `c2c-workflow` Prompt, and tool descriptions. Read before writing `CLAUDE.md`.
+- **[What Codex sees](https://github.com/PrestoOverture/c2c/blob/main/prompts/what-codex-sees.md)** — the protocol, rendered Goal/Delta Contracts, and the thread-goal objective. Read before writing `AGENTS.md`.
+
 **`CLAUDE.md`** (for Claude — the architect/reviewer):
 
 ```markdown

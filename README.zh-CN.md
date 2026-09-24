@@ -157,6 +157,11 @@ npx claude2codex
 
 MCP 服务器负责工作流协议。你的项目文件只需要放**项目特有的上下文**——不要重复服务器已经提供的内容。
 
+服务器具体提供了哪些内容，可以直接看原文（由代码生成，与实际发送的内容始终一致，英文）：
+
+- **[What Claude sees](https://github.com/PrestoOverture/c2c/blob/main/prompts/what-claude-sees.md)**：服务器 instructions、`c2c-workflow` Prompt 和工具描述。写 `CLAUDE.md` 之前先读这份。
+- **[What Codex sees](https://github.com/PrestoOverture/c2c/blob/main/prompts/what-codex-sees.md)**：协议、渲染后的 Goal/Delta Contract 和 thread-goal objective。写 `AGENTS.md` 之前先读这份。
+
 `CLAUDE.md`（给 Claude——架构师/审查者）：
 
 ```markdown

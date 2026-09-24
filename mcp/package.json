@@ -30,6 +30,7 @@
     "start": "bun src/server.ts",
     "build": "tsup",
     "test": "bun test",
+    "gen:prompt-docs": "bun scripts/gen-prompt-docs.ts",
     "prepack": "cp ../README.md ../README.zh-CN.md ../PATTERNS.md ../PATTERNS.zh-CN.md .",
     "postpack": "rm -f README.md README.zh-CN.md PATTERNS.md PATTERNS.zh-CN.md"
   },

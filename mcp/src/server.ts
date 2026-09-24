@@ -235,11 +235,11 @@ server.registerTool(
       goal: z.string().min(1).describe(`What the code must do when this task is done. ${objectiveBudgetDescription}`),
       constraints: z
         .array(z.string())
-        .describe("Technical boundaries: files to touch, patterns to follow, 'Do not modify' lists."),
+        .describe("Only what Codex would get wrong without being told: genuine risks, not a review checklist."),
       success_conditions: z
         .array(z.string())
         .min(1)
-        .describe(`Checkable criteria proving the goal is met. At least one must be a runnable command/test. ${objectiveBudgetDescription}`),
+        .describe(`Checkable criteria proving the goal is met. At least one must be a runnable command/test; command-based ones should say how they fail when the defect exists. ${objectiveBudgetDescription}`),
       token_budget: z
         .number()
         .int()
@@ -308,11 +308,11 @@ server.registerTool(
       goal: z.string().min(1).describe(`What the code must do when this task is done. ${objectiveBudgetDescription}`),
       constraints: z
         .array(z.string())
-        .describe("Technical boundaries: files to touch, patterns to follow, 'Do not modify' lists."),
+        .describe("Only what Codex would get wrong without being told: genuine risks, not a review checklist."),
       success_conditions: z
         .array(z.string())
         .min(1)
-        .describe(`Checkable criteria proving the goal is met. At least one must be a runnable command/test. ${objectiveBudgetDescription}`),
+        .describe(`Checkable criteria proving the goal is met. At least one must be a runnable command/test; command-based ones should say how they fail when the defect exists. ${objectiveBudgetDescription}`),
       cwd: z.string().optional().describe("Working directory used to resolve relative context_files paths. Defaults to the project directory."),
       context_files: contextFiles.optional().describe("Files or directories included in the rendered prompt."),
     },
@@ -471,9 +471,7 @@ server.registerPrompt("c2c-workflow", {
   messages: [{
     role: "user" as const,
     content: { type: "text" as const, text: `
-You are the **architect and reviewer**. Codex is the **implementer**. You draft contracts, delegate via the \`codex\` MCP server, and review the output. You do not implement the task yourself.
-
-If \`codex_config\` errors, tell the user to install the MCP server (npm: \`claude2codex\`).
+You are the **architect and reviewer**. Codex is the **implementer**. You draft contracts, delegate via the \`codex_*\` tools, and review the output. You do not implement the task yourself.
 
 ## Workflow
 
@@ -499,7 +497,6 @@ Only what Codex would get wrong without being told. One line of
 ### Success Conditions
 - [ ] Assertions, not paragraphs. At least one is a command whose exit code decides.
 - [ ] Command-based conditions must be falsifiable: describe how they fail when the defect exists. Subjective criteria should be marked as needing reviewer judgment.
-- [ ] Handoff includes: Changed Files, Validation, Success Conditions, Risks & Deviations.
 \`\`\`
 
 **Write lean contracts.** Goal and Success Conditions are what Codex acts on. Constraints are for genuine risks only — don't front-load your review checklist into the contract.
