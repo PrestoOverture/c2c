@@ -110,7 +110,7 @@ Read-only estimate made before starting a job. Measures the fully rendered Goal 
 
 ### `codex_rework`
 
-Resume the Codex thread from a previous implement job and hand it a Delta Contract (review findings + failed success conditions). The existing thread goal re-engages, so the /goal loop continues until the objective passes. Returns a new job_id.
+Resume the Codex thread from a previous implement job and hand it a Delta Contract (review findings + failed success conditions). The existing thread goal is reactivated, so the /goal loop continues until the objective passes. Returns a new job_id.
 
 - `job_id` (optional) — The original implement job's id (preferred; resolves the thread to resume).
 - `thread_id` (optional) — Codex thread id, if the job registry is gone (e.g. after a restart).

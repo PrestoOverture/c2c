@@ -56,8 +56,9 @@ rl.on("line", (line) => {
       send({ id, result: { thread: { id: params.threadId } } });
       break;
     case "thread/goal/set":
-      marker = markerFor(params.objective);
-      goal = { objective: params.objective, status: "active", tokensUsed: 0 };
+      // Status-only set = rework reactivating the goal persisted with the thread.
+      if (params.objective != null) marker = markerFor(params.objective);
+      goal = { objective: params.objective ?? "persisted objective", status: params.status ?? "active", tokensUsed: 0 };
       send({ id, result: { goal } });
       send({ method: "thread/goal/updated", params: { threadId: params.threadId, goal } });
       break;
@@ -74,7 +75,8 @@ rl.on("line", (line) => {
         });
         if (goal) {
           goal.status = "complete";
-          goal.tokensUsed = tokenTotal(marker);
+          // Rework reports usage via its turn only (the distinctive 9999).
+          if (marker !== "rework") goal.tokensUsed = tokenTotal(marker);
           send({ method: "thread/goal/updated", params: { threadId: params.threadId, goal } });
         }
         send({

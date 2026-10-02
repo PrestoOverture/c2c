@@ -156,6 +156,59 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
   }
 }, 30_000);
 
+test("rework reactivates a goal the previous round left complete", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "c2c-rework-goal-"));
+  const goalSetLog = join(tempDir, "goal-set.jsonl");
+  const transport = new StdioClientTransport({
+    command: "bun",
+    args: [join(mcpDir, "src", "server.ts")],
+    cwd: mcpDir,
+    env: {
+      ...(process.env as Record<string, string>),
+      CODEX_BIN: "bun",
+      CODEX_ARGS: join(mcpDir, "test", "mock-codex.ts"),
+      CODEX_QUIET_MS: "500",
+      CODEX_JOB_TIMEOUT_MS: "10000",
+      RESUMED_GOAL_STATUS: "complete",
+      GOAL_SET_LOG: goalSetLog,
+      C2C_STATE_DIR: join(tempDir, "state"),
+    },
+  });
+  const client = new Client({ name: "e2e", version: "0.0.1" });
+  await client.connect(transport);
+
+  try {
+    const rework = parsePayload(
+      await client.callTool({
+        name: "codex_rework",
+        arguments: {
+          thread_id: "thr_prev",
+          findings: ["thing.ts:12 — edge case unhandled"],
+          failed_conditions: ["The thing exists — verified by the project's test command"],
+          cwd: tempDir,
+        },
+      }),
+    );
+
+    // Without the fix, the replayed "complete" status ended the job before
+    // any turn ran: state "done", turns 0, no handoff.
+    const status = await pollUntilDone(client, rework.job_id);
+    expect(status.state).toBe("done");
+    expect(status.turns).toBeGreaterThanOrEqual(1);
+
+    const result = parsePayload(
+      await client.callTool({ name: "codex_result", arguments: { job_id: rework.job_id } }),
+    );
+    expect(result.handoff.valid).toBe(true);
+
+    const goalSets = readFileSync(goalSetLog, "utf8").trim().split("\n").map((line) => JSON.parse(line));
+    expect(goalSets).toEqual([{ threadId: "thr_prev", status: "active" }]);
+  } finally {
+    await client.close();
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+}, 30_000);
+
 test("missing context files reject implement and rework before creating jobs", async () => {
   const tempDir = mkdtempSync(join(tmpdir(), "c2c-context-validation-"));
   const stateDir = join(tempDir, "state");

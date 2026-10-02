@@ -139,7 +139,7 @@ export interface StartJobOptions {
   /** Rendered prompt string containing protocol instructions and contract body */
   prompt: string;
   /** Compact objective string set on the thread goal for implement jobs */
-  objective?: string; // set on implement; rework reuses the existing thread goal
+  objective?: string; // set on implement; rework reactivates the existing thread goal
   /** Optional token budget limit for goal execution */
   tokenBudget?: number;
   /** Optional list of context file paths for Codex reference */
@@ -690,6 +690,11 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
    */
   function finalize(state: JobState, error?: string) {
     clearStallTimer();
+    // A job that never ran a turn did no work; reporting it "done" would pass a no-op off as success.
+    if (state === "done" && job.turns === 0) {
+      state = "error";
+      error = "job ended without running a turn";
+    }
     finish(job, state, client, error);
   }
 
@@ -750,7 +755,9 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
           tokens_used: job.goal?.tokensUsed ?? null,
         });
         progress("goal_updated", `goal status=${job.goal?.status ?? "unknown"}`);
-        if (job.goal?.status && TERMINAL_GOAL_STATUSES.has(job.goal.status) && !activeTurn) {
+        // turns > 0: on resume Codex replays the previous round's goal status before
+        // this job's turn starts; a stale "complete" there must not end the job.
+        if (job.goal?.status && TERMINAL_GOAL_STATUSES.has(job.goal.status) && !activeTurn && job.turns > 0) {
           finalize("done");
           settle();
         }
@@ -845,7 +852,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     if (opts.resumeThreadId) {
       threadRes = await client.request("thread/resume", { threadId: opts.resumeThreadId, ...threadParams });
       job.threadId = threadRes?.thread?.id ?? opts.resumeThreadId;
-      job.goalSet = true; // implement already set the thread goal; the loop re-engages on resume
+      job.goalSet = true; // implement already set the thread goal; reactivated below
     } else {
       threadRes = await client.request("thread/start", { ...threadParams, sessionStartSource: "startup" });
       job.threadId = threadRes?.thread?.id ?? threadRes?.id;
@@ -854,11 +861,14 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     store.save(job);
     log(job, "thread", `thread ${job.threadId} ${opts.resumeThreadId ? "resumed" : "started"}`);
 
-    if (opts.objective) {
+    // Implement sets a fresh goal. Rework reactivates the existing one: a goal the
+    // previous round left "complete" would otherwise stay terminal, and the loop
+    // would not re-engage. Omitting `objective` keeps the original objective.
+    if (opts.objective || opts.resumeThreadId) {
       try {
         const goalRes: any = await client.request("thread/goal/set", {
           threadId: job.threadId,
-          objective: opts.objective,
+          ...(opts.objective ? { objective: opts.objective } : { status: "active" }),
           ...(opts.tokenBudget ? { tokenBudget: opts.tokenBudget } : {}),
         });
         job.goalSet = true;

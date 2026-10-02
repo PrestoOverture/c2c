@@ -352,7 +352,7 @@ server.registerTool(
     title: "Send a Delta Contract to Codex",
     description:
       "Resume the Codex thread from a previous implement job and hand it a Delta Contract " +
-      "(review findings + failed success conditions). The existing thread goal re-engages, so the " +
+      "(review findings + failed success conditions). The existing thread goal is reactivated, so the " +
       "/goal loop continues until the objective passes. Returns a new job_id.",
     inputSchema: {
       job_id: z

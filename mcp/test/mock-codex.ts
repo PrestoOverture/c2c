@@ -3,7 +3,7 @@
 // then a two-turn goal-continuation loop ending with goal status "complete".
 
 import { createInterface } from "node:readline";
-import { writeFileSync } from "node:fs";
+import { appendFileSync, writeFileSync } from "node:fs";
 
 if (process.env.SPAWN_MARKER_FILE) writeFileSync(process.env.SPAWN_MARKER_FILE, "spawned");
 
@@ -118,12 +118,26 @@ rl.on("line", (line) => {
       break;
     case "thread/resume":
       send({ id, result: { thread: { id: params.threadId } } });
-      // A resumed thread keeps its goal; reactivate it for the rework loop.
-      if (goal) goal.status = "active";
+      if (process.env.RESUMED_GOAL_STATUS) {
+        // Real Codex persists the goal with the thread and replays its last
+        // status on resume — e.g. "complete" from the previous round.
+        goal = { objective: "persisted objective", status: process.env.RESUMED_GOAL_STATUS, tokensUsed: 61300 };
+        send({ method: "thread/goal/updated", params: { threadId: params.threadId, goal } });
+      }
       break;
     case "thread/goal/set":
-      if (process.env.OBJECTIVE_FILE) writeFileSync(process.env.OBJECTIVE_FILE, params.objective);
-      goal = { objective: params.objective, status: "active", tokensUsed: 0, tokenBudget: params.tokenBudget };
+      if (process.env.GOAL_SET_LOG) appendFileSync(process.env.GOAL_SET_LOG, JSON.stringify(params) + "\n");
+      if (params.objective == null) {
+        // Status-only update of an existing goal (rework reactivation).
+        if (!goal) {
+          send({ id, error: { code: -32600, message: "thread has no goal" } });
+          break;
+        }
+        if (params.status) goal.status = params.status;
+      } else {
+        if (process.env.OBJECTIVE_FILE) writeFileSync(process.env.OBJECTIVE_FILE, params.objective);
+        goal = { objective: params.objective, status: "active", tokensUsed: 0, tokenBudget: params.tokenBudget };
+      }
       send({ id, result: { goal } });
       send({ method: "thread/goal/updated", params: { threadId: params.threadId, goal } });
       break;
