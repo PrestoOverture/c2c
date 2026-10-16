@@ -1,0 +1,12 @@
+# Pilot instances — SWE-bench/SWE-bench_Verified, difficulty in ('1-4 hours', '>4 hours')
+# 45 hard instances; stratified by repo, seed 20261016. Frozen: do not edit.
+astropy__astropy-13398
+django__django-15503
+django__django-15629
+pydata__xarray-6992
+pylint-dev__pylint-8898
+pytest-dev__pytest-5787
+scikit-learn__scikit-learn-25102
+sphinx-doc__sphinx-11510
+sympy__sympy-16597
+sympy__sympy-17630
