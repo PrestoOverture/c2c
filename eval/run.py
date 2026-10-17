@@ -14,6 +14,7 @@ predictions.jsonl shape, so `score` is the single grading path for all of them.
 
 import argparse
 import json
+import os
 import random
 import subprocess
 import sys
@@ -22,10 +23,12 @@ from collections import defaultdict
 from pathlib import Path
 
 EVAL_DIR = Path(__file__).resolve().parent
+REPO_ROOT = EVAL_DIR.parent
 RESULTS_DIR = EVAL_DIR / "results"
 PILOT_FILE = EVAL_DIR / "pilot_instances.txt"
 
-DATASET = "SWE-bench/SWE-bench_Verified"
+# A HF dataset id, or a local JSON task file such as fresh/tasks.json (see fresh/build_task.py).
+DATASET = os.environ.get("C2C_EVAL_DATASET", "SWE-bench/SWE-bench_Verified")
 HARD = ("1-4 hours", ">4 hours")
 PILOT_SIZE = 10
 PILOT_SEED = 20261016
@@ -43,6 +46,8 @@ new file mode 100644
 
 
 def load_dataset():
+    if DATASET.endswith(".json"):
+        return {r["instance_id"]: r for r in json.loads(Path(DATASET).read_text())}
     from datasets import load_dataset as hf_load
 
     return {r["instance_id"]: r for r in hf_load(DATASET, split="test")}
@@ -132,7 +137,7 @@ def score(run_id, workers, timeout):
     model = preds[0]["model_name_or_path"]
     cmd = [
         sys.executable, "-m", "swebench.harness.run_evaluation",
-        "--dataset_name", DATASET,
+        "--dataset_name", str(Path(DATASET).resolve()) if DATASET.endswith(".json") else DATASET,
         "--predictions_path", "predictions.jsonl",
         "--run_id", run_id,
         "--max_workers", str(workers),
@@ -175,12 +180,12 @@ def cmd_score(args):
 
 
 def cmd_sanity(args):
-    ids = read_pilot()
+    ids = args.ids or read_pilot()
     n = len(ids)
     pull_images(ids)
     ok = True
     for kind, expect in (("gold", n), ("noop", 0)):
-        run_id = f"sanity-{kind}"
+        run_id = f"sanity-{args.tag}-{kind}" if args.tag else f"sanity-{kind}"
         write_predictions(run_id, kind, ids)
         s = score(run_id, args.workers, args.timeout)
         # noop must still apply and be graded; an error is not a clean 0.
@@ -210,6 +215,9 @@ def main():
         s = sub.add_parser(name)
         if name == "score":
             s.add_argument("--run-id", required=True)
+        else:
+            s.add_argument("--ids", nargs="+", help="instance ids (default: the pilot)")
+            s.add_argument("--tag", default="", help="run ids become sanity-<tag>-<kind>")
         s.add_argument("--workers", type=int, default=2)
         s.add_argument("--timeout", type=int, default=1800)
         s.set_defaults(fn=fn)
