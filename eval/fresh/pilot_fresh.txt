@@ -1,0 +1,11 @@
+# Fresh pilot (post-cutoff, screened, sanity PASS, rebuild <=5 min on the dev Mac)
+colbymchenry__codegraph-1317
+colbymchenry__codegraph-1370
+colbymchenry__codegraph-1313
+jsonata-js__jsonata-814
+networkx__networkx-8895
+pylint-dev__astroid-3260
+more-itertools__more-itertools-1248
+more-itertools__more-itertools-1285
+pydantic__pydantic-13994
+pydantic__pydantic-13980

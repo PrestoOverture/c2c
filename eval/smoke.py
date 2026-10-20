@@ -45,12 +45,43 @@ UNATTENDED = (
     "fails again, stop and report the failure. Never implement the fix yourself."
 )
 
+# Session mechanics only, identical for every Claude arm (A, C, D, E): in -p mode
+# the session ends the moment the model ends its turn, so a run that "waits" by
+# backgrounding a sleep and ending its turn kills its own Codex job/subagent.
+HEADLESS = (
+    "\n\n## Session mechanics\n"
+    "This session is non-interactive. It ends the moment you end your turn, and nothing will "
+    "resume it later. Do not run commands in the background and do not end your turn while "
+    "waiting for anything. To wait, pause in the foreground "
+    "(for example `python3 -c 'import time; time.sleep(60)'`) and then check again."
+)
+
 CLAUDE_BASE = [
     "claude", "-p", "--model", OPUS, "--effort", EFFORT,
     "--output-format", "stream-json", "--verbose",
     "--setting-sources", "", "--strict-mcp-config",
     "--permission-mode", "bypassPermissions",
+    "--disallowedTools", "Monitor", "ScheduleWakeup", "CronCreate", "WebFetch", "WebSearch",
 ]
+
+# Every arm runs with no route to the upstream fix: no web tools (above for
+# Claude, web_search="disabled" for Codex), no GitHub CLI login (agent_env), and
+# a workspace outside this repo under an opaque name (pilot.py), so neither the
+# PR number nor the eval's own files and AGENTS.md are within reach.
+CODEX_NO_WEB = 'web_search="disabled"'
+
+
+def agent_env(home_dir, proxy_url=None):
+    env = {k: v for k, v in os.environ.items()
+           if k not in ("GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN")}
+    gh = home_dir / "gh-empty"
+    gh.mkdir(parents=True, exist_ok=True)
+    env.update(GH_CONFIG_DIR=str(gh), GIT_TERMINAL_PROMPT="0")
+    if proxy_url:  # blockproxy.py: refuses GitHub / code search / search engines, passes the model APIs
+        for k in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "http_proxy", "https_proxy", "all_proxy"):
+            env[k] = proxy_url
+        env["NO_PROXY"] = env["no_proxy"] = "localhost,127.0.0.1"
+    return env
 
 
 def sh(*cmd, **kw):
@@ -82,14 +113,26 @@ def codex_usage():
     }
 
 
+def _retry(read, tries=4):
+    """Usage reads hit the network; a transient failure must not kill a run."""
+    for attempt in range(tries):
+        try:
+            return read()
+        except Exception as e:  # noqa: BLE001 — any failure here just means "unknown"
+            err = e
+            time.sleep(15 * (attempt + 1))
+    print(f"  usage read failed after {tries} tries: {err}", flush=True)
+    return None
+
+
 def snapshot():
-    return {"at": time.time(), "claude": claude_usage(), "codex": codex_usage()}
+    return {"at": time.time(), "claude": _retry(claude_usage), "codex": _retry(codex_usage)}
 
 
 def wait_for_headroom(side, read):
     """Wait for the 5h window to reset if it is too full to start a run, or if it
     would reset mid-run (a reset makes the run's 5h delta unmeasurable)."""
-    u = read()
+    u = _retry(read)
     if not u or "five_hour" not in u:
         return
     w = u["five_hour"]
@@ -114,7 +157,8 @@ def prepare_workspace(inst, run_dir, ctr):
     finally:
         sh("docker", "rm", tmp)
     subprocess.run(["docker", "rm", "-f", ctr], capture_output=True)
-    sh("docker", "run", "-d", *plat_flag, "--name", ctr,
+    # no network inside the work container: envrun must not be a way around the proxy
+    sh("docker", "run", "-d", *plat_flag, "--network", "none", "--name", ctr,
        "-v", f"{ws}:/testbed", inst["image"], "sleep", "infinity")
     envrun = run_dir / "bin" / "envrun"
     envrun.parent.mkdir(exist_ok=True)
@@ -124,7 +168,17 @@ def prepare_workspace(inst, run_dir, ctr):
         f'"{inst.get("env_activate", "source /opt/miniconda3/bin/activate testbed")} && $*"\n'
     )
     envrun.chmod(0o755)
-    return ws, envrun
+    base = inst["base_commit"]
+    if inst.get("sanitize_git"):
+        # The image's .git can still hold the upstream fix (objects, reflog);
+        # replace the agent's copy with a single commit of the base tree.
+        sh("rm", "-rf", str(ws / ".git"))
+        sh("git", "init", "-q", cwd=ws)
+        sh("git", "add", "-A", cwd=ws)
+        sh("git", "-c", "user.name=c2c-eval", "-c", "user.email=eval@c2c.invalid",
+           "commit", "-q", "-m", "base", cwd=ws)
+        base = sh("git", "rev-parse", "HEAD", cwd=ws).strip()
+    return ws, envrun, base
 
 
 def collect_patch(ws, base_commit):
@@ -132,7 +186,8 @@ def collect_patch(ws, base_commit):
     return sh(
         "git", "-C", str(ws), "diff", "--cached", base_commit, "--", ".",
         ":(exclude,glob)tests/**", ":(exclude,glob)**/tests/**", ":(exclude,glob)testing/**",
-        ":(exclude,glob)**/test_*.py",
+        ":(exclude,glob)**/test_*.py", ":(exclude,glob)test/**", ":(exclude,glob)**/test/**",
+        ":(exclude,glob)**/__tests__/**", ":(exclude,glob)**/*.test.*", ":(exclude,glob)**/*.spec.*",
     )
 
 
@@ -152,21 +207,21 @@ def c2c_lite_text():
 
 def arm_command(arm, prompt, run_dir):
     if arm == "A":
-        return CLAUDE_BASE + [prompt]
+        return CLAUDE_BASE + ["--append-system-prompt", HEADLESS.lstrip(), prompt]
     if arm == "B":
         return ["codex", "exec", "--json", "-m", CODEX_MODEL, "-c", f"model_reasoning_effort={EFFORT}",
-                "-s", "danger-full-access", "--skip-git-repo-check", prompt]
+                "-c", CODEX_NO_WEB, "-s", "danger-full-access", "--skip-git-repo-check", prompt]
     if arm == "C":
         mcp = {"mcpServers": {"codex": {"command": "npx", "args": ["-y", C2C_PACKAGE], "env": {
             "CODEX_MODEL": CODEX_MODEL,
-            "CODEX_ARGS": f"app-server -c model_reasoning_effort={EFFORT} -c sandbox_mode=danger-full-access",
+            "CODEX_ARGS": f"app-server -c model_reasoning_effort={EFFORT} -c sandbox_mode=danger-full-access -c {CODEX_NO_WEB}",
             "CODEX_JOB_TIMEOUT_MS": str(80 * 60 * 1000),
             "C2C_STATE_DIR": str(run_dir / "c2c-jobs"),
         }}}}
         (run_dir / "mcp.json").write_text(json.dumps(mcp, indent=2))
         note = UNATTENDED + f"\nPass reasoning_effort \"{EFFORT}\" on every codex_implement and codex_rework call."
         return CLAUDE_BASE + ["--mcp-config", str(run_dir / "mcp.json"),
-                              "--append-system-prompt", workflow_text() + note, prompt]
+                              "--append-system-prompt", workflow_text() + note + HEADLESS, prompt]
     if arm in ("D", "E"):
         model = SONNET if arm == "D" else OPUS
         agents = {"implementer": {
@@ -178,14 +233,14 @@ def arm_command(arm, prompt, run_dir):
         note = UNATTENDED + ("\nSpawn the implementer with subagent_type \"implementer\" and do not "
                              "override its model.")
         return CLAUDE_BASE + ["--agents", str(run_dir / "agents.json"),
-                              "--append-system-prompt", c2c_lite_text() + note, prompt]
+                              "--append-system-prompt", c2c_lite_text() + note + HEADLESS, prompt]
     raise ValueError(arm)
 
 
-def run_agent(cmd, cwd, log_path):
+def run_agent(cmd, cwd, log_path, env=None):
     start = time.time()
     with log_path.open("w") as log:
-        proc = subprocess.Popen(cmd, cwd=cwd, stdout=log, stderr=subprocess.STDOUT,
+        proc = subprocess.Popen(cmd, cwd=cwd, stdout=log, stderr=subprocess.STDOUT, env=env,
                                 stdin=subprocess.DEVNULL, start_new_session=True)
         try:
             rc = proc.wait(timeout=RUN_CAP_S)
@@ -283,7 +338,7 @@ def main():
         if arm in ("B", "C"):
             wait_for_headroom("codex", codex_usage)
         ctr = f"c2c-eval-{run_id}"
-        ws, envrun = prepare_workspace(inst, run_dir, ctr)
+        ws, envrun, base = prepare_workspace(inst, run_dir, ctr)
         prompt = template.format(repo=inst["repo"], workdir=ws, envrun=envrun,
                                  problem_statement=inst["problem_statement"])
         cmd = arm_command(arm, prompt, run_dir)
@@ -295,7 +350,7 @@ def main():
         after = snapshot()
         subprocess.run(["docker", "rm", "-f", ctr], capture_output=True)
 
-        patch = collect_patch(ws, inst["base_commit"])
+        patch = collect_patch(ws, base)
         with (run_dir / "predictions.jsonl").open("w") as f:
             f.write(json.dumps({"instance_id": args.instance, "model_name_or_path": f"arm-{arm}",
                                 "model_patch": patch}) + "\n")

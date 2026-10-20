@@ -27,7 +27,23 @@ FRESH = Path(__file__).resolve().parent
 SRC = FRESH / "src"
 TASKS = FRESH / "tasks.json"
 
+PYTEST = "python -m pytest -rA -p no:cacheprovider"
+
+
+def pytest_profile(*pip):
+    """Plain `pip install -e .` repo tested with pytest's -rA summary (parse_log_pytest)."""
+    return {"python": "3.12", "pip": ["pytest", *pip], "test_cmd": PYTEST, "log_parser": "parse_log_pytest"}
+
+
 PROFILES = {
+    "networkx/networkx": pytest_profile("numpy", "scipy"),
+    "pylint-dev/astroid": pytest_profile(),
+    "more-itertools/more-itertools": pytest_profile(),
+    # pydantic's dev group minus pytest-pretty, which rewrites the -rA summary
+    # the parser reads; tzdata because #13908 only reproduces with it installed.
+    "pydantic/pydantic": pytest_profile("pytz", "dirty-equals", "pytest-mock", "faker", "packaging", "jsonschema",
+                                        "time-machine", "pytest-run-parallel", "cloudpickle", "tzdata",
+                                        "pytest-benchmark"),  # pyproject addopts pass --benchmark-* flags
     "sympy/sympy": {
         "python": "3.12",
         "pip": ["mpmath", "pytest", "hypothesis"],
@@ -103,7 +119,7 @@ def run_tests(image, base_commit, test_files, test_patch, gold, prof):
     script += "git apply -v - <<'EOF_TEST'\n" + test_patch + "EOF_TEST\n"
     script += f"{prof['test_cmd']} {' '.join(test_files)}\n"
     out = subprocess.run(["docker", "run", "--rm", "-i", image, "bash", "-s"],
-                         input=script, capture_output=True, text=True).stdout
+                         input=script, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout
     return getattr(parsers, prof["log_parser"])(out, None), out
 
 
@@ -149,7 +165,9 @@ def main():
         sh("git", "clone", "-q", "--filter=blob:none", f"https://github.com/{args.repo}.git", str(clone))
     sh("git", "-C", str(clone), "fetch", "-q", "origin", merge)
     gold, test_patch = split_diff(sh("git", "-C", str(clone), "diff", base, merge))
-    test_files = sorted(set(re.findall(r"(?m)^diff --git a/(\S+)", test_patch)))
+    # Tests to run: files the test patch leaves in place (a moved test file shows up as a deletion too).
+    deleted = set(re.findall(r"(?m)^--- a/(\S+)\n\+\+\+ /dev/null", test_patch))
+    test_files = sorted(set(re.findall(r"(?m)^diff --git a/(\S+)", test_patch)) - deleted)
     if not gold or not test_patch:
         sys.exit("PR has no source change or no test change")
 

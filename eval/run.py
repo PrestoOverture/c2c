@@ -134,6 +134,24 @@ def score(run_id, workers, timeout):
     run_dir = RESULTS_DIR / run_id
     preds = [json.loads(l) for l in (run_dir / "predictions.jsonl").read_text().splitlines()]
     ids = [p["instance_id"] for p in preds]
+    tasks = load_dataset()
+    if all(tasks[i].get("grader") == "multilang" for i in ids):
+        import multilang
+
+        summary = multilang.grade(run_dir, run_id, tasks)
+    else:
+        summary = score_with_harness(run_dir, run_id, preds, workers, timeout)
+    (run_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
+    print(
+        f"{run_id}: resolved {len(summary['resolved'])}/{len(ids)}, "
+        f"unresolved {len(summary['unresolved'])}, error {len(summary['error'])}, "
+        f"patch applied {len(summary['patch_applied'])}/{len(ids)}"
+    )
+    return summary
+
+
+def score_with_harness(run_dir, run_id, preds, workers, timeout):
+    ids = [p["instance_id"] for p in preds]
     model = preds[0]["model_name_or_path"]
     cmd = [
         sys.executable, "-m", "swebench.harness.run_evaluation",
@@ -166,12 +184,6 @@ def score(run_id, workers, timeout):
         "empty_patch": report["empty_patch_ids"],
         "patch_applied": sorted(i for i, r in per_instance.items() if r and r.get("patch_successfully_applied")),
     }
-    (run_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
-    print(
-        f"{run_id}: resolved {len(summary['resolved'])}/{len(ids)}, "
-        f"unresolved {len(summary['unresolved'])}, error {len(summary['error'])}, "
-        f"patch applied {len(summary['patch_applied'])}/{len(ids)}"
-    )
     return summary
 
 

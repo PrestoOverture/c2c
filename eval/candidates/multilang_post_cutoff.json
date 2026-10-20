@@ -1,0 +1,5231 @@
+[
+  {
+    "instance_id": "xroche__httrack-817",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "824"
+    ],
+    "pull_number": "817",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-817:latest",
+    "image_gb": 0.78,
+    "fix_code_files": 4,
+    "fix_lines": 95,
+    "fail_to_pass": 1,
+    "pass_to_pass": 178,
+    "issue_chars": 1410,
+    "title": "A cache repair that recovers nothing still replaces the cache with an empty archive",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-830",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "823"
+    ],
+    "pull_number": "830",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-830:latest",
+    "image_gb": 0.78,
+    "fix_code_files": 3,
+    "fix_lines": 105,
+    "fail_to_pass": 1,
+    "pass_to_pass": 178,
+    "issue_chars": 1013,
+    "title": "An FTP resume can splice a changed remote when there is no cache entry",
+    "known_local": "dropped in screening: hidden test pins a SIZE+MDTM policy the issue does not state",
+    "excluded": [
+      "dropped in screening: hidden test pins a SIZE+MDTM policy the issue does not state"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "c-ares__c-ares-1190",
+    "repo": "c-ares/c-ares",
+    "language": "c",
+    "created_at": "2026-07-03",
+    "issue_numbers": [
+      "1181"
+    ],
+    "pull_number": "1190",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.c-ares_1776_c-ares-1190:latest",
+    "image_gb": 0.76,
+    "fix_code_files": 4,
+    "fix_lines": 31,
+    "fail_to_pass": 2,
+    "pass_to_pass": 1187,
+    "issue_chars": 2464,
+    "title": "SRV record should not allow name compression",
+    "known_local": "valid (sanity PASS); rebuild 6.5 min; screened: keep 1 of 2 F2P",
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-809",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "797"
+    ],
+    "pull_number": "809",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-809:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 1,
+    "fix_lines": 55,
+    "fail_to_pass": 1,
+    "pass_to_pass": 175,
+    "issue_chars": 1443,
+    "title": "A successful FTP transfer can be blanked when its backlog slot is swapped out",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-763",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "748"
+    ],
+    "pull_number": "763",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-763:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 1,
+    "fix_lines": 7,
+    "fail_to_pass": 1,
+    "pass_to_pass": 157,
+    "issue_chars": 1536,
+    "title": "A re-fetch that never gets a response truncates the mirrored file to zero on macOS",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-789",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "778"
+    ],
+    "pull_number": "789",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-789:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 1,
+    "fix_lines": 60,
+    "fail_to_pass": 2,
+    "pass_to_pass": 169,
+    "issue_chars": 1807,
+    "title": "server-not-modified revisit records carry no WARC-Refers-To-Target-URI, so replay cannot resolve them",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-803",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "787"
+    ],
+    "pull_number": "803",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-803:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 5,
+    "fix_lines": 33,
+    "fail_to_pass": 1,
+    "pass_to_pass": 172,
+    "issue_chars": 1352,
+    "title": "The -o help text promises a generated error page; the engine stores the server's",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-810",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "798"
+    ],
+    "pull_number": "810",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-810:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 1,
+    "fix_lines": 16,
+    "fail_to_pass": 1,
+    "pass_to_pass": 174,
+    "issue_chars": 1442,
+    "title": "An FTP --update resumes a complete mirror with REST and splices the old file into the new body",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-815",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "814"
+    ],
+    "pull_number": "815",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-815:latest",
+    "image_gb": 0.79,
+    "fix_code_files": 10,
+    "fix_lines": 172,
+    "fail_to_pass": 182,
+    "pass_to_pass": 0,
+    "issue_chars": 2198,
+    "title": "Backward scans from strlen(s) - 1 walk off the front of the buffer",
+    "known_local": null,
+    "excluded": [
+      "182 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-876",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-29",
+    "issue_numbers": [
+      "875"
+    ],
+    "pull_number": "876",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-876:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 1,
+    "fix_lines": 92,
+    "fail_to_pass": 1,
+    "pass_to_pass": 201,
+    "issue_chars": 1381,
+    "title": "htsserver labels every PNG as image/gif, and serves JPEG as a download",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-829",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "828"
+    ],
+    "pull_number": "829",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-829:latest",
+    "image_gb": 0.79,
+    "fix_code_files": 2,
+    "fix_lines": 10,
+    "fail_to_pass": 1,
+    "pass_to_pass": 188,
+    "issue_chars": 1062,
+    "title": "A PROPFIND on an exact cache entry crashes proxytrack",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-784",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "779"
+    ],
+    "pull_number": "784",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-784:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 4,
+    "fix_lines": 20,
+    "fail_to_pass": 1,
+    "pass_to_pass": 163,
+    "issue_chars": 1345,
+    "title": "hts_rename_over() deletes the destination when the source is missing",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-807",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "772"
+    ],
+    "pull_number": "807",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-807:latest",
+    "image_gb": 0.79,
+    "fix_code_files": 1,
+    "fix_lines": 21,
+    "fail_to_pass": 1,
+    "pass_to_pass": 181,
+    "issue_chars": 1533,
+    "title": "hts_newthread() leaves the pthread attributes object undestroyed when thread creation fails",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-837",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "826"
+    ],
+    "pull_number": "837",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-837:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 5,
+    "fix_lines": 46,
+    "fail_to_pass": 186,
+    "pass_to_pass": 0,
+    "issue_chars": 703,
+    "title": "A 304 revisit loses its WARC request and response headers, and cache_read_including_broken returns freed pointers",
+    "known_local": null,
+    "excluded": [
+      "186 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-849",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "838",
+      "839"
+    ],
+    "pull_number": "849",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-849:latest",
+    "image_gb": 0.79,
+    "fix_code_files": 4,
+    "fix_lines": 59,
+    "fail_to_pass": 3,
+    "pass_to_pass": 191,
+    "issue_chars": 1842,
+    "title": "A 304 revisit record names no peer IP",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-851",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "840"
+    ],
+    "pull_number": "851",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-851:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 1,
+    "fix_lines": 61,
+    "fail_to_pass": 1,
+    "pass_to_pass": 194,
+    "issue_chars": 1613,
+    "title": "A chunked response cut at a chunk boundary is stored and cached as complete",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-893",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-30",
+    "issue_numbers": [
+      "892"
+    ],
+    "pull_number": "893",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-893:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 3,
+    "fix_lines": 23,
+    "fail_to_pass": 1,
+    "pass_to_pass": 202,
+    "issue_chars": 1298,
+    "title": "armhf crash reports have no frames, and the empty backtrace fails the build",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-835",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "825"
+    ],
+    "pull_number": "835",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-835:latest",
+    "image_gb": 0.79,
+    "fix_code_files": 1,
+    "fix_lines": 95,
+    "fail_to_pass": 1,
+    "pass_to_pass": 183,
+    "issue_chars": 553,
+    "title": "ProxyTrack .ndx parse reads an uninitialized offset and bounds a strncat by its source",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-765",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "746"
+    ],
+    "pull_number": "765",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-765:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 1,
+    "fix_lines": 21,
+    "fail_to_pass": 1,
+    "pass_to_pass": 160,
+    "issue_chars": 1351,
+    "title": "--purge-old deletes a mirrored file when the connection drops before the response",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-850",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "806"
+    ],
+    "pull_number": "850",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-850:latest",
+    "image_gb": 0.79,
+    "fix_code_files": 5,
+    "fix_lines": 85,
+    "fail_to_pass": 188,
+    "pass_to_pass": 0,
+    "issue_chars": 1235,
+    "title": "Four time helpers still read libc's shared gmtime/localtime static",
+    "known_local": null,
+    "excluded": [
+      "188 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-811",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "793"
+    ],
+    "pull_number": "811",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-811:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 1,
+    "fix_lines": 13,
+    "fail_to_pass": 2,
+    "pass_to_pass": 176,
+    "issue_chars": 1437,
+    "title": "Reading an .ndx cache with full-length URL fields reads past the buffer",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "AOMediaCodec__libavif-3300",
+    "repo": "AOMediaCodec/libavif",
+    "language": "c",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "3297"
+    ],
+    "pull_number": "3300",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.aomediacodec_1776_libavif-3300:latest",
+    "image_gb": 1.38,
+    "fix_code_files": 7,
+    "fix_lines": 40,
+    "fail_to_pass": 1,
+    "pass_to_pass": 9453,
+    "issue_chars": 142,
+    "title": "Bring `ignore-xmp/exif` to avifgainmaputil",
+    "known_local": null,
+    "excluded": [
+      "issue text <300 chars (after removing images/links)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "fluent__fluent-bit-12029",
+    "repo": "fluent/fluent-bit",
+    "language": "c",
+    "created_at": "2026-07-02",
+    "issue_numbers": [
+      "12026"
+    ],
+    "pull_number": "12029",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.fluent_1776_fluent-bit-12029:latest",
+    "image_gb": 6.81,
+    "fix_code_files": 2,
+    "fix_lines": 71,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1577,
+    "issue_chars": 15970,
+    "title": "Silent record loss in rewrite_tag when the shared in_emitter is paused (FLB_EMITTER_BUSY / -2 not handled)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "c-ares__c-ares-1197",
+    "repo": "c-ares/c-ares",
+    "language": "c",
+    "created_at": "2026-07-04",
+    "issue_numbers": [
+      "1152"
+    ],
+    "pull_number": "1197",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.c-ares_1776_c-ares-1197:latest",
+    "image_gb": 0.76,
+    "fix_code_files": 3,
+    "fix_lines": 32,
+    "fail_to_pass": 2,
+    "pass_to_pass": 1190,
+    "issue_chars": 1261,
+    "title": "v1.34.6 regression: ares_fetch_connection rejects connections when consec_failures > 0, causing UDP socket exhaustion un",
+    "known_local": "valid (sanity PASS); rebuild 10 min",
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "c-ares__c-ares-1189",
+    "repo": "c-ares/c-ares",
+    "language": "c",
+    "created_at": "2026-07-03",
+    "issue_numbers": [
+      "1137"
+    ],
+    "pull_number": "1189",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.c-ares_1776_c-ares-1189:latest",
+    "image_gb": 0.77,
+    "fix_code_files": 1,
+    "fix_lines": 16,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1181,
+    "issue_chars": 1279,
+    "title": "Multiple OPT records accepted in a single DNS response (RFC 6891 violation)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "colbymchenry__codegraph-1207",
+    "repo": "colbymchenry/codegraph",
+    "language": "c",
+    "created_at": "2026-07-07",
+    "issue_numbers": [
+      "1159"
+    ],
+    "pull_number": "1207",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.colbymchenry_1776_codegraph-1207:latest",
+    "image_gb": 0.88,
+    "fix_code_files": 1,
+    "fix_lines": 11,
+    "fail_to_pass": 1,
+    "pass_to_pass": 2235,
+    "issue_chars": 1476,
+    "title": "UE-style single-line export-macro class headers (class ENGINE_API Foo : public Bar) are misdetected as C and their class",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "xroche__httrack-856",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "854"
+    ],
+    "pull_number": "856",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-856:latest",
+    "image_gb": 0.79,
+    "fix_code_files": 5,
+    "fix_lines": 152,
+    "fail_to_pass": 1,
+    "pass_to_pass": 191,
+    "issue_chars": 1669,
+    "title": "A query-string character reference the page charset cannot represent is left unescaped, changing the query's parse",
+    "known_local": "valid (sanity PASS) but rebuild 13 min under emulation",
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "colbymchenry__codegraph-1314",
+    "repo": "colbymchenry/codegraph",
+    "language": "c",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "1284"
+    ],
+    "pull_number": "1314",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.colbymchenry_1776_codegraph-1314:latest",
+    "image_gb": 0.88,
+    "fix_code_files": 1,
+    "fix_lines": 9,
+    "fail_to_pass": 3,
+    "pass_to_pass": 2428,
+    "issue_chars": 2436,
+    "title": "problem with showing node content in c++",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "colbymchenry__codegraph-1201",
+    "repo": "colbymchenry/codegraph",
+    "language": "c",
+    "created_at": "2026-07-07",
+    "issue_numbers": [
+      "1200"
+    ],
+    "pull_number": "1201",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.colbymchenry_1776_codegraph-1201:latest",
+    "image_gb": 0.88,
+    "fix_code_files": 1,
+    "fix_lines": 44,
+    "fail_to_pass": 7,
+    "pass_to_pass": 2181,
+    "issue_chars": 2034,
+    "title": "Daemon inactivity backstop reaps live-but-quiet MCP sessions (silent degrade to in-process)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "colbymchenry__codegraph-1370",
+    "repo": "colbymchenry/codegraph",
+    "language": "c",
+    "created_at": "2026-07-20",
+    "issue_numbers": [
+      "1351"
+    ],
+    "pull_number": "1370",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.colbymchenry_1776_codegraph-1370:latest",
+    "image_gb": 0.89,
+    "fix_code_files": 1,
+    "fix_lines": 138,
+    "fail_to_pass": 6,
+    "pass_to_pass": 2514,
+    "issue_chars": 3604,
+    "title": "Codex installer: findNextTableHeader skips past [[array-of-tables]], silently deleting sibling [[...]] blocks in ~/.code",
+    "known_local": null,
+    "excluded": [
+      "used in pilot"
+    ],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "colbymchenry__codegraph-1318",
+    "repo": "colbymchenry/codegraph",
+    "language": "c",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "1295"
+    ],
+    "pull_number": "1318",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.colbymchenry_1776_codegraph-1318:latest",
+    "image_gb": 0.88,
+    "fix_code_files": 1,
+    "fix_lines": 21,
+    "fail_to_pass": 3,
+    "pass_to_pass": 2434,
+    "issue_chars": 3265,
+    "title": "includeIgnored in codegraph.json does not revive embedded git repos on init/index (v1.4.1)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "colbymchenry__codegraph-1317",
+    "repo": "colbymchenry/codegraph",
+    "language": "c",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "1230"
+    ],
+    "pull_number": "1317",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.colbymchenry_1776_codegraph-1317:latest",
+    "image_gb": 0.88,
+    "fix_code_files": 2,
+    "fix_lines": 74,
+    "fail_to_pass": 1,
+    "pass_to_pass": 2435,
+    "issue_chars": 1984,
+    "title": "[python] matching built-ins",
+    "known_local": null,
+    "excluded": [
+      "used in pilot"
+    ],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "xroche__httrack-610",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "602"
+    ],
+    "pull_number": "610",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-610:latest",
+    "image_gb": 0.78,
+    "fix_code_files": 1,
+    "fix_lines": 20,
+    "fail_to_pass": 1,
+    "pass_to_pass": 101,
+    "issue_chars": 1060,
+    "title": "An out-of-range -P proxy port parses to a garbage port instead of being rejected",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-618",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "615"
+    ],
+    "pull_number": "618",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-618:latest",
+    "image_gb": 0.78,
+    "fix_code_files": 1,
+    "fix_lines": 39,
+    "fail_to_pass": 1,
+    "pass_to_pass": 101,
+    "issue_chars": 1770,
+    "title": "httrack <URL> --build-top-index exits 255 with the usage screen instead of crawling",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "DynamoRIO__dynamorio-8017",
+    "repo": "DynamoRIO/dynamorio",
+    "language": "c",
+    "created_at": "2026-07-20",
+    "issue_numbers": [
+      "8016"
+    ],
+    "pull_number": "8017",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.dynamorio_1776_dynamorio-8017:latest",
+    "image_gb": 4.33,
+    "fix_code_files": 3,
+    "fix_lines": 10,
+    "fail_to_pass": 1,
+    "pass_to_pass": 547,
+    "issue_chars": 931,
+    "title": "Change `noinline` attributes to the double-underscore variant to avoid conflicts with the Linux kernel",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "colbymchenry__codegraph-1313",
+    "repo": "colbymchenry/codegraph",
+    "language": "c",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "1285"
+    ],
+    "pull_number": "1313",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.colbymchenry_1776_codegraph-1313:latest",
+    "image_gb": 0.88,
+    "fix_code_files": 1,
+    "fix_lines": 34,
+    "fail_to_pass": 3,
+    "pass_to_pass": 2429,
+    "issue_chars": 1167,
+    "title": "Directory deletion not cascading to child file records in index",
+    "known_local": null,
+    "excluded": [
+      "used in pilot"
+    ],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "xroche__httrack-584",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "562"
+    ],
+    "pull_number": "584",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-584:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 1,
+    "fix_lines": 4,
+    "fail_to_pass": 1,
+    "pass_to_pass": 97,
+    "issue_chars": 1922,
+    "title": "--update: an incomplete transfer deletes the previously-mirrored file",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-560",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "557"
+    ],
+    "pull_number": "560",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-560:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 1,
+    "fix_lines": 62,
+    "fail_to_pass": 1,
+    "pass_to_pass": 91,
+    "issue_chars": 1981,
+    "title": "--update: a compressed re-fetch that fails to decode destroys the previously-mirrored file",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-596",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "564"
+    ],
+    "pull_number": "596",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-596:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 9,
+    "fix_lines": 185,
+    "fail_to_pass": 101,
+    "pass_to_pass": 0,
+    "issue_chars": 2796,
+    "title": "Plain http through a CONNECT-only proxy (tor HTTPTunnelPort) is refused",
+    "known_local": null,
+    "excluded": [
+      "101 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-522",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-11",
+    "issue_numbers": [
+      "521"
+    ],
+    "pull_number": "522",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-522:latest",
+    "image_gb": 0.78,
+    "fix_code_files": 2,
+    "fix_lines": 74,
+    "fail_to_pass": 1,
+    "pass_to_pass": 80,
+    "issue_chars": 1063,
+    "title": "-M/-E abort during --update can destroy already-complete files",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-530",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-11",
+    "issue_numbers": [
+      "520"
+    ],
+    "pull_number": "530",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-530:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 1,
+    "fix_lines": 11,
+    "fail_to_pass": 1,
+    "pass_to_pass": 82,
+    "issue_chars": 1351,
+    "title": "-M overall-size cap measures saved bytes, undercounting redirect/plugin-heavy crawls",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-599",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "598"
+    ],
+    "pull_number": "599",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-599:latest",
+    "image_gb": 0.8,
+    "fix_code_files": 1,
+    "fix_lines": 8,
+    "fail_to_pass": 1,
+    "pass_to_pass": 100,
+    "issue_chars": 999,
+    "title": "A -P proxy given as a bracketed IPv6 literal with no port parses to a truncated host and port 1",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "xroche__httrack-482",
+    "repo": "xroche/httrack",
+    "language": "c",
+    "created_at": "2026-07-04",
+    "issue_numbers": [
+      "481"
+    ],
+    "pull_number": "482",
+    "build": "c/make",
+    "image": "starryzhang/sweb.eval.x86_64.xroche_1776_httrack-482:latest",
+    "image_gb": 0.78,
+    "fix_code_files": 5,
+    "fix_lines": 180,
+    "fail_to_pass": 1,
+    "pass_to_pass": 65,
+    "issue_chars": 1586,
+    "title": "-E time limit can fire minutes late and never hard-stops the mirror",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "duckdb__duckdb-23615",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-05",
+    "issue_numbers": [
+      "23614"
+    ],
+    "pull_number": "23615",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-23615:latest",
+    "image_gb": 1.19,
+    "fix_code_files": 1,
+    "fix_lines": 31,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5889,
+    "issue_chars": 1314,
+    "title": "`length` function doesn't prune correctly based on stats",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-23604",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-04",
+    "issue_numbers": [
+      "23603"
+    ],
+    "pull_number": "23604",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-23604:latest",
+    "image_gb": 1.19,
+    "fix_code_files": 1,
+    "fix_lines": 3,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5889,
+    "issue_chars": 2617,
+    "title": "Prefix query doesn't always prune row groups correctly",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "root-project__root-22854",
+    "repo": "root-project/root",
+    "language": "cpp",
+    "created_at": "2026-07-20",
+    "issue_numbers": [
+      "22855"
+    ],
+    "pull_number": "22854",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.root-project_1776_root-22854:latest",
+    "image_gb": 3.58,
+    "fix_code_files": 1,
+    "fix_lines": 5,
+    "fail_to_pass": 12,
+    "pass_to_pass": 11209,
+    "issue_chars": 564,
+    "title": "[ntuple] double free when resizing small RVec",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "dragonflydb__dragonfly-7777",
+    "repo": "dragonflydb/dragonfly",
+    "language": "cpp",
+    "created_at": "2026-07-02",
+    "issue_numbers": [
+      "7776"
+    ],
+    "pull_number": "7777",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.dragonflydb_1776_dragonfly-7777:latest",
+    "image_gb": 5.96,
+    "fix_code_files": 3,
+    "fix_lines": 21,
+    "fail_to_pass": 1,
+    "pass_to_pass": 4732,
+    "issue_chars": 473,
+    "title": "MONITOR never decrements ConnectionContext::subscriptions",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-23628",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-06",
+    "issue_numbers": [
+      "23625"
+    ],
+    "pull_number": "23628",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-23628:latest",
+    "image_gb": 1.19,
+    "fix_code_files": 2,
+    "fix_lines": 16,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5889,
+    "issue_chars": 1900,
+    "title": "Rowid filter doesn't prune row group",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-23624",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-05",
+    "issue_numbers": [
+      "23623"
+    ],
+    "pull_number": "23624",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-23624:latest",
+    "image_gb": 1.19,
+    "fix_code_files": 4,
+    "fix_lines": 108,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5889,
+    "issue_chars": 2027,
+    "title": "Left function doesn't get rewritten to prefix query",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__ducklake-1339",
+    "repo": "duckdb/ducklake",
+    "language": "cpp",
+    "created_at": "2026-07-23",
+    "issue_numbers": [
+      "1332"
+    ],
+    "pull_number": "1339",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_ducklake-1339:latest",
+    "image_gb": 2.01,
+    "fix_code_files": 2,
+    "fix_lines": 32,
+    "fail_to_pass": 1,
+    "pass_to_pass": 494,
+    "issue_chars": 3371,
+    "title": "ADD COLUMN + RENAME TABLE in one transaction corrupts catalog metadata (\"Column with name ... already exists!\" on every ",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "root-project__root-22857",
+    "repo": "root-project/root",
+    "language": "cpp",
+    "created_at": "2026-07-20",
+    "issue_numbers": [
+      "22856"
+    ],
+    "pull_number": "22857",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.root-project_1776_root-22857:latest",
+    "image_gb": 3.58,
+    "fix_code_files": 1,
+    "fix_lines": 2,
+    "fail_to_pass": 2,
+    "pass_to_pass": 11219,
+    "issue_chars": 602,
+    "title": "[ntuple] REntry::BindRawPtr() does not type-check",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "kvcache-ai__Mooncake-2892",
+    "repo": "kvcache-ai/Mooncake",
+    "language": "cpp",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "2889"
+    ],
+    "pull_number": "2892",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.kvcache-ai_1776_mooncake-2892:latest",
+    "image_gb": 5.36,
+    "fix_code_files": 2,
+    "fix_lines": 15,
+    "fail_to_pass": 3,
+    "pass_to_pass": 1456,
+    "issue_chars": 1478,
+    "title": "RdmaContext accepts an invalid empty completion topology",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__ducklake-1340",
+    "repo": "duckdb/ducklake",
+    "language": "cpp",
+    "created_at": "2026-07-23",
+    "issue_numbers": [
+      "1310"
+    ],
+    "pull_number": "1340",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_ducklake-1340:latest",
+    "image_gb": 2.01,
+    "fix_code_files": 3,
+    "fix_lines": 64,
+    "fail_to_pass": 1,
+    "pass_to_pass": 494,
+    "issue_chars": 3001,
+    "title": "BUG: comment seems to left after column dropped",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-23618",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-05",
+    "issue_numbers": [
+      "23617"
+    ],
+    "pull_number": "23618",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-23618:latest",
+    "image_gb": 1.19,
+    "fix_code_files": 1,
+    "fix_lines": 69,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5889,
+    "issue_chars": 1299,
+    "title": "`least`/`greatest` function doesn't propagate stats",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-24105",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-24",
+    "issue_numbers": [
+      "24103"
+    ],
+    "pull_number": "24105",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-24105:latest",
+    "image_gb": 1.71,
+    "fix_code_files": 5,
+    "fix_lines": 39,
+    "fail_to_pass": 1,
+    "pass_to_pass": 6086,
+    "issue_chars": 1568,
+    "title": "Read-only WAL replay incorrectly tries to persist replayed index blocks back into the database file",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-24100",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-24",
+    "issue_numbers": [
+      "24099"
+    ],
+    "pull_number": "24100",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-24100:latest",
+    "image_gb": 1.7,
+    "fix_code_files": 1,
+    "fix_lines": 5,
+    "fail_to_pass": 1,
+    "pass_to_pass": 6081,
+    "issue_chars": 1180,
+    "title": "Row group pruning seems incorrect on rowid column",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-24181",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "24180"
+    ],
+    "pull_number": "24181",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-24181:latest",
+    "image_gb": 1.7,
+    "fix_code_files": 2,
+    "fix_lines": 11,
+    "fail_to_pass": 1,
+    "pass_to_pass": 6031,
+    "issue_chars": 2910,
+    "title": "Query gets incorrect result after NULL related table update",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-24074",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-23",
+    "issue_numbers": [
+      "24073"
+    ],
+    "pull_number": "24074",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-24074:latest",
+    "image_gb": 1.7,
+    "fix_code_files": 1,
+    "fix_lines": 90,
+    "fail_to_pass": 1,
+    "pass_to_pass": 6015,
+    "issue_chars": 1602,
+    "title": "Type cast leads to unpruned row groups",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-24150",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-25",
+    "issue_numbers": [
+      "24149"
+    ],
+    "pull_number": "24150",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-24150:latest",
+    "image_gb": 1.7,
+    "fix_code_files": 21,
+    "fix_lines": 120602,
+    "fail_to_pass": 2,
+    "pass_to_pass": 6080,
+    "issue_chars": 1933,
+    "title": "Parquet LIST type doesn't leverage bloom filter to prune row group",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-24018",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-21",
+    "issue_numbers": [
+      "24017"
+    ],
+    "pull_number": "24018",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-24018:latest",
+    "image_gb": 1.7,
+    "fix_code_files": 1,
+    "fix_lines": 10,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5973,
+    "issue_chars": 2161,
+    "title": "Parquet reader doesn't prune row group with non-existent UUID",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-23637",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-06",
+    "issue_numbers": [
+      "23589"
+    ],
+    "pull_number": "23637",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-23637:latest",
+    "image_gb": 1.68,
+    "fix_code_files": 2,
+    "fix_lines": 6,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5887,
+    "issue_chars": 1589,
+    "title": "COUNT(*) over a reversed ROWS frame can return a negative count",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "FastLED__FastLED-3781",
+    "repo": "FastLED/FastLED",
+    "language": "cpp",
+    "created_at": "2026-07-31",
+    "issue_numbers": [
+      "3773"
+    ],
+    "pull_number": "3781",
+    "build": "other",
+    "image": "starryzhang/sweb.eval.x86_64.fastled_1776_fastled-3781:latest",
+    "image_gb": 4.44,
+    "fix_code_files": 3,
+    "fix_lines": 130,
+    "fail_to_pass": 244,
+    "pass_to_pass": 83,
+    "issue_chars": 2337,
+    "title": "build: src/ and tests/ metadata caches still use the mtime hash that caused #3761",
+    "known_local": null,
+    "excluded": [
+      "244 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "duckdb__duckdb-23634",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-06",
+    "issue_numbers": [
+      "23633"
+    ],
+    "pull_number": "23634",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-23634:latest",
+    "image_gb": 1.68,
+    "fix_code_files": 6,
+    "fix_lines": 22,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5889,
+    "issue_chars": 1245,
+    "title": "Total string length records incorrectly",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-24318",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-30",
+    "issue_numbers": [
+      "24309"
+    ],
+    "pull_number": "24318",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-24318:latest",
+    "image_gb": 1.71,
+    "fix_code_files": 2,
+    "fix_lines": 10,
+    "fail_to_pass": 2,
+    "pass_to_pass": 6126,
+    "issue_chars": 1307,
+    "title": "VARCHAR hive partition value 'NULL' round-trips as SQL NULL",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-24290",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-29",
+    "issue_numbers": [
+      "24243"
+    ],
+    "pull_number": "24290",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-24290:latest",
+    "image_gb": 1.71,
+    "fix_code_files": 1,
+    "fix_lines": 22,
+    "fail_to_pass": 1,
+    "pass_to_pass": 6122,
+    "issue_chars": 2374,
+    "title": "Fixed-size ARRAY extract filters miss row-group pruning",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "dragonflydb__dragonfly-7850",
+    "repo": "dragonflydb/dragonfly",
+    "language": "cpp",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "7840"
+    ],
+    "pull_number": "7850",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.dragonflydb_1776_dragonfly-7850:latest",
+    "image_gb": 5.97,
+    "fix_code_files": 1,
+    "fix_lines": 2,
+    "fail_to_pass": 1,
+    "pass_to_pass": 4771,
+    "issue_chars": 843,
+    "title": "test_s3_snapshot (deadlock) hangs on SAVE to S3 (helio client)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-24211",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-28",
+    "issue_numbers": [
+      "24210"
+    ],
+    "pull_number": "24211",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-24211:latest",
+    "image_gb": 1.71,
+    "fix_code_files": 2,
+    "fix_lines": 42,
+    "fail_to_pass": 3,
+    "pass_to_pass": 6119,
+    "issue_chars": 1990,
+    "title": "Struct field with default value doesn't gets updated after rename",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "IfcOpenShell__IfcOpenShell-8887",
+    "repo": "IfcOpenShell/IfcOpenShell",
+    "language": "cpp",
+    "created_at": "2026-07-23",
+    "issue_numbers": [
+      "8851"
+    ],
+    "pull_number": "8887",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.ifcopenshell_1776_ifcopenshell-8887:latest",
+    "image_gb": 2.01,
+    "fix_code_files": 1,
+    "fix_lines": 1,
+    "fail_to_pass": 3,
+    "pass_to_pass": 2236,
+    "issue_chars": 751,
+    "title": "Bonsai: Cost: duplicating a cost schedule also adds the copied items to the original schedule",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "duckdb__duckdb-24266",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-29",
+    "issue_numbers": [
+      "24265"
+    ],
+    "pull_number": "24266",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-24266:latest",
+    "image_gb": 1.71,
+    "fix_code_files": 1,
+    "fix_lines": 26,
+    "fail_to_pass": 1,
+    "pass_to_pass": 6085,
+    "issue_chars": 2029,
+    "title": "Parquet struct type doesn't leverage bloom filter to prune row groups",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "stephenberry__glaze-2731",
+    "repo": "stephenberry/glaze",
+    "language": "cpp",
+    "created_at": "2026-07-30",
+    "issue_numbers": [
+      "2727"
+    ],
+    "pull_number": "2731",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.stephenberry_1776_glaze-2731:latest",
+    "image_gb": 0.85,
+    "fix_code_files": 12,
+    "fix_lines": 784,
+    "fail_to_pass": 5,
+    "pass_to_pass": 96,
+    "issue_chars": 3763,
+    "title": "BEVE reader has no recursion depth limit: a small hostile buffer overflows the stack",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "BYVoid__OpenCC-1405",
+    "repo": "BYVoid/OpenCC",
+    "language": "cpp",
+    "created_at": "2026-07-07",
+    "issue_numbers": [
+      "541",
+      "1397"
+    ],
+    "pull_number": "1405",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.byvoid_1776_opencc-1405:latest",
+    "image_gb": 0.81,
+    "fix_code_files": 0,
+    "fix_lines": 6,
+    "fail_to_pass": 1,
+    "pass_to_pass": 198,
+    "issue_chars": 3116,
+    "title": "s2t \u300c\u6258\u300d\u76f8\u95dc\u8a5e\u5f59\u88dc\u5145",
+    "known_local": null,
+    "excluded": [
+      "docs-only patch"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "kvcache-ai__Mooncake-2964",
+    "repo": "kvcache-ai/Mooncake",
+    "language": "cpp",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "2963"
+    ],
+    "pull_number": "2964",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.kvcache-ai_1776_mooncake-2964:latest",
+    "image_gb": 5.39,
+    "fix_code_files": 2,
+    "fix_lines": 112,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1505,
+    "issue_chars": 1548,
+    "title": "[Bug]: OffsetAllocator eviction loses local replicas when notification fails",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "luau-lang__luau-2506",
+    "repo": "luau-lang/luau",
+    "language": "cpp",
+    "created_at": "2026-07-05",
+    "issue_numbers": [
+      "2493"
+    ],
+    "pull_number": "2506",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.luau-lang_1776_luau-2506:latest",
+    "image_gb": 0.81,
+    "fix_code_files": 1,
+    "fix_lines": 6,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5410,
+    "issue_chars": 535,
+    "title": "`types.singleton()` misleading / incorrect error",
+    "known_local": null,
+    "excluded": [
+      "issue text <300 chars (after removing images/links)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "duckdb__duckdb-23569",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-02",
+    "issue_numbers": [
+      "23443"
+    ],
+    "pull_number": "23569",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-23569:latest",
+    "image_gb": 1.71,
+    "fix_code_files": 1,
+    "fix_lines": 41,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5386,
+    "issue_chars": 2491,
+    "title": "Inherited named window fails to resolve earlier base window",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-24101",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-24",
+    "issue_numbers": [
+      "24007"
+    ],
+    "pull_number": "24101",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-24101:latest",
+    "image_gb": 1.71,
+    "fix_code_files": 1,
+    "fix_lines": 70,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5509,
+    "issue_chars": 2323,
+    "title": "Parquet read doesn't prune row group for IN operator",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "duckdb__duckdb-24011",
+    "repo": "duckdb/duckdb",
+    "language": "cpp",
+    "created_at": "2026-07-21",
+    "issue_numbers": [
+      "24010"
+    ],
+    "pull_number": "24011",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.duckdb_1776_duckdb-24011:latest",
+    "image_gb": 1.21,
+    "fix_code_files": 1,
+    "fix_lines": 24,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5460,
+    "issue_chars": 3187,
+    "title": "Parquet read doesn't prune row group with equal BETWEEN boundary",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "monero-project__monero-10858",
+    "repo": "monero-project/monero",
+    "language": "cpp",
+    "created_at": "2026-07-04",
+    "issue_numbers": [
+      "9930"
+    ],
+    "pull_number": "10858",
+    "build": "c-cpp/cmake",
+    "image": "starryzhang/sweb.eval.x86_64.monero-project_1776_monero-10858:latest",
+    "image_gb": 1.52,
+    "fix_code_files": 2,
+    "fix_lines": 7,
+    "fail_to_pass": 2,
+    "pass_to_pass": 1477,
+    "issue_chars": 479,
+    "title": "Get_block_template Fails with reserve_size > 127 (Expected Max 255)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "notionnext-org__NotionNext-4253",
+    "repo": "notionnext-org/NotionNext",
+    "language": "js",
+    "created_at": "2026-07-10",
+    "issue_numbers": [
+      "4198"
+    ],
+    "pull_number": "4253",
+    "build": "js/yarn",
+    "image": "starryzhang/sweb.eval.x86_64.notionnext-org_1776_notionnext-4253:latest",
+    "image_gb": 2.62,
+    "fix_code_files": 6,
+    "fix_lines": 81,
+    "fail_to_pass": 2,
+    "pass_to_pass": 160,
+    "issue_chars": 728,
+    "title": "Notice\u540c\u6b65\u533a\u5757\u90e8\u5206\u90e8\u7f72\u5230\u7f51\u7ad9\u4e0a\u4ecd\u7136\u65e0\u6cd5\u663e\u793a",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "open-gsd__gsd-core-2233",
+    "repo": "open-gsd/gsd-core",
+    "language": "js",
+    "created_at": "2026-07-13",
+    "issue_numbers": [
+      "2202"
+    ],
+    "pull_number": "2233",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.open-gsd_1776_gsd-core-2233:latest",
+    "image_gb": 0.87,
+    "fix_code_files": 1,
+    "fix_lines": 13,
+    "fail_to_pass": 94,
+    "pass_to_pass": 19170,
+    "issue_chars": 2128,
+    "title": "`syncStateFrontmatter` drops unknown STATE.md frontmatter keys on every mutating verb",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "notionnext-org__NotionNext-4338",
+    "repo": "notionnext-org/NotionNext",
+    "language": "js",
+    "created_at": "2026-07-28",
+    "issue_numbers": [
+      "4334"
+    ],
+    "pull_number": "4338",
+    "build": "js/yarn",
+    "image": "starryzhang/sweb.eval.x86_64.notionnext-org_1776_notionnext-4338:latest",
+    "image_gb": 2.59,
+    "fix_code_files": 2,
+    "fix_lines": 18,
+    "fail_to_pass": 2,
+    "pass_to_pass": 192,
+    "issue_chars": 1325,
+    "title": "Gallery \u4e2d\u300c\u663e\u793a\u9875\u9762\u56fe\u6807\u300d\u53ca\u300c\u5c5e\u6027\u662f\u5426\u53ef\u89c1 \u2192 Title\u300d\u914d\u7f6e\u672a\u751f\u6548",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "jsonata-js__jsonata-809",
+    "repo": "jsonata-js/jsonata",
+    "language": "js",
+    "created_at": "2026-07-02",
+    "issue_numbers": [
+      "584"
+    ],
+    "pull_number": "809",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.jsonata-js_1776_jsonata-809:latest",
+    "image_gb": 0.47,
+    "fix_code_files": 1,
+    "fix_lines": 2,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1781,
+    "issue_chars": 929,
+    "title": "Bug: Accessing undefined property with a function results in an error",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "notionnext-org__NotionNext-4290",
+    "repo": "notionnext-org/NotionNext",
+    "language": "js",
+    "created_at": "2026-07-18",
+    "issue_numbers": [
+      "4288"
+    ],
+    "pull_number": "4290",
+    "build": "js/yarn",
+    "image": "starryzhang/sweb.eval.x86_64.notionnext-org_1776_notionnext-4290:latest",
+    "image_gb": 2.62,
+    "fix_code_files": 1,
+    "fix_lines": 33,
+    "fail_to_pass": 2,
+    "pass_to_pass": 167,
+    "issue_chars": 983,
+    "title": "Gallery \u4e2d Date \u5b57\u6bb5\u6392\u5e8f\u672a\u751f\u6548",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "playcanvas__engine-9000",
+    "repo": "playcanvas/engine",
+    "language": "js",
+    "created_at": "2026-07-02",
+    "issue_numbers": [
+      "8999"
+    ],
+    "pull_number": "9000",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.playcanvas_1776_engine-9000:latest",
+    "image_gb": 2.09,
+    "fix_code_files": 1,
+    "fix_lines": 12,
+    "fail_to_pass": 2,
+    "pass_to_pass": 1959,
+    "issue_chars": 2281,
+    "title": "NullGraphicsDevice throws in constructor with mock canvas since v2.20.0 (getBoundingClientRect regression from #8950)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "playcanvas__engine-9002",
+    "repo": "playcanvas/engine",
+    "language": "js",
+    "created_at": "2026-07-02",
+    "issue_numbers": [
+      "8997"
+    ],
+    "pull_number": "9002",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.playcanvas_1776_engine-9002:latest",
+    "image_gb": 2.09,
+    "fix_code_files": 2,
+    "fix_lines": 25,
+    "fail_to_pass": 1,
+    "pass_to_pass": 2027,
+    "issue_chars": 2296,
+    "title": "MSDF font atlases are mipmapped, corrupting the median on minified text",
+    "known_local": "valid (sanity PASS); rebuild 10 min",
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "playcanvas__engine-9066",
+    "repo": "playcanvas/engine",
+    "language": "js",
+    "created_at": "2026-07-17",
+    "issue_numbers": [
+      "9062"
+    ],
+    "pull_number": "9066",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.playcanvas_1776_engine-9066:latest",
+    "image_gb": 1.45,
+    "fix_code_files": 2,
+    "fix_lines": 8,
+    "fail_to_pass": 4,
+    "pass_to_pass": 2087,
+    "issue_chars": 1015,
+    "title": "glTF occlusion strength not supported",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "notionnext-org__NotionNext-4316",
+    "repo": "notionnext-org/NotionNext",
+    "language": "js",
+    "created_at": "2026-07-26",
+    "issue_numbers": [
+      "4293"
+    ],
+    "pull_number": "4316",
+    "build": "js/yarn",
+    "image": "starryzhang/sweb.eval.x86_64.notionnext-org_1776_notionnext-4316:latest",
+    "image_gb": 2.59,
+    "fix_code_files": 2,
+    "fix_lines": 14,
+    "fail_to_pass": 1,
+    "pass_to_pass": 190,
+    "issue_chars": 691,
+    "title": "Gallery \u5e03\u5c40\u4e2d\u201c\u663e\u793a\u9875\u9762\u56fe\u6807\u201d\u914d\u7f6e\u672a\u751f\u6548",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "jsonata-js__jsonata-817",
+    "repo": "jsonata-js/jsonata",
+    "language": "js",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "770"
+    ],
+    "pull_number": "817",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.jsonata-js_1776_jsonata-817:latest",
+    "image_gb": 0.47,
+    "fix_code_files": 1,
+    "fix_lines": 2,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1784,
+    "issue_chars": 1851,
+    "title": "Context variabe binding breaks when joining empty arrays or the join results in an empty result",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "jsonata-js__jsonata-814",
+    "repo": "jsonata-js/jsonata",
+    "language": "js",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "812"
+    ],
+    "pull_number": "814",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.jsonata-js_1776_jsonata-814:latest",
+    "image_gb": 0.47,
+    "fix_code_files": 4,
+    "fix_lines": 44,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1781,
+    "issue_chars": 551,
+    "title": "$each  fails on partial data",
+    "known_local": null,
+    "excluded": [
+      "used in pilot"
+    ],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "open-gsd__gsd-core-2492",
+    "repo": "open-gsd/gsd-core",
+    "language": "js",
+    "created_at": "2026-07-21",
+    "issue_numbers": [
+      "2488"
+    ],
+    "pull_number": "2492",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.open-gsd_1776_gsd-core-2492:latest",
+    "image_gb": 0.88,
+    "fix_code_files": 1,
+    "fix_lines": 26,
+    "fail_to_pass": 321,
+    "pass_to_pass": 20165,
+    "issue_chars": 4563,
+    "title": "fix: changeset fragments whose body starts with a newline render as an empty bullet and are dropped from release notes",
+    "known_local": null,
+    "excluded": [
+      "321 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "open-gsd__gsd-core-2079",
+    "repo": "open-gsd/gsd-core",
+    "language": "js",
+    "created_at": "2026-07-08",
+    "issue_numbers": [
+      "2067"
+    ],
+    "pull_number": "2079",
+    "build": "js/npm",
+    "image": "starryzhang/sweb.eval.x86_64.open-gsd_1776_gsd-core-2079:latest",
+    "image_gb": 0.83,
+    "fix_code_files": 1,
+    "fix_lines": 11,
+    "fail_to_pass": 54,
+    "pass_to_pass": 19239,
+    "issue_chars": 1748,
+    "title": "`phase complete` can mark the wrong phase's checkbox when a later phase's description mentions the completed phase",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "lakehq__sail-2284",
+    "repo": "lakehq/sail",
+    "language": "rust",
+    "created_at": "2026-07-23",
+    "issue_numbers": [
+      "2275"
+    ],
+    "pull_number": "2284",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.lakehq_1776_sail-2284:latest",
+    "image_gb": 9.74,
+    "fix_code_files": 24,
+    "fix_lines": 305,
+    "fail_to_pass": 2,
+    "pass_to_pass": 1021,
+    "issue_chars": 403,
+    "title": "Improve the `pathGlobFilter` option",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "prefix-dev__pixi-6500",
+    "repo": "prefix-dev/pixi",
+    "language": "rust",
+    "created_at": "2026-07-02",
+    "issue_numbers": [
+      "6387"
+    ],
+    "pull_number": "6500",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.prefix-dev_1776_pixi-6500:latest",
+    "image_gb": 4.86,
+    "fix_code_files": 15,
+    "fix_lines": 3822,
+    "fail_to_pass": 2521,
+    "pass_to_pass": 0,
+    "issue_chars": 891,
+    "title": "Support TOML 1.1",
+    "known_local": null,
+    "excluded": [
+      "2521 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "h4ckf0r0day__obscura-426",
+    "repo": "h4ckf0r0day/obscura",
+    "language": "rust",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "424"
+    ],
+    "pull_number": "426",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.h4ckf0r0day_1776_obscura-426:latest",
+    "image_gb": 3.31,
+    "fix_code_files": 1,
+    "fix_lines": 34,
+    "fail_to_pass": 1,
+    "pass_to_pass": 329,
+    "issue_chars": 2904,
+    "title": "HTMLFormElement.requestSubmit() does not validate its submitter argument",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "biomejs__biome-10853",
+    "repo": "biomejs/biome",
+    "language": "rust",
+    "created_at": "2026-07-04",
+    "issue_numbers": [
+      "10840"
+    ],
+    "pull_number": "10853",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.biomejs_1776_biome-10853:latest",
+    "image_gb": 33.14,
+    "fix_code_files": 1,
+    "fix_lines": 15,
+    "fail_to_pass": 1,
+    "pass_to_pass": 13406,
+    "issue_chars": 9425,
+    "title": "\ud83d\udc85 Astro: `noUnusedVariables` regression in v2.5.2",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "yvgude__lean-ctx-1180",
+    "repo": "yvgude/lean-ctx",
+    "language": "rust",
+    "created_at": "2026-07-22",
+    "issue_numbers": [
+      "1174"
+    ],
+    "pull_number": "1180",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.yvgude_1776_lean-ctx-1180:latest",
+    "image_gb": 7.29,
+    "fix_code_files": 10,
+    "fix_lines": 203,
+    "fail_to_pass": 14,
+    "pass_to_pass": 8792,
+    "issue_chars": 2274,
+    "title": "bug(dashboard): Context Contents conflates history with active model usage",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "h4ckf0r0day__obscura-421",
+    "repo": "h4ckf0r0day/obscura",
+    "language": "rust",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "419",
+      "420"
+    ],
+    "pull_number": "421",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.h4ckf0r0day_1776_obscura-421:latest",
+    "image_gb": 3.31,
+    "fix_code_files": 1,
+    "fix_lines": 25,
+    "fail_to_pass": 2,
+    "pass_to_pass": 329,
+    "issue_chars": 4009,
+    "title": "structuredClone: circular Error.cause causes stack-overflow crash",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "h4ckf0r0day__obscura-414",
+    "repo": "h4ckf0r0day/obscura",
+    "language": "rust",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "417"
+    ],
+    "pull_number": "414",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.h4ckf0r0day_1776_obscura-414:latest",
+    "image_gb": 3.31,
+    "fix_code_files": 6,
+    "fix_lines": 308,
+    "fail_to_pass": 1,
+    "pass_to_pass": 329,
+    "issue_chars": 2655,
+    "title": "Passive callbacks still fire for sibling pages and outlive their page (#408 follow-up)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "rust-lang__rust-analyzer-22822",
+    "repo": "rust-lang/rust-analyzer",
+    "language": "rust",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "22806"
+    ],
+    "pull_number": "22822",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.rust-lang_1776_rust-analyzer-22822:latest",
+    "image_gb": 7.65,
+    "fix_code_files": 1,
+    "fix_lines": 7,
+    "fail_to_pass": 5,
+    "pass_to_pass": 8123,
+    "issue_chars": 4241,
+    "title": "panic: `assertion failed: entry.is_some_and(|entry| entry.def == def)` proc macro fn redefinition",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "gleam-lang__gleam-6021",
+    "repo": "gleam-lang/gleam",
+    "language": "rust",
+    "created_at": "2026-07-21",
+    "issue_numbers": [
+      "6020"
+    ],
+    "pull_number": "6021",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.gleam-lang_1776_gleam-6021:latest",
+    "image_gb": 5.73,
+    "fix_code_files": 3,
+    "fix_lines": 437,
+    "fail_to_pass": 2495,
+    "pass_to_pass": 3610,
+    "issue_chars": 933,
+    "title": "Erlang codegen regression in BitArrays",
+    "known_local": null,
+    "excluded": [
+      "2495 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "rust-lang__rust-bindgen-3390",
+    "repo": "rust-lang/rust-bindgen",
+    "language": "rust",
+    "created_at": "2026-07-07",
+    "issue_numbers": [
+      "3303"
+    ],
+    "pull_number": "3390",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.rust-lang_1776_rust-bindgen-3390:latest",
+    "image_gb": 3.5,
+    "fix_code_files": 1,
+    "fix_lines": 18,
+    "fail_to_pass": 23,
+    "pass_to_pass": 647,
+    "issue_chars": 1660,
+    "title": "Constant generation for my project broken by PR #3288",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "modelcontextprotocol__rust-sdk-1005",
+    "repo": "modelcontextprotocol/rust-sdk",
+    "language": "rust",
+    "created_at": "2026-07-17",
+    "issue_numbers": [
+      "980"
+    ],
+    "pull_number": "1005",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.modelcontextprotocol_1776_rust-sdk-1005:latest",
+    "image_gb": 4.51,
+    "fix_code_files": 1,
+    "fix_lines": 8,
+    "fail_to_pass": 1,
+    "pass_to_pass": 643,
+    "issue_chars": 974,
+    "title": "Stateless streamable HTTP: tools/call with progress returns notification as response body",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "NVlabs__cuda-oxide-381",
+    "repo": "NVlabs/cuda-oxide",
+    "language": "rust",
+    "created_at": "2026-07-12",
+    "issue_numbers": [
+      "380"
+    ],
+    "pull_number": "381",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.nvlabs_1776_cuda-oxide-381:latest",
+    "image_gb": 4.81,
+    "fix_code_files": 10,
+    "fix_lines": 1475,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1595,
+    "issue_chars": 1974,
+    "title": "Legacy NVVM export rejects relaxed f32/f64 atomic add",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "prefix-dev__pixi-6518",
+    "repo": "prefix-dev/pixi",
+    "language": "rust",
+    "created_at": "2026-07-03",
+    "issue_numbers": [
+      "6494"
+    ],
+    "pull_number": "6518",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.prefix-dev_1776_pixi-6518:latest",
+    "image_gb": 4.86,
+    "fix_code_files": 4,
+    "fix_lines": 288,
+    "fail_to_pass": 1,
+    "pass_to_pass": 2418,
+    "issue_chars": 2931,
+    "title": "`pixi run task` Bash completion breaks after -e flag",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "rust-lang__rust-analyzer-22804",
+    "repo": "rust-lang/rust-analyzer",
+    "language": "rust",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "22798"
+    ],
+    "pull_number": "22804",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.rust-lang_1776_rust-analyzer-22804:latest",
+    "image_gb": 7.76,
+    "fix_code_files": 1,
+    "fix_lines": 3,
+    "fail_to_pass": 1,
+    "pass_to_pass": 8122,
+    "issue_chars": 3665,
+    "title": "panic: closure inside array size: `type of closure expr Idx::<Expr>(2) is not a closure usize`",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "rust-lang__rust-bindgen-3391",
+    "repo": "rust-lang/rust-bindgen",
+    "language": "rust",
+    "created_at": "2026-07-07",
+    "issue_numbers": [
+      "3320"
+    ],
+    "pull_number": "3391",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.rust-lang_1776_rust-bindgen-3391:latest",
+    "image_gb": 3.5,
+    "fix_code_files": 1,
+    "fix_lines": 13,
+    "fail_to_pass": 670,
+    "pass_to_pass": 0,
+    "issue_chars": 2426,
+    "title": "Input validation: missing header(s) causes panic",
+    "known_local": null,
+    "excluded": [
+      "670 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "rust-lang__rust-analyzer-22827",
+    "repo": "rust-lang/rust-analyzer",
+    "language": "rust",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "22802"
+    ],
+    "pull_number": "22827",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.rust-lang_1776_rust-analyzer-22827:latest",
+    "image_gb": 7.76,
+    "fix_code_files": 1,
+    "fix_lines": 14,
+    "fail_to_pass": 3,
+    "pass_to_pass": 8130,
+    "issue_chars": 4361,
+    "title": "panic: unreachable: `let x: vec![]+;`",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "rust-lang__rust-analyzer-22849",
+    "repo": "rust-lang/rust-analyzer",
+    "language": "rust",
+    "created_at": "2026-07-18",
+    "issue_numbers": [
+      "22837"
+    ],
+    "pull_number": "22849",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.rust-lang_1776_rust-analyzer-22849:latest",
+    "image_gb": 7.76,
+    "fix_code_files": 1,
+    "fix_lines": 15,
+    "fail_to_pass": 1,
+    "pass_to_pass": 8140,
+    "issue_chars": 6539,
+    "title": "syntax bridge: unreachable",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "rust-lang__rust-analyzer-22789",
+    "repo": "rust-lang/rust-analyzer",
+    "language": "rust",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "22788"
+    ],
+    "pull_number": "22789",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.rust-lang_1776_rust-analyzer-22789:latest",
+    "image_gb": 7.76,
+    "fix_code_files": 2,
+    "fix_lines": 21,
+    "fail_to_pass": 1,
+    "pass_to_pass": 8119,
+    "issue_chars": 2070,
+    "title": "can't downcast non-adt non-coroutine type",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "rust-lang__rust-analyzer-22855",
+    "repo": "rust-lang/rust-analyzer",
+    "language": "rust",
+    "created_at": "2026-07-19",
+    "issue_numbers": [
+      "22803"
+    ],
+    "pull_number": "22855",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.rust-lang_1776_rust-analyzer-22855:latest",
+    "image_gb": 7.76,
+    "fix_code_files": 1,
+    "fix_lines": 2,
+    "fail_to_pass": 1,
+    "pass_to_pass": 8144,
+    "issue_chars": 4164,
+    "title": "panic `No generics for EnumVariantId`",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "yvgude__lean-ctx-1179",
+    "repo": "yvgude/lean-ctx",
+    "language": "rust",
+    "created_at": "2026-07-22",
+    "issue_numbers": [
+      "1178"
+    ],
+    "pull_number": "1179",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.yvgude_1776_lean-ctx-1179:latest",
+    "image_gb": 7.29,
+    "fix_code_files": 3,
+    "fix_lines": 66,
+    "fail_to_pass": 9,
+    "pass_to_pass": 8796,
+    "issue_chars": 1602,
+    "title": "bug: dashboard project root promotion accepts broken ancestor gitfiles",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "h4ckf0r0day__obscura-447",
+    "repo": "h4ckf0r0day/obscura",
+    "language": "rust",
+    "created_at": "2026-07-19",
+    "issue_numbers": [
+      "432"
+    ],
+    "pull_number": "447",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.h4ckf0r0day_1776_obscura-447:latest",
+    "image_gb": 3.31,
+    "fix_code_files": 3,
+    "fix_lines": 70,
+    "fail_to_pass": 3,
+    "pass_to_pass": 343,
+    "issue_chars": 1749,
+    "title": "TreeWalker.nextNode() / NodeIterator stops after the first leaf node",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "h4ckf0r0day__obscura-440",
+    "repo": "h4ckf0r0day/obscura",
+    "language": "rust",
+    "created_at": "2026-07-17",
+    "issue_numbers": [
+      "439"
+    ],
+    "pull_number": "440",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.h4ckf0r0day_1776_obscura-440:latest",
+    "image_gb": 3.31,
+    "fix_code_files": 1,
+    "fix_lines": 28,
+    "fail_to_pass": 2,
+    "pass_to_pass": 336,
+    "issue_chars": 1849,
+    "title": "NodeFilter is missing FILTER_ACCEPT/REJECT/SKIP constants, so TreeWalker filters reject everything",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "h4ckf0r0day__obscura-479",
+    "repo": "h4ckf0r0day/obscura",
+    "language": "rust",
+    "created_at": "2026-07-24",
+    "issue_numbers": [
+      "478"
+    ],
+    "pull_number": "479",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.h4ckf0r0day_1776_obscura-479:latest",
+    "image_gb": 3.31,
+    "fix_code_files": 1,
+    "fix_lines": 42,
+    "fail_to_pass": 2,
+    "pass_to_pass": 361,
+    "issue_chars": 2598,
+    "title": "Iframe events do not consistently reach registered listeners",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "h4ckf0r0day__obscura-413",
+    "repo": "h4ckf0r0day/obscura",
+    "language": "rust",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "407"
+    ],
+    "pull_number": "413",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.h4ckf0r0day_1776_obscura-413:latest",
+    "image_gb": 3.31,
+    "fix_code_files": 1,
+    "fix_lines": 10,
+    "fail_to_pass": 1,
+    "pass_to_pass": 323,
+    "issue_chars": 1838,
+    "title": "Runtime.executionContextsCleared never prunes valid_context_ids: stale contexts keep validating + unbounded growth",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "pnpm__pnpm-12935",
+    "repo": "pnpm/pnpm",
+    "language": "rust",
+    "created_at": "2026-07-11",
+    "issue_numbers": [
+      "12933"
+    ],
+    "pull_number": "12935",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.pnpm_1776_pnpm-12935:latest",
+    "image_gb": 28.97,
+    "fix_code_files": 3,
+    "fix_lines": 133,
+    "fail_to_pass": 3,
+    "pass_to_pass": 5915,
+    "issue_chars": 2020,
+    "title": "pnpm deploy materializes the full workspace lockfile in every deploy output",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "h4ckf0r0day__obscura-390",
+    "repo": "h4ckf0r0day/obscura",
+    "language": "rust",
+    "created_at": "2026-07-12",
+    "issue_numbers": [
+      "389"
+    ],
+    "pull_number": "390",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.h4ckf0r0day_1776_obscura-390:latest",
+    "image_gb": 3.31,
+    "fix_code_files": 1,
+    "fix_lines": 94,
+    "fail_to_pass": 4,
+    "pass_to_pass": 306,
+    "issue_chars": 5349,
+    "title": "Cloudflare managed challenge hangs at 'Just a moment...': structuredClone is JSON-only, MessagePort is a no-op stub, Cry",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "biomejs__biome-10886",
+    "repo": "biomejs/biome",
+    "language": "rust",
+    "created_at": "2026-07-08",
+    "issue_numbers": [
+      "10727"
+    ],
+    "pull_number": "10886",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.biomejs_1776_biome-10886:latest",
+    "image_gb": 33.16,
+    "fix_code_files": 1,
+    "fix_lines": 39,
+    "fail_to_pass": 1,
+    "pass_to_pass": 13524,
+    "issue_chars": 6918,
+    "title": "\ud83d\udcdd `test.each(...)` arguments not wrapped, overflowing `lineWidth` (2.3.6 regression)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "rust-lang__rust-analyzer-22751",
+    "repo": "rust-lang/rust-analyzer",
+    "language": "rust",
+    "created_at": "2026-07-09",
+    "issue_numbers": [
+      "22723"
+    ],
+    "pull_number": "22751",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.rust-lang_1776_rust-analyzer-22751:latest",
+    "image_gb": 7.76,
+    "fix_code_files": 1,
+    "fix_lines": 5,
+    "fail_to_pass": 1,
+    "pass_to_pass": 8090,
+    "issue_chars": 1536,
+    "title": "Rust-anlayer cannot know it is the return point when using cfg",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "biomejs__biome-10867",
+    "repo": "biomejs/biome",
+    "language": "rust",
+    "created_at": "2026-07-06",
+    "issue_numbers": [
+      "10864"
+    ],
+    "pull_number": "10867",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.biomejs_1776_biome-10867:latest",
+    "image_gb": 33.16,
+    "fix_code_files": 2,
+    "fix_lines": 45,
+    "fail_to_pass": 3,
+    "pass_to_pass": 13414,
+    "issue_chars": 3286,
+    "title": "Immediate crash on check and lint",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "h4ckf0r0day__obscura-412",
+    "repo": "h4ckf0r0day/obscura",
+    "language": "rust",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "409"
+    ],
+    "pull_number": "412",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.h4ckf0r0day_1776_obscura-412:latest",
+    "image_gb": 3.31,
+    "fix_code_files": 1,
+    "fix_lines": 48,
+    "fail_to_pass": 1,
+    "pass_to_pass": 318,
+    "issue_chars": 6323,
+    "title": "CSS resources inserted via JS are not being loaded",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "biomejs__biome-10827",
+    "repo": "biomejs/biome",
+    "language": "rust",
+    "created_at": "2026-07-02",
+    "issue_numbers": [
+      "10698"
+    ],
+    "pull_number": "10827",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.biomejs_1776_biome-10827:latest",
+    "image_gb": 33.42,
+    "fix_code_files": 1,
+    "fix_lines": 16,
+    "fail_to_pass": 1,
+    "pass_to_pass": 13384,
+    "issue_chars": 5307,
+    "title": "\ud83d\udc85 noUnsafeOptionalChaining misses optional chain used as constructor target through TypeScript `as` assertion",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "lakehq__sail-2292",
+    "repo": "lakehq/sail",
+    "language": "rust",
+    "created_at": "2026-07-26",
+    "issue_numbers": [
+      "2236"
+    ],
+    "pull_number": "2292",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.lakehq_1776_sail-2292:latest",
+    "image_gb": 9.74,
+    "fix_code_files": 1,
+    "fix_lines": 82,
+    "fail_to_pass": 3,
+    "pass_to_pass": 1073,
+    "issue_chars": 3466,
+    "title": "Regression (0.6.5+): Iceberg REST create+write fails with \"unsupported catalog capability ... remote signing, vended cre",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "biomejs__biome-10875",
+    "repo": "biomejs/biome",
+    "language": "rust",
+    "created_at": "2026-07-07",
+    "issue_numbers": [
+      "10795"
+    ],
+    "pull_number": "10875",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.biomejs_1776_biome-10875:latest",
+    "image_gb": 33.16,
+    "fix_code_files": 3,
+    "fix_lines": 33,
+    "fail_to_pass": 2,
+    "pass_to_pass": 13442,
+    "issue_chars": 410,
+    "title": "\ud83d\udcce --profile-rules split plugins",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "h4ckf0r0day__obscura-477",
+    "repo": "h4ckf0r0day/obscura",
+    "language": "rust",
+    "created_at": "2026-07-24",
+    "issue_numbers": [
+      "474"
+    ],
+    "pull_number": "477",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.h4ckf0r0day_1776_obscura-477:latest",
+    "image_gb": 3.31,
+    "fix_code_files": 2,
+    "fix_lines": 33,
+    "fail_to_pass": 1,
+    "pass_to_pass": 361,
+    "issue_chars": 3349,
+    "title": "Dynamic `<script>` insertion still fails on main (regression of #406, #422)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "h4ckf0r0day__obscura-392",
+    "repo": "h4ckf0r0day/obscura",
+    "language": "rust",
+    "created_at": "2026-07-12",
+    "issue_numbers": [
+      "393"
+    ],
+    "pull_number": "392",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.h4ckf0r0day_1776_obscura-392:latest",
+    "image_gb": 3.31,
+    "fix_code_files": 1,
+    "fix_lines": 23,
+    "fail_to_pass": 2,
+    "pass_to_pass": 306,
+    "issue_chars": 1277,
+    "title": "Document.adoptNode and Element.toggleAttribute are undefined",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "pnpm__pnpm-12888",
+    "repo": "pnpm/pnpm",
+    "language": "rust",
+    "created_at": "2026-07-09",
+    "issue_numbers": [
+      "12882"
+    ],
+    "pull_number": "12888",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.pnpm_1776_pnpm-12888:latest",
+    "image_gb": 28.97,
+    "fix_code_files": 4,
+    "fix_lines": 184,
+    "fail_to_pass": 2,
+    "pass_to_pass": 5914,
+    "issue_chars": 4591,
+    "title": "`ERR_PNPM_CACHE_MISSING_AFTER_304`: pnpm trusts a 304 unconditionally and crashes on an empty cache",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "yvgude__lean-ctx-816",
+    "repo": "yvgude/lean-ctx",
+    "language": "rust",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "811"
+    ],
+    "pull_number": "816",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.yvgude_1776_lean-ctx-816:latest",
+    "image_gb": 7.46,
+    "fix_code_files": 4,
+    "fix_lines": 227,
+    "fail_to_pass": 7612,
+    "pass_to_pass": 0,
+    "issue_chars": 1285,
+    "title": "ctx_read: bounded/anchored reads fail on large files (materializes whole file)",
+    "known_local": null,
+    "excluded": [
+      "7612 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "yvgude__lean-ctx-927",
+    "repo": "yvgude/lean-ctx",
+    "language": "rust",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "925"
+    ],
+    "pull_number": "927",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.yvgude_1776_lean-ctx-927:latest",
+    "image_gb": 7.46,
+    "fix_code_files": 1,
+    "fix_lines": 70,
+    "fail_to_pass": 7769,
+    "pass_to_pass": 0,
+    "issue_chars": 747,
+    "title": "perf(graph): avoid cloning the complete prior index during incremental scans",
+    "known_local": null,
+    "excluded": [
+      "7769 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "yvgude__lean-ctx-1164",
+    "repo": "yvgude/lean-ctx",
+    "language": "rust",
+    "created_at": "2026-07-22",
+    "issue_numbers": [
+      "1167"
+    ],
+    "pull_number": "1164",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.yvgude_1776_lean-ctx-1164:latest",
+    "image_gb": 7.46,
+    "fix_code_files": 2,
+    "fix_lines": 46,
+    "fail_to_pass": 8560,
+    "pass_to_pass": 0,
+    "issue_chars": 844,
+    "title": "Enforce OCLA budgets on proxy requests",
+    "known_local": null,
+    "excluded": [
+      "8560 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "gleam-lang__gleam-5938",
+    "repo": "gleam-lang/gleam",
+    "language": "rust",
+    "created_at": "2026-07-02",
+    "issue_numbers": [
+      "5937"
+    ],
+    "pull_number": "5938",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.gleam-lang_1776_gleam-5938:latest",
+    "image_gb": 5.76,
+    "fix_code_files": 1,
+    "fix_lines": 9,
+    "fail_to_pass": 251,
+    "pass_to_pass": 5674,
+    "issue_chars": 368,
+    "title": "Language server doesn't show autocomplete for internal types in same package",
+    "known_local": null,
+    "excluded": [
+      "251 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "gleam-lang__gleam-5982",
+    "repo": "gleam-lang/gleam",
+    "language": "rust",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "5975"
+    ],
+    "pull_number": "5982",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.gleam-lang_1776_gleam-5982:latest",
+    "image_gb": 5.76,
+    "fix_code_files": 3,
+    "fix_lines": 74,
+    "fail_to_pass": 2497,
+    "pass_to_pass": 3606,
+    "issue_chars": 764,
+    "title": "Probably incorrect report of \"imported module is never used\"",
+    "known_local": null,
+    "excluded": [
+      "2497 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "gleam-lang__gleam-6049",
+    "repo": "gleam-lang/gleam",
+    "language": "rust",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "6045"
+    ],
+    "pull_number": "6049",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.gleam-lang_1776_gleam-6049:latest",
+    "image_gb": 5.73,
+    "fix_code_files": 1,
+    "fix_lines": 9,
+    "fail_to_pass": 2493,
+    "pass_to_pass": 3616,
+    "issue_chars": 505,
+    "title": "v1.18: const string to binary fails",
+    "known_local": null,
+    "excluded": [
+      "2493 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "yvgude__lean-ctx-1168",
+    "repo": "yvgude/lean-ctx",
+    "language": "rust",
+    "created_at": "2026-07-22",
+    "issue_numbers": [
+      "1169"
+    ],
+    "pull_number": "1168",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.yvgude_1776_lean-ctx-1168:latest",
+    "image_gb": 7.46,
+    "fix_code_files": 4,
+    "fix_lines": 42,
+    "fail_to_pass": 1,
+    "pass_to_pass": 8586,
+    "issue_chars": 228,
+    "title": "OCLA cached provider errors replay as 200",
+    "known_local": null,
+    "excluded": [
+      "issue text <300 chars (after removing images/links)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "pola-rs__polars-28484",
+    "repo": "pola-rs/polars",
+    "language": "rust",
+    "created_at": "2026-07-22",
+    "issue_numbers": [
+      "28433"
+    ],
+    "pull_number": "28484",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.pola-rs_1776_polars-28484:latest",
+    "image_gb": 9.45,
+    "fix_code_files": 3,
+    "fix_lines": 206,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1554,
+    "issue_chars": 2035,
+    "title": "SQL: NOT IN with a NULL on the right side (literal list or subquery) violates three-valued logic \u2014 anti-join returns wro",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "gleam-lang__gleam-5971",
+    "repo": "gleam-lang/gleam",
+    "language": "rust",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "5970"
+    ],
+    "pull_number": "5971",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.gleam-lang_1776_gleam-5971:latest",
+    "image_gb": 5.76,
+    "fix_code_files": 1,
+    "fix_lines": 8,
+    "fail_to_pass": 2495,
+    "pass_to_pass": 3603,
+    "issue_chars": 1572,
+    "title": "Regression in Erlang codegen with unused FFI arguments",
+    "known_local": null,
+    "excluded": [
+      "2495 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "gitbutlerapp__gitbutler-14920",
+    "repo": "gitbutlerapp/gitbutler",
+    "language": "rust",
+    "created_at": "2026-07-22",
+    "issue_numbers": [
+      "14918"
+    ],
+    "pull_number": "14920",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.gitbutlerapp_1776_gitbutler-14920:latest",
+    "image_gb": 8.58,
+    "fix_code_files": 2,
+    "fix_lines": 95,
+    "fail_to_pass": 1,
+    "pass_to_pass": 3426,
+    "issue_chars": 6050,
+    "title": "Cannot set target branch: `but config target` deadlocks after virtual_branches.toml is reset",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "yvgude__lean-ctx-969",
+    "repo": "yvgude/lean-ctx",
+    "language": "rust",
+    "created_at": "2026-07-17",
+    "issue_numbers": [
+      "968"
+    ],
+    "pull_number": "969",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.yvgude_1776_lean-ctx-969:latest",
+    "image_gb": 7.46,
+    "fix_code_files": 2,
+    "fix_lines": 85,
+    "fail_to_pass": 3,
+    "pass_to_pass": 7809,
+    "issue_chars": 2857,
+    "title": "SECURITY: brace group { } bypasses the shell allowlist, the $() hard-block, and dangerous-flag checks",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "agentgateway__agentgateway-2452",
+    "repo": "agentgateway/agentgateway",
+    "language": "rust",
+    "created_at": "2026-07-07",
+    "issue_numbers": [
+      "2413"
+    ],
+    "pull_number": "2452",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.agentgateway_1776_agentgateway-2452:latest",
+    "image_gb": 7.67,
+    "fix_code_files": 1,
+    "fix_lines": 2,
+    "fail_to_pass": 2,
+    "pass_to_pass": 1859,
+    "issue_chars": 776,
+    "title": "Fetching JWKS keys fails for AgentgatewayPolicies using targetSelector",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "gleam-lang__gleam-5958",
+    "repo": "gleam-lang/gleam",
+    "language": "rust",
+    "created_at": "2026-07-09",
+    "issue_numbers": [
+      "5957"
+    ],
+    "pull_number": "5958",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.gleam-lang_1776_gleam-5958:latest",
+    "image_gb": 5.76,
+    "fix_code_files": 1,
+    "fix_lines": 31,
+    "fail_to_pass": 2450,
+    "pass_to_pass": 3528,
+    "issue_chars": 546,
+    "title": "Build tool generates incorrect package interface for some type aliases",
+    "known_local": null,
+    "excluded": [
+      "2450 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "prefix-dev__pixi-6529",
+    "repo": "prefix-dev/pixi",
+    "language": "rust",
+    "created_at": "2026-07-05",
+    "issue_numbers": [
+      "6527"
+    ],
+    "pull_number": "6529",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.prefix-dev_1776_pixi-6529:latest",
+    "image_gb": 4.94,
+    "fix_code_files": 4,
+    "fix_lines": 214,
+    "fail_to_pass": 3,
+    "pass_to_pass": 2391,
+    "issue_chars": 533,
+    "title": "bug(inline packages): metadata change on immutable source (git or url) doesn't invalidate build",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "web-infra-dev__rspack-14794",
+    "repo": "web-infra-dev/rspack",
+    "language": "rust",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "14756"
+    ],
+    "pull_number": "14794",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.web-infra-dev_1776_rspack-14794:latest",
+    "image_gb": 16.31,
+    "fix_code_files": 1,
+    "fix_lines": 13,
+    "fail_to_pass": 229,
+    "pass_to_pass": 1870,
+    "issue_chars": 5468,
+    "title": "[Bug]: experiments.rsc - production usedExports tree-shakes client-reference exports of re-export-only vendor \"use clien",
+    "known_local": null,
+    "excluded": [
+      "229 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "gleam-lang__gleam-6030",
+    "repo": "gleam-lang/gleam",
+    "language": "rust",
+    "created_at": "2026-07-23",
+    "issue_numbers": [
+      "6029"
+    ],
+    "pull_number": "6030",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.gleam-lang_1776_gleam-6030:latest",
+    "image_gb": 5.73,
+    "fix_code_files": 2,
+    "fix_lines": 12,
+    "fail_to_pass": 2522,
+    "pass_to_pass": 3585,
+    "issue_chars": 688,
+    "title": "Invalid JavaScript code generated for bit array float slice when a constructor is named `Number`",
+    "known_local": null,
+    "excluded": [
+      "2522 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "web-infra-dev__rspack-14882",
+    "repo": "web-infra-dev/rspack",
+    "language": "rust",
+    "created_at": "2026-07-20",
+    "issue_numbers": [
+      "14880"
+    ],
+    "pull_number": "14882",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.web-infra-dev_1776_rspack-14882:latest",
+    "image_gb": 16.23,
+    "fix_code_files": 1,
+    "fix_lines": 6,
+    "fail_to_pass": 170,
+    "pass_to_pass": 1819,
+    "issue_chars": 5338,
+    "title": "Server build: `import * as` on a CSS module emits `__webpack_require__.t()` on an undeclared namespace binding",
+    "known_local": null,
+    "excluded": [
+      "170 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "lance-format__lance-8049",
+    "repo": "lance-format/lance",
+    "language": "rust",
+    "created_at": "2026-07-28",
+    "issue_numbers": [
+      "7908"
+    ],
+    "pull_number": "8049",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.lance-format_1776_lance-8049:latest",
+    "image_gb": 30.35,
+    "fix_code_files": 1,
+    "fix_lines": 74,
+    "fail_to_pass": 3,
+    "pass_to_pass": 5762,
+    "issue_chars": 4513,
+    "title": "Filtered scan loses top-level validity of an appended nullable struct column",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "web-infra-dev__rspack-14803",
+    "repo": "web-infra-dev/rspack",
+    "language": "rust",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "14802"
+    ],
+    "pull_number": "14803",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.web-infra-dev_1776_rspack-14803:latest",
+    "image_gb": 16.31,
+    "fix_code_files": 1,
+    "fix_lines": 52,
+    "fail_to_pass": 2308,
+    "pass_to_pass": 2340,
+    "issue_chars": 4178,
+    "title": "[Bug]: 2.1.3+ silently drops all Vue SFC <style> blocks (empty CSS) with vue-loader 15 + native CSS",
+    "known_local": null,
+    "excluded": [
+      "2308 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "tursodatabase__turso-8102",
+    "repo": "tursodatabase/turso",
+    "language": "rust",
+    "created_at": "2026-07-29",
+    "issue_numbers": [
+      "7991"
+    ],
+    "pull_number": "8102",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.tursodatabase_1776_turso-8102:latest",
+    "image_gb": 19.7,
+    "fix_code_files": 2,
+    "fix_lines": 20,
+    "fail_to_pass": 1,
+    "pass_to_pass": 4181,
+    "issue_chars": 2635,
+    "title": "Pending checksum not cleared after a failed deferred write",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "lance-format__lance-7565",
+    "repo": "lance-format/lance",
+    "language": "rust",
+    "created_at": "2026-07-01",
+    "issue_numbers": [
+      "7434"
+    ],
+    "pull_number": "7565",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.lance-format_1776_lance-7565:latest",
+    "image_gb": 30.39,
+    "fix_code_files": 6,
+    "fix_lines": 215,
+    "fail_to_pass": 2,
+    "pass_to_pass": 4847,
+    "issue_chars": 4946,
+    "title": "ZoneMap scalar index returns incomplete results on datasets with stable row IDs",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "modelcontextprotocol__rust-sdk-1021",
+    "repo": "modelcontextprotocol/rust-sdk",
+    "language": "rust",
+    "created_at": "2026-07-21",
+    "issue_numbers": [
+      "1017"
+    ],
+    "pull_number": "1021",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.modelcontextprotocol_1776_rust-sdk-1021:latest",
+    "image_gb": 4.51,
+    "fix_code_files": 4,
+    "fix_lines": 89,
+    "fail_to_pass": 9,
+    "pass_to_pass": 654,
+    "issue_chars": 3859,
+    "title": "conflict initialized response id when gateway echoes numeric JSON-RPC id as string",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "servo__servo-46309",
+    "repo": "servo/servo",
+    "language": "rust",
+    "created_at": "2026-07-06",
+    "issue_numbers": [
+      "46162"
+    ],
+    "pull_number": "46309",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.servo_1776_servo-46309:latest",
+    "image_gb": 39.11,
+    "fix_code_files": 1,
+    "fix_lines": 6,
+    "fail_to_pass": 2,
+    "pass_to_pass": 962,
+    "issue_chars": 914,
+    "title": "Click+drag selection in <textarea> not following cursor after first word of a line",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "modelcontextprotocol__rust-sdk-996",
+    "repo": "modelcontextprotocol/rust-sdk",
+    "language": "rust",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "983"
+    ],
+    "pull_number": "996",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.modelcontextprotocol_1776_rust-sdk-996:latest",
+    "image_gb": 4.51,
+    "fix_code_files": 1,
+    "fix_lines": 198,
+    "fail_to_pass": 5,
+    "pass_to_pass": 629,
+    "issue_chars": 809,
+    "title": "SEP-2468 follow-up: validate issuer in authorization server metadata",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "modelcontextprotocol__rust-sdk-1044",
+    "repo": "modelcontextprotocol/rust-sdk",
+    "language": "rust",
+    "created_at": "2026-07-24",
+    "issue_numbers": [
+      "1039"
+    ],
+    "pull_number": "1044",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.modelcontextprotocol_1776_rust-sdk-1044:latest",
+    "image_gb": 4.51,
+    "fix_code_files": 1,
+    "fix_lines": 49,
+    "fail_to_pass": 97,
+    "pass_to_pass": 625,
+    "issue_chars": 2936,
+    "title": "`DiscoverResult` rejects valid discovery responses with server identity in `_meta`",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "pnpm__pnpm-12879",
+    "repo": "pnpm/pnpm",
+    "language": "rust",
+    "created_at": "2026-07-09",
+    "issue_numbers": [
+      "12877"
+    ],
+    "pull_number": "12879",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.pnpm_1776_pnpm-12879:latest",
+    "image_gb": 21.97,
+    "fix_code_files": 4,
+    "fix_lines": 74,
+    "fail_to_pass": 5577,
+    "pass_to_pass": 0,
+    "issue_chars": 2231,
+    "title": "`pnpm self-update` fails when not installed but running the same version you want to install",
+    "known_local": null,
+    "excluded": [
+      "5577 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "nearai__ironclaw-6706",
+    "repo": "nearai/ironclaw",
+    "language": "rust",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "6702"
+    ],
+    "pull_number": "6706",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.nearai_1776_ironclaw-6706:latest",
+    "image_gb": 5.53,
+    "fix_code_files": 5,
+    "fix_lines": 52,
+    "fail_to_pass": 1,
+    "pass_to_pass": 593,
+    "issue_chars": 1640,
+    "title": "Normalize WebUI Typography and Shared Control Font Sizing",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "lance-format__lance-7618",
+    "repo": "lance-format/lance",
+    "language": "rust",
+    "created_at": "2026-07-03",
+    "issue_numbers": [
+      "7617"
+    ],
+    "pull_number": "7618",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.lance-format_1776_lance-7618:latest",
+    "image_gb": 30.39,
+    "fix_code_files": 2,
+    "fix_lines": 160,
+    "fail_to_pass": 2,
+    "pass_to_pass": 4895,
+    "issue_chars": 4547,
+    "title": "Blob descriptor projection and take_blobs fail for blob v2 columns in 9.0.0-beta.13",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "lance-format__lance-7835",
+    "repo": "lance-format/lance",
+    "language": "rust",
+    "created_at": "2026-07-17",
+    "issue_numbers": [
+      "7485"
+    ],
+    "pull_number": "7835",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.lance-format_1776_lance-7835:latest",
+    "image_gb": 30.34,
+    "fix_code_files": 1,
+    "fix_lines": 354,
+    "fail_to_pass": 12,
+    "pass_to_pass": 5347,
+    "issue_chars": 4206,
+    "title": "JSON-path scalar index returns wrong results for non-exact float values (ranges empty; equality misses)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "nearai__ironclaw-6712",
+    "repo": "nearai/ironclaw",
+    "language": "rust",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "6711"
+    ],
+    "pull_number": "6712",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.nearai_1776_ironclaw-6712:latest",
+    "image_gb": 5.53,
+    "fix_code_files": 2,
+    "fix_lines": 31,
+    "fail_to_pass": 1,
+    "pass_to_pass": 591,
+    "issue_chars": 968,
+    "title": "fix(webui): preserve selected appearance theme across SPA navigation",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "web-infra-dev__rspack-14806",
+    "repo": "web-infra-dev/rspack",
+    "language": "rust",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "14695"
+    ],
+    "pull_number": "14806",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.web-infra-dev_1776_rspack-14806:latest",
+    "image_gb": 16.31,
+    "fix_code_files": 1,
+    "fix_lines": 53,
+    "fail_to_pass": 2,
+    "pass_to_pass": 1571,
+    "issue_chars": 2785,
+    "title": "[Bug]: `import.meta.webpackHot?.dispose(...)` compiles to `undefined(...)` (runtime TypeError) when HMR is disabled",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "nearai__ironclaw-6724",
+    "repo": "nearai/ironclaw",
+    "language": "rust",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "6730"
+    ],
+    "pull_number": "6724",
+    "build": "rust/cargo",
+    "image": "starryzhang/sweb.eval.x86_64.nearai_1776_ironclaw-6724:latest",
+    "image_gb": 5.55,
+    "fix_code_files": 52,
+    "fix_lines": 4102,
+    "fail_to_pass": 590,
+    "pass_to_pass": 0,
+    "issue_chars": 1200,
+    "title": "Correct memory provider lifecycle capabilities and tool registration",
+    "known_local": null,
+    "excluded": [
+      "590 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "agentscope-ai__agentscope-java-2257",
+    "repo": "agentscope-ai/agentscope-java",
+    "language": "java",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "2235"
+    ],
+    "pull_number": "2257",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.agentscope-ai_1776_agentscope-java-2257:latest",
+    "image_gb": 2.1,
+    "fix_code_files": 1,
+    "fix_lines": 51,
+    "fail_to_pass": 2708,
+    "pass_to_pass": 4421,
+    "issue_chars": 106,
+    "title": "[Feature]: Anthropic disable_parallel_tool_use \u914d\u7f6e\u7f3a\u5931",
+    "known_local": null,
+    "excluded": [
+      "issue text <300 chars (after removing images/links)",
+      "2708 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "agentscope-ai__agentscope-java-2260",
+    "repo": "agentscope-ai/agentscope-java",
+    "language": "java",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "2242"
+    ],
+    "pull_number": "2260",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.agentscope-ai_1776_agentscope-java-2260:latest",
+    "image_gb": 2.1,
+    "fix_code_files": 1,
+    "fix_lines": 1,
+    "fail_to_pass": 4986,
+    "pass_to_pass": 2205,
+    "issue_chars": 1982,
+    "title": "Core: user interrupt returns MODEL_STOP instead of GenerateReason.INTERRUPTED",
+    "known_local": null,
+    "excluded": [
+      "4986 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5806",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-20",
+    "issue_numbers": [
+      "5804"
+    ],
+    "pull_number": "5806",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5806:latest",
+    "image_gb": 2.9,
+    "fix_code_files": 1,
+    "fix_lines": 47,
+    "fail_to_pass": 2237,
+    "pass_to_pass": 2862,
+    "issue_chars": 1694,
+    "title": "[BUG] OkHttpClient delivers no streaming events when the response Content-Type is not text/event-stream",
+    "known_local": null,
+    "excluded": [
+      "2237 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5799",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-19",
+    "issue_numbers": [
+      "5798"
+    ],
+    "pull_number": "5799",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5799:latest",
+    "image_gb": 2.9,
+    "fix_code_files": 1,
+    "fix_lines": 43,
+    "fail_to_pass": 2020,
+    "pass_to_pass": 3080,
+    "issue_chars": 2178,
+    "title": "[BUG] AwsLoggingInterceptor logs Authorization and X-Amz-Security-Token headers when request/response logging is enabled",
+    "known_local": null,
+    "excluded": [
+      "2020 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "btraceio__btrace-898",
+    "repo": "btraceio/btrace",
+    "language": "java",
+    "created_at": "2026-07-13",
+    "issue_numbers": [
+      "877"
+    ],
+    "pull_number": "898",
+    "build": "java/gradle",
+    "image": "starryzhang/sweb.eval.x86_64.btraceio_1776_btrace-898:latest",
+    "image_gb": 1.92,
+    "fix_code_files": 3,
+    "fix_lines": 52,
+    "fail_to_pass": 858,
+    "pass_to_pass": 409,
+    "issue_chars": 1083,
+    "title": "[3.0] Add regression coverage for embedded extension permission enforcement",
+    "known_local": null,
+    "excluded": [
+      "858 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "floci-io__floci-1908",
+    "repo": "floci-io/floci",
+    "language": "java",
+    "created_at": "2026-07-19",
+    "issue_numbers": [
+      "1756"
+    ],
+    "pull_number": "1908",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.floci-io_1776_floci-1908:latest",
+    "image_gb": 0.93,
+    "fix_code_files": 1,
+    "fix_lines": 14,
+    "fail_to_pass": 5,
+    "pass_to_pass": 7714,
+    "issue_chars": 3419,
+    "title": "[BUG] DynamoDB UpdateItem: ADD on a nested map path with ExpressionAttributeNames creates a phantom top-level attribute ",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "apache__rocketmq-10573",
+    "repo": "apache/rocketmq",
+    "language": "java",
+    "created_at": "2026-07-02",
+    "issue_numbers": [
+      "10572"
+    ],
+    "pull_number": "10573",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_rocketmq-10573:latest",
+    "image_gb": 0.87,
+    "fix_code_files": 3,
+    "fix_lines": 132,
+    "fail_to_pass": 181,
+    "pass_to_pass": 2727,
+    "issue_chars": 2466,
+    "title": "[Enhancement] Add dual TTL policy for tiered storage read-ahead cache",
+    "known_local": null,
+    "excluded": [
+      "181 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "floci-io__floci-1895",
+    "repo": "floci-io/floci",
+    "language": "java",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "1752"
+    ],
+    "pull_number": "1895",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.floci-io_1776_floci-1895:latest",
+    "image_gb": 0.93,
+    "fix_code_files": 1,
+    "fix_lines": 7,
+    "fail_to_pass": 1,
+    "pass_to_pass": 7713,
+    "issue_chars": 3706,
+    "title": "[BUG] Athena: GetQueryExecution reports OutputLocation as a directory prefix instead of the result CSV object key",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5807",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-20",
+    "issue_numbers": [
+      "5805"
+    ],
+    "pull_number": "5807",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5807:latest",
+    "image_gb": 2.9,
+    "fix_code_files": 1,
+    "fix_lines": 16,
+    "fail_to_pass": 2236,
+    "pass_to_pass": 2859,
+    "issue_chars": 1460,
+    "title": "[BUG] ApacheHttpClient maps connectTimeout to the connection pool lease timeout",
+    "known_local": null,
+    "excluded": [
+      "2236 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5809",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-20",
+    "issue_numbers": [
+      "5808"
+    ],
+    "pull_number": "5809",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5809:latest",
+    "image_gb": 2.9,
+    "fix_code_files": 1,
+    "fix_lines": 8,
+    "fail_to_pass": 3831,
+    "pass_to_pass": 1265,
+    "issue_chars": 1471,
+    "title": "[BUG] JdkHttpClient alters the error response body of streaming requests",
+    "known_local": null,
+    "excluded": [
+      "3831 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "apache__parquet-java-3642",
+    "repo": "apache/parquet-java",
+    "language": "java",
+    "created_at": "2026-07-02",
+    "issue_numbers": [
+      "3659"
+    ],
+    "pull_number": "3642",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_parquet-java-3642:latest",
+    "image_gb": 3.66,
+    "fix_code_files": 1,
+    "fix_lines": 13,
+    "fail_to_pass": 182,
+    "pass_to_pass": 2362,
+    "issue_chars": 305,
+    "title": "Throw IAE for odd-length hex strings in Parquet CLI",
+    "known_local": null,
+    "excluded": [
+      "182 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "apache__parquet-java-3638",
+    "repo": "apache/parquet-java",
+    "language": "java",
+    "created_at": "2026-07-01",
+    "issue_numbers": [
+      "3637"
+    ],
+    "pull_number": "3638",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_parquet-java-3638:latest",
+    "image_gb": 3.66,
+    "fix_code_files": 2,
+    "fix_lines": 14,
+    "fail_to_pass": 1581,
+    "pass_to_pass": 963,
+    "issue_chars": 500,
+    "title": "FallbackValuesWriter can corrupt row group when reusing dictionary writer",
+    "known_local": null,
+    "excluded": [
+      "1581 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5850",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "5849"
+    ],
+    "pull_number": "5850",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5850:latest",
+    "image_gb": 2.91,
+    "fix_code_files": 1,
+    "fix_lines": 27,
+    "fail_to_pass": 194,
+    "pass_to_pass": 4971,
+    "issue_chars": 1611,
+    "title": "[BUG] A2A agent call hangs when the stream ends without a result",
+    "known_local": null,
+    "excluded": [
+      "194 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "apache__parquet-java-3645",
+    "repo": "apache/parquet-java",
+    "language": "java",
+    "created_at": "2026-07-03",
+    "issue_numbers": [
+      "3644"
+    ],
+    "pull_number": "3645",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_parquet-java-3645:latest",
+    "image_gb": 3.66,
+    "fix_code_files": 1,
+    "fix_lines": 4,
+    "fail_to_pass": 2221,
+    "pass_to_pass": 325,
+    "issue_chars": 967,
+    "title": "Handle NoClassDefFoundError in Dyn* classes",
+    "known_local": null,
+    "excluded": [
+      "2221 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5790",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "5783"
+    ],
+    "pull_number": "5790",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5790:latest",
+    "image_gb": 2.94,
+    "fix_code_files": 1,
+    "fix_lines": 16,
+    "fail_to_pass": 1450,
+    "pass_to_pass": 2847,
+    "issue_chars": 5303,
+    "title": "[BUG] langchain4j-mcp: $ref outside $defs becomes \"#/$defs/#/...\" \u2014 malformed uri-reference rejected by OpenAI",
+    "known_local": null,
+    "excluded": [
+      "1450 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5792",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-17",
+    "issue_numbers": [
+      "5791"
+    ],
+    "pull_number": "5792",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5792:latest",
+    "image_gb": 2.94,
+    "fix_code_files": 1,
+    "fix_lines": 20,
+    "fail_to_pass": 1448,
+    "pass_to_pass": 2847,
+    "issue_chars": 2000,
+    "title": "[BUG] MCP: user-supplied _meta (metaSupplier) overwrites the framework progressToken, so progress notifications never fi",
+    "known_local": null,
+    "excluded": [
+      "1448 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5788",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "5784"
+    ],
+    "pull_number": "5788",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5788:latest",
+    "image_gb": 2.94,
+    "fix_code_files": 1,
+    "fix_lines": 29,
+    "fail_to_pass": 517,
+    "pass_to_pass": 4294,
+    "issue_chars": 877,
+    "title": "[BUG] PgVector does not pass through to the constructor from Builder",
+    "known_local": null,
+    "excluded": [
+      "517 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5864",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-28",
+    "issue_numbers": [
+      "5863"
+    ],
+    "pull_number": "5864",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5864:latest",
+    "image_gb": 2.91,
+    "fix_code_files": 1,
+    "fix_lines": 23,
+    "fail_to_pass": 196,
+    "pass_to_pass": 5009,
+    "issue_chars": 1949,
+    "title": "[BUG] Async agent returning null crashes the workflow with a NullPointerException",
+    "known_local": null,
+    "excluded": [
+      "196 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5847",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "5845"
+    ],
+    "pull_number": "5847",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5847:latest",
+    "image_gb": 2.91,
+    "fix_code_files": 2,
+    "fix_lines": 166,
+    "fail_to_pass": 196,
+    "pass_to_pass": 4971,
+    "issue_chars": 1820,
+    "title": "[BUG] Agentic proxies throw UnsupportedOperationException on equals()",
+    "known_local": null,
+    "excluded": [
+      "196 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5861",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "5860"
+    ],
+    "pull_number": "5861",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5861:latest",
+    "image_gb": 2.91,
+    "fix_code_files": 1,
+    "fix_lines": 5,
+    "fail_to_pass": 2473,
+    "pass_to_pass": 2737,
+    "issue_chars": 1537,
+    "title": "[BUG] SimpleToolSearchStrategy fails to match tools under Turkish locale",
+    "known_local": null,
+    "excluded": [
+      "2473 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "apache__shardingsphere-39137",
+    "repo": "apache/shardingsphere",
+    "language": "java",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "39134"
+    ],
+    "pull_number": "39137",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_shardingsphere-39137:latest",
+    "image_gb": 1.5,
+    "fix_code_files": 1,
+    "fix_lines": 9,
+    "fail_to_pass": 865,
+    "pass_to_pass": 13717,
+    "issue_chars": 1496,
+    "title": "PostgreSQL array parameter decoder throws StringIndexOutOfBoundsException for empty array literal {}",
+    "known_local": null,
+    "excluded": [
+      "865 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "apache__rocketmq-10614",
+    "repo": "apache/rocketmq",
+    "language": "java",
+    "created_at": "2026-07-13",
+    "issue_numbers": [
+      "10613"
+    ],
+    "pull_number": "10614",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_rocketmq-10614:latest",
+    "image_gb": 0.88,
+    "fix_code_files": 4,
+    "fix_lines": 48,
+    "fail_to_pass": 403,
+    "pass_to_pass": 2613,
+    "issue_chars": 2870,
+    "title": "Async request-reply RequestCallback may fire multiple times (premature onSuccess(null) + reply/timeout double callback)",
+    "known_local": null,
+    "excluded": [
+      "403 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "apache__rocketmq-10662",
+    "repo": "apache/rocketmq",
+    "language": "java",
+    "created_at": "2026-07-25",
+    "issue_numbers": [
+      "10661"
+    ],
+    "pull_number": "10662",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_rocketmq-10662:latest",
+    "image_gb": 0.88,
+    "fix_code_files": 1,
+    "fix_lines": 13,
+    "fail_to_pass": 242,
+    "pass_to_pass": 2675,
+    "issue_chars": 1096,
+    "title": "[Enhancement] gRPC producer termination only unregisters the first publishing topic",
+    "known_local": null,
+    "excluded": [
+      "242 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5817",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-21",
+    "issue_numbers": [
+      "5816"
+    ],
+    "pull_number": "5817",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5817:latest",
+    "image_gb": 2.91,
+    "fix_code_files": 1,
+    "fix_lines": 23,
+    "fail_to_pass": 3953,
+    "pass_to_pass": 1187,
+    "issue_chars": 2164,
+    "title": "[BUG] Utils.merge is not null-safe: NPE for 3+ args with null, and can return null",
+    "known_local": null,
+    "excluded": [
+      "3953 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "btraceio__btrace-910",
+    "repo": "btraceio/btrace",
+    "language": "java",
+    "created_at": "2026-07-18",
+    "issue_numbers": [
+      "890"
+    ],
+    "pull_number": "910",
+    "build": "java/gradle",
+    "image": "starryzhang/sweb.eval.x86_64.btraceio_1776_btrace-910:latest",
+    "image_gb": 1.93,
+    "fix_code_files": 4,
+    "fix_lines": 316,
+    "fail_to_pass": 881,
+    "pass_to_pass": 412,
+    "issue_chars": 1730,
+    "title": "[3.0] Recursion is caught by neither verifier layer \u2014 violates bounded-execution guarantee",
+    "known_local": null,
+    "excluded": [
+      "881 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "floci-io__floci-2031",
+    "repo": "floci-io/floci",
+    "language": "java",
+    "created_at": "2026-07-28",
+    "issue_numbers": [
+      "2013"
+    ],
+    "pull_number": "2031",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.floci-io_1776_floci-2031:latest",
+    "image_gb": 0.93,
+    "fix_code_files": 1,
+    "fix_lines": 4,
+    "fail_to_pass": 1,
+    "pass_to_pass": 7905,
+    "issue_chars": 1114,
+    "title": "[BUG] CloudFormation: AWS::EC2::Subnet drops MapPublicIpOnLaunch",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5869",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-28",
+    "issue_numbers": [
+      "5865"
+    ],
+    "pull_number": "5869",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5869:latest",
+    "image_gb": 2.91,
+    "fix_code_files": 2,
+    "fix_lines": 62,
+    "fail_to_pass": 1187,
+    "pass_to_pass": 4031,
+    "issue_chars": 16375,
+    "title": "[BUG] VertexAiAnthropicClient.createClient() does not handle global region",
+    "known_local": null,
+    "excluded": [
+      "1187 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5848",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "5846"
+    ],
+    "pull_number": "5848",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5848:latest",
+    "image_gb": 2.91,
+    "fix_code_files": 1,
+    "fix_lines": 20,
+    "fail_to_pass": 192,
+    "pass_to_pass": 4979,
+    "issue_chars": 1636,
+    "title": "[BUG] Parallel mapper agent returns null instead of an empty result for an empty input collection",
+    "known_local": null,
+    "excluded": [
+      "192 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "apache__paimon-8536",
+    "repo": "apache/paimon",
+    "language": "java",
+    "created_at": "2026-07-10",
+    "issue_numbers": [
+      "8535"
+    ],
+    "pull_number": "8536",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_paimon-8536:latest",
+    "image_gb": 0.77,
+    "fix_code_files": 1,
+    "fix_lines": 49,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1722,
+    "issue_chars": 1025,
+    "title": "[Bug] Internal map equality uses Java key lookup for binary keys",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "floci-io__floci-1931",
+    "repo": "floci-io/floci",
+    "language": "java",
+    "created_at": "2026-07-23",
+    "issue_numbers": [
+      "1921"
+    ],
+    "pull_number": "1931",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.floci-io_1776_floci-1931:latest",
+    "image_gb": 0.93,
+    "fix_code_files": 1,
+    "fix_lines": 26,
+    "fail_to_pass": 1,
+    "pass_to_pass": 7782,
+    "issue_chars": 2285,
+    "title": "[BUG] Duplicate storage backends clobber persisted state on graceful shutdown (DynamoDB table definitions lost)",
+    "known_local": "sanity broken here: 7,782 P2P failures for gold and no-op alike",
+    "excluded": [
+      "sanity broken here: 7,782 P2P failures for gold and no-op alike"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "apache__shardingsphere-39104",
+    "repo": "apache/shardingsphere",
+    "language": "java",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "39101"
+    ],
+    "pull_number": "39104",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_shardingsphere-39104:latest",
+    "image_gb": 2.24,
+    "fix_code_files": 1,
+    "fix_lines": 10,
+    "fail_to_pass": 13050,
+    "pass_to_pass": 1382,
+    "issue_chars": 1581,
+    "title": "Oracle metadata loader skips identity and collation columns on Oracle 18c and later",
+    "known_local": null,
+    "excluded": [
+      "13050 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "apache__shardingsphere-39237",
+    "repo": "apache/shardingsphere",
+    "language": "java",
+    "created_at": "2026-07-24",
+    "issue_numbers": [
+      "39120"
+    ],
+    "pull_number": "39237",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_shardingsphere-39237:latest",
+    "image_gb": 1.62,
+    "fix_code_files": 1,
+    "fix_lines": 53,
+    "fail_to_pass": 4670,
+    "pass_to_pass": 10225,
+    "issue_chars": 7869,
+    "title": "\u3010SQL Federation\u3011SQL Federation fails on MySQL LIMIT ? when the bound parameter is Long",
+    "known_local": null,
+    "excluded": [
+      "4670 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "floci-io__floci-2015",
+    "repo": "floci-io/floci",
+    "language": "java",
+    "created_at": "2026-07-28",
+    "issue_numbers": [
+      "1913"
+    ],
+    "pull_number": "2015",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.floci-io_1776_floci-2015:latest",
+    "image_gb": 0.93,
+    "fix_code_files": 2,
+    "fix_lines": 37,
+    "fail_to_pass": 7803,
+    "pass_to_pass": 0,
+    "issue_chars": 4963,
+    "title": "[BUG] CloudFormation DeleteStack OOMs after persistent restart with ELBv2 resources",
+    "known_local": null,
+    "excluded": [
+      "7803 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "floci-io__floci-1932",
+    "repo": "floci-io/floci",
+    "language": "java",
+    "created_at": "2026-07-23",
+    "issue_numbers": [
+      "1911"
+    ],
+    "pull_number": "1932",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.floci-io_1776_floci-1932:latest",
+    "image_gb": 0.93,
+    "fix_code_files": 1,
+    "fix_lines": 21,
+    "fail_to_pass": 4,
+    "pass_to_pass": 7782,
+    "issue_chars": 1670,
+    "title": "[BUG] DescribeKeyPairs \u2014 empty list / HTTP 200 instead of InvalidKeyPair.NotFound",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "apache__parquet-java-3669",
+    "repo": "apache/parquet-java",
+    "language": "java",
+    "created_at": "2026-07-16",
+    "issue_numbers": [
+      "3671"
+    ],
+    "pull_number": "3669",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_parquet-java-3669:latest",
+    "image_gb": 3.75,
+    "fix_code_files": 1,
+    "fix_lines": 12,
+    "fail_to_pass": 3,
+    "pass_to_pass": 2639,
+    "issue_chars": 352,
+    "title": "Bug: parquet-java fails on unknown logical types",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "agentscope-ai__agentscope-java-2343",
+    "repo": "agentscope-ai/agentscope-java",
+    "language": "java",
+    "created_at": "2026-07-21",
+    "issue_numbers": [
+      "2342"
+    ],
+    "pull_number": "2343",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.agentscope-ai_1776_agentscope-java-2343:latest",
+    "image_gb": 1.81,
+    "fix_code_files": 1,
+    "fix_lines": 13,
+    "fail_to_pass": 1,
+    "pass_to_pass": 7230,
+    "issue_chars": 1774,
+    "title": "[Bug]:`RemoteFilesystem.glob()` \u4f7f\u7528 `**/` \u6a21\u5f0f\u65f6\u65e0\u6cd5\u5339\u914d\u641c\u7d22\u76ee\u5f55\u6839\u5c42\u6587\u4ef6",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5755",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-11",
+    "issue_numbers": [
+      "5754"
+    ],
+    "pull_number": "5755",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5755:latest",
+    "image_gb": 2.9,
+    "fix_code_files": 1,
+    "fix_lines": 75,
+    "fail_to_pass": 4,
+    "pass_to_pass": 5044,
+    "issue_chars": 2642,
+    "title": "[BUG] DefaultToolExecutor silently loses precision for long/BigInteger/BigDecimal tool arguments (routed through double)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "apache__shardingsphere-39126",
+    "repo": "apache/shardingsphere",
+    "language": "java",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "39124"
+    ],
+    "pull_number": "39126",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_shardingsphere-39126:latest",
+    "image_gb": 1.62,
+    "fix_code_files": 3,
+    "fix_lines": 9,
+    "fail_to_pass": 1500,
+    "pass_to_pass": 13335,
+    "issue_chars": 1499,
+    "title": "MySQL dialect exception mapper does not map ColumnNotFoundException to a MySQL error",
+    "known_local": null,
+    "excluded": [
+      "1500 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "agentscope-ai__agentscope-java-2189",
+    "repo": "agentscope-ai/agentscope-java",
+    "language": "java",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "2168"
+    ],
+    "pull_number": "2189",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.agentscope-ai_1776_agentscope-java-2189:latest",
+    "image_gb": 2.1,
+    "fix_code_files": 2,
+    "fix_lines": 11,
+    "fail_to_pass": 3213,
+    "pass_to_pass": 3961,
+    "issue_chars": 1132,
+    "title": "Why does `DeepSeekFormatter` convert `system` messages to `user` messages?",
+    "known_local": null,
+    "excluded": [
+      "3213 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5757",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-11",
+    "issue_numbers": [
+      "5756"
+    ],
+    "pull_number": "5757",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5757:latest",
+    "image_gb": 2.9,
+    "fix_code_files": 3,
+    "fix_lines": 63,
+    "fail_to_pass": 1,
+    "pass_to_pass": 5045,
+    "issue_chars": 2874,
+    "title": "[BUG] MCP stdio/HTTP transports leak the previous subprocess/SSE connection on every reconnect",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "langchain4j__langchain4j-5752",
+    "repo": "langchain4j/langchain4j",
+    "language": "java",
+    "created_at": "2026-07-11",
+    "issue_numbers": [
+      "5751"
+    ],
+    "pull_number": "5752",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.langchain4j_1776_langchain4j-5752:latest",
+    "image_gb": 2.9,
+    "fix_code_files": 2,
+    "fix_lines": 12,
+    "fail_to_pass": 2,
+    "pass_to_pass": 5045,
+    "issue_chars": 1661,
+    "title": "[BUG] Non-numeric timeout_seconds argument throws raw NumberFormatException in run_shell_command tool",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "btraceio__btrace-899",
+    "repo": "btraceio/btrace",
+    "language": "java",
+    "created_at": "2026-07-13",
+    "issue_numbers": [
+      "878"
+    ],
+    "pull_number": "899",
+    "build": "java/gradle",
+    "image": "starryzhang/sweb.eval.x86_64.btraceio_1776_btrace-899:latest",
+    "image_gb": 1.23,
+    "fix_code_files": 2,
+    "fix_lines": 311,
+    "fail_to_pass": 760,
+    "pass_to_pass": 587,
+    "issue_chars": 1306,
+    "title": "[3.0] Make Gradle fat-agent bundled probes execute end to end",
+    "known_local": null,
+    "excluded": [
+      "760 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "floci-io__floci-1838",
+    "repo": "floci-io/floci",
+    "language": "java",
+    "created_at": "2026-07-11",
+    "issue_numbers": [
+      "1836"
+    ],
+    "pull_number": "1838",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.floci-io_1776_floci-1838:latest",
+    "image_gb": 0.87,
+    "fix_code_files": 1,
+    "fix_lines": 20,
+    "fail_to_pass": 2,
+    "pass_to_pass": 7614,
+    "issue_chars": 1261,
+    "title": "[BUG] S3 GetBucketEncryption returns 404 instead of default SSE-S3",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "floci-io__floci-1837",
+    "repo": "floci-io/floci",
+    "language": "java",
+    "created_at": "2026-07-11",
+    "issue_numbers": [
+      "1835"
+    ],
+    "pull_number": "1837",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.floci-io_1776_floci-1837:latest",
+    "image_gb": 0.87,
+    "fix_code_files": 1,
+    "fix_lines": 6,
+    "fail_to_pass": 3,
+    "pass_to_pass": 7612,
+    "issue_chars": 1177,
+    "title": "[BUG] S3 DeleteBucketReplication deletes the entire bucket",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "btraceio__btrace-897",
+    "repo": "btraceio/btrace",
+    "language": "java",
+    "created_at": "2026-07-13",
+    "issue_numbers": [
+      "876"
+    ],
+    "pull_number": "897",
+    "build": "java/gradle",
+    "image": "starryzhang/sweb.eval.x86_64.btraceio_1776_btrace-897:latest",
+    "image_gb": 1.22,
+    "fix_code_files": 3,
+    "fix_lines": 110,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1321,
+    "issue_chars": 1339,
+    "title": "[3.0] Fix Gradle extension annotation discovery for io.btrace descriptors",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "apache__shardingsphere-39072",
+    "repo": "apache/shardingsphere",
+    "language": "java",
+    "created_at": "2026-07-10",
+    "issue_numbers": [
+      "39071"
+    ],
+    "pull_number": "39072",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_shardingsphere-39072:latest",
+    "image_gb": 2.24,
+    "fix_code_files": 1,
+    "fix_lines": 25,
+    "fail_to_pass": 1035,
+    "pass_to_pass": 13402,
+    "issue_chars": 7496,
+    "title": "MySQL Proxy corrupts BLOB parameters when COM_STMT_EXECUTE sends VAR_STRING or VARCHAR for binary columns",
+    "known_local": null,
+    "excluded": [
+      "1035 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "agentscope-ai__agentscope-java-2232",
+    "repo": "agentscope-ai/agentscope-java",
+    "language": "java",
+    "created_at": "2026-07-15",
+    "issue_numbers": [
+      "2221"
+    ],
+    "pull_number": "2232",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.agentscope-ai_1776_agentscope-java-2232:latest",
+    "image_gb": 2.12,
+    "fix_code_files": 2,
+    "fix_lines": 9,
+    "fail_to_pass": 2774,
+    "pass_to_pass": 4414,
+    "issue_chars": 110,
+    "title": "[Bug]: ToolChoice.None \u88ab\u6620\u5c04\u4e3a Anthropic any",
+    "known_local": null,
+    "excluded": [
+      "issue text <300 chars (after removing images/links)",
+      "2774 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "apache__paimon-8874",
+    "repo": "apache/paimon",
+    "language": "java",
+    "created_at": "2026-07-27",
+    "issue_numbers": [
+      "8873"
+    ],
+    "pull_number": "8874",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.apache_1776_paimon-8874:latest",
+    "image_gb": 0.68,
+    "fix_code_files": 1,
+    "fix_lines": 13,
+    "fail_to_pass": 2,
+    "pass_to_pass": 12175,
+    "issue_chars": 1954,
+    "title": "[Bug] SliceComparator throws ClassCastException on BINARY/VARBINARY primary-key fields",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "vm"
+  },
+  {
+    "instance_id": "floci-io__floci-1870",
+    "repo": "floci-io/floci",
+    "language": "java",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "1728"
+    ],
+    "pull_number": "1870",
+    "build": "java/maven",
+    "image": "starryzhang/sweb.eval.x86_64.floci-io_1776_floci-1870:latest",
+    "image_gb": 0.87,
+    "fix_code_files": 1,
+    "fix_lines": 5,
+    "fail_to_pass": 2,
+    "pass_to_pass": 7658,
+    "issue_chars": 906,
+    "title": "[BUG] DescribeDBSubnetGroups: empty list instead of DBSubnetGroupNotFoundFault",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "btraceio__btrace-895",
+    "repo": "btraceio/btrace",
+    "language": "java",
+    "created_at": "2026-07-13",
+    "issue_numbers": [
+      "874"
+    ],
+    "pull_number": "895",
+    "build": "java/gradle",
+    "image": "starryzhang/sweb.eval.x86_64.btraceio_1776_btrace-895:latest",
+    "image_gb": 1.64,
+    "fix_code_files": 8,
+    "fix_lines": 1168,
+    "fail_to_pass": 1155,
+    "pass_to_pass": 102,
+    "issue_chars": 1681,
+    "title": "[3.0] Secure the prepared-mode BTrace control endpoint",
+    "known_local": null,
+    "excluded": [
+      "1155 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "btraceio__btrace-894",
+    "repo": "btraceio/btrace",
+    "language": "java",
+    "created_at": "2026-07-13",
+    "issue_numbers": [
+      "873"
+    ],
+    "pull_number": "894",
+    "build": "java/gradle",
+    "image": "starryzhang/sweb.eval.x86_64.btraceio_1776_btrace-894:latest",
+    "image_gb": 2.48,
+    "fix_code_files": 3,
+    "fix_lines": 97,
+    "fail_to_pass": 790,
+    "pass_to_pass": 428,
+    "issue_chars": 1340,
+    "title": "[3.0] Make agent telemetry explicitly opt-in",
+    "known_local": null,
+    "excluded": [
+      "790 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "JasperFx__wolverine-3523",
+    "repo": "JasperFx/wolverine",
+    "language": "cs",
+    "created_at": "2026-07-20",
+    "issue_numbers": [
+      "3520"
+    ],
+    "pull_number": "3523",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.jasperfx_1776_wolverine-3523:latest",
+    "image_gb": 6.92,
+    "fix_code_files": 2,
+    "fix_lines": 37,
+    "fail_to_pass": 2,
+    "pass_to_pass": 1852,
+    "issue_chars": 2843,
+    "title": "EventSubscriptionAgent.RebuildAsync/RewindAsync leave the shard permanently stopped under Wolverine-managed distribution",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "angularsen__UnitsNet-1699",
+    "repo": "angularsen/UnitsNet",
+    "language": "cs",
+    "created_at": "2026-07-25",
+    "issue_numbers": [
+      "1652"
+    ],
+    "pull_number": "1699",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.angularsen_1776_unitsnet-1699:latest",
+    "image_gb": 1.07,
+    "fix_code_files": 5,
+    "fix_lines": 84,
+    "fail_to_pass": 20,
+    "pass_to_pass": 46691,
+    "issue_chars": 2046,
+    "title": "Add Information/BitRate/Duration and Frequency/Duration unit relations",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "OrchardCMS__OrchardCore-19492",
+    "repo": "OrchardCMS/OrchardCore",
+    "language": "cs",
+    "created_at": "2026-07-01",
+    "issue_numbers": [
+      "19487"
+    ],
+    "pull_number": "19492",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.orchardcms_1776_orchardcore-19492:latest",
+    "image_gb": 6.95,
+    "fix_code_files": 4,
+    "fix_lines": 52,
+    "fail_to_pass": 5,
+    "pass_to_pass": 2452,
+    "issue_chars": 1500,
+    "title": "`main` `commit 1082d22ca75dfe86b2d69f34afaaaa1a166051e5` - Run SQL query, parse error and js error",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "SubtitleEdit__subtitleedit-12151",
+    "repo": "SubtitleEdit/subtitleedit",
+    "language": "cs",
+    "created_at": "2026-07-04",
+    "issue_numbers": [
+      "12126"
+    ],
+    "pull_number": "12151",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.subtitleedit_1776_subtitleedit-12151:latest",
+    "image_gb": 2.81,
+    "fix_code_files": 2,
+    "fix_lines": 29,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1196,
+    "issue_chars": 793,
+    "title": "Subtitle Edit 5.1.0 beta 8 (Linux)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "nunit__nunit-5351",
+    "repo": "nunit/nunit",
+    "language": "cs",
+    "created_at": "2026-07-18",
+    "issue_numbers": [
+      "5348"
+    ],
+    "pull_number": "5351",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.nunit_1776_nunit-5351:latest",
+    "image_gb": 1.41,
+    "fix_code_files": 4,
+    "fix_lines": 36,
+    "fail_to_pass": 3,
+    "pass_to_pass": 27281,
+    "issue_chars": 3108,
+    "title": "Use ArgumentNullException throw helper and remove CA1510 diagnostic",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "JasperFx__wolverine-3426",
+    "repo": "JasperFx/wolverine",
+    "language": "cs",
+    "created_at": "2026-07-14",
+    "issue_numbers": [
+      "3416"
+    ],
+    "pull_number": "3426",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.jasperfx_1776_wolverine-3426:latest",
+    "image_gb": 6.97,
+    "fix_code_files": 2,
+    "fix_lines": 341,
+    "fail_to_pass": 106,
+    "pass_to_pass": 1811,
+    "issue_chars": 1993,
+    "title": "CosmosDB persistence requires a camelCase serializer policy, and nothing says so",
+    "known_local": null,
+    "excluded": [
+      "106 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "JasperFx__wolverine-3488",
+    "repo": "JasperFx/wolverine",
+    "language": "cs",
+    "created_at": "2026-07-18",
+    "issue_numbers": [
+      "3471"
+    ],
+    "pull_number": "3488",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.jasperfx_1776_wolverine-3488:latest",
+    "image_gb": 6.97,
+    "fix_code_files": 6,
+    "fix_lines": 248,
+    "fail_to_pass": 19,
+    "pass_to_pass": 1857,
+    "issue_chars": 793,
+    "title": "Azure Service Bus: surface PrefetchCount",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "JasperFx__wolverine-3456",
+    "repo": "JasperFx/wolverine",
+    "language": "cs",
+    "created_at": "2026-07-17",
+    "issue_numbers": [
+      "3454"
+    ],
+    "pull_number": "3456",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.jasperfx_1776_wolverine-3456:latest",
+    "image_gb": 6.97,
+    "fix_code_files": 6,
+    "fix_lines": 145,
+    "fail_to_pass": 62,
+    "pass_to_pass": 1824,
+    "issue_chars": 2845,
+    "title": "Kafka: degrade-only connection state via SetErrorHandler/SetStatisticsHandler (follow-up to #3237)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "JasperFx__wolverine-3695",
+    "repo": "JasperFx/wolverine",
+    "language": "cs",
+    "created_at": "2026-07-28",
+    "issue_numbers": [
+      "3680"
+    ],
+    "pull_number": "3695",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.jasperfx_1776_wolverine-3695:latest",
+    "image_gb": 6.95,
+    "fix_code_files": 3,
+    "fix_lines": 88,
+    "fail_to_pass": 7,
+    "pass_to_pass": 1931,
+    "issue_chars": 3006,
+    "title": "CircuitBreakingTests: durable_and_not_parallel.the_circuit_breaker_should_trip_and_restart is unreliable on CI",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "JasperFx__wolverine-3513",
+    "repo": "JasperFx/wolverine",
+    "language": "cs",
+    "created_at": "2026-07-19",
+    "issue_numbers": [
+      "3499"
+    ],
+    "pull_number": "3513",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.jasperfx_1776_wolverine-3513:latest",
+    "image_gb": 6.97,
+    "fix_code_files": 4,
+    "fix_lines": 79,
+    "fail_to_pass": 14,
+    "pass_to_pass": 1863,
+    "issue_chars": 3385,
+    "title": "SignalR: ResponseToCallingWebSocket is silently dropped when the handler's context has already flushed (explicit SaveCha",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "angularsen__UnitsNet-1698",
+    "repo": "angularsen/UnitsNet",
+    "language": "cs",
+    "created_at": "2026-07-25",
+    "issue_numbers": [
+      "1667"
+    ],
+    "pull_number": "1698",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.angularsen_1776_unitsnet-1698:latest",
+    "image_gb": 1.13,
+    "fix_code_files": 2,
+    "fix_lines": 48,
+    "fail_to_pass": 26,
+    "pass_to_pass": 46677,
+    "issue_chars": 1795,
+    "title": "Compressibility unit conversion between InverseKilopascal and InversePoundForcePerSquareInch is inverted",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "SubtitleEdit__subtitleedit-12685",
+    "repo": "SubtitleEdit/subtitleedit",
+    "language": "cs",
+    "created_at": "2026-07-21",
+    "issue_numbers": [
+      "12683"
+    ],
+    "pull_number": "12685",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.subtitleedit_1776_subtitleedit-12685:latest",
+    "image_gb": 2.84,
+    "fix_code_files": 6,
+    "fix_lines": 187,
+    "fail_to_pass": 129,
+    "pass_to_pass": 1274,
+    "issue_chars": 5864,
+    "title": "Opening a raw PGS .sup freezes the UI and causes thread-pool growth",
+    "known_local": null,
+    "excluded": [
+      "129 FAIL_TO_PASS (hidden tests far beyond one issue)"
+    ],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "SubtitleEdit__subtitleedit-12895",
+    "repo": "SubtitleEdit/subtitleedit",
+    "language": "cs",
+    "created_at": "2026-07-28",
+    "issue_numbers": [
+      "12894"
+    ],
+    "pull_number": "12895",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.subtitleedit_1776_subtitleedit-12895:latest",
+    "image_gb": 2.84,
+    "fix_code_files": 1,
+    "fix_lines": 224,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1575,
+    "issue_chars": 1488,
+    "title": "Scroll bar trough click-and-hold keeps paging past the cursor in the subtitle grid",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "SubtitleEdit__subtitleedit-12763",
+    "repo": "SubtitleEdit/subtitleedit",
+    "language": "cs",
+    "created_at": "2026-07-23",
+    "issue_numbers": [
+      "12748"
+    ],
+    "pull_number": "12763",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.subtitleedit_1776_subtitleedit-12763:latest",
+    "image_gb": 2.84,
+    "fix_code_files": 1,
+    "fix_lines": 160,
+    "fail_to_pass": 10,
+    "pass_to_pass": 1486,
+    "issue_chars": 601,
+    "title": "\"fix dash dialog\" does not work if the dash is a non-ASCII",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "Ombi-app__Ombi-5444",
+    "repo": "Ombi-app/Ombi",
+    "language": "cs",
+    "created_at": "2026-07-09",
+    "issue_numbers": [
+      "5239"
+    ],
+    "pull_number": "5444",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.ombi-app_1776_ombi-5444:latest",
+    "image_gb": 1.66,
+    "fix_code_files": 1,
+    "fix_lines": 4,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1686,
+    "issue_chars": 559,
+    "title": "All users variables in MassEmail with BCC default to the first valid user",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "riok__mapperly-2355",
+    "repo": "riok/mapperly",
+    "language": "cs",
+    "created_at": "2026-07-06",
+    "issue_numbers": [
+      "2250"
+    ],
+    "pull_number": "2355",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.riok_1776_mapperly-2355:latest",
+    "image_gb": 1.01,
+    "fix_code_files": 1,
+    "fix_lines": 22,
+    "fail_to_pass": 1,
+    "pass_to_pass": 1704,
+    "issue_chars": 1416,
+    "title": "elevate default severity of RMG068 from info to warning (queryable projection's user implemented mapping not inlinable)",
+    "known_local": "sanity broken here: ~1,620 P2P failures for gold and no-op alike",
+    "excluded": [
+      "sanity broken here: ~1,620 P2P failures for gold and no-op alike"
+    ],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "elsa-workflows__elsa-core-7898",
+    "repo": "elsa-workflows/elsa-core",
+    "language": "cs",
+    "created_at": "2026-07-30",
+    "issue_numbers": [
+      "7771"
+    ],
+    "pull_number": "7898",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.elsa-workflows_1776_elsa-core-7898:latest",
+    "image_gb": 3.59,
+    "fix_code_files": 1,
+    "fix_lines": 42,
+    "fail_to_pass": 2,
+    "pass_to_pass": 2255,
+    "issue_chars": 6284,
+    "title": "Thread-safety: DefaultTenantService.DeactivateTenantsAsync mutates the tenant dictionary without _refreshLock (intermitt",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-slow"
+  },
+  {
+    "instance_id": "JasperFx__marten-5080",
+    "repo": "JasperFx/marten",
+    "language": "cs",
+    "created_at": "2026-07-29",
+    "issue_numbers": [
+      "5076"
+    ],
+    "pull_number": "5080",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.jasperfx_1776_marten-5080:latest",
+    "image_gb": 2.88,
+    "fix_code_files": 2,
+    "fix_lines": 106,
+    "fail_to_pass": 1,
+    "pass_to_pass": 4903,
+    "issue_chars": 3133,
+    "title": "Newtonsoft: persisting a lazy LINQ sequence writes an unreadable $type and breaks all later reads",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "JasperFx__wolverine-3642",
+    "repo": "JasperFx/wolverine",
+    "language": "cs",
+    "created_at": "2026-07-26",
+    "issue_numbers": [
+      "3618"
+    ],
+    "pull_number": "3642",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.jasperfx_1776_wolverine-3642:latest",
+    "image_gb": 0.78,
+    "fix_code_files": 2,
+    "fix_lines": 59,
+    "fail_to_pass": 7,
+    "pass_to_pass": 1941,
+    "issue_chars": 1534,
+    "title": "Store-aware overload of TryRebuildRegisteredProjectionAsync (last-resort transient rebuild)",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "JasperFx__wolverine-3608",
+    "repo": "JasperFx/wolverine",
+    "language": "cs",
+    "created_at": "2026-07-23",
+    "issue_numbers": [
+      "3599"
+    ],
+    "pull_number": "3608",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.jasperfx_1776_wolverine-3608:latest",
+    "image_gb": 0.82,
+    "fix_code_files": 1,
+    "fix_lines": 9,
+    "fail_to_pass": 1,
+    "pass_to_pass": 2030,
+    "issue_chars": 2284,
+    "title": "Deserialization failures mark spans as errors without recording exception details",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "JasperFx__wolverine-3612",
+    "repo": "JasperFx/wolverine",
+    "language": "cs",
+    "created_at": "2026-07-23",
+    "issue_numbers": [
+      "3601"
+    ],
+    "pull_number": "3612",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.jasperfx_1776_wolverine-3612:latest",
+    "image_gb": 0.82,
+    "fix_code_files": 1,
+    "fix_lines": 105,
+    "fail_to_pass": 66,
+    "pass_to_pass": 1966,
+    "issue_chars": 2066,
+    "title": "OpenAPI: describe chain-bound parameters from bound variables, not re-derived attributes (retire the 3 subtractive guard",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  },
+  {
+    "instance_id": "JasperFx__wolverine-3582",
+    "repo": "JasperFx/wolverine",
+    "language": "cs",
+    "created_at": "2026-07-22",
+    "issue_numbers": [
+      "3580"
+    ],
+    "pull_number": "3582",
+    "build": "c#/dotnet",
+    "image": "starryzhang/sweb.eval.x86_64.jasperfx_1776_wolverine-3582:latest",
+    "image_gb": 0.82,
+    "fix_code_files": 1,
+    "fix_lines": 14,
+    "fail_to_pass": 3,
+    "pass_to_pass": 1967,
+    "issue_chars": 2890,
+    "title": "EventSubscriptionAgent health check compares a per-tenant agent's position against the database-wide high water mark \u2014 i",
+    "known_local": null,
+    "excluded": [],
+    "local_tier": "local-fast"
+  }
+]

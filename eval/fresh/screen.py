@@ -7,11 +7,12 @@ either keeps the task with only the implied tests, or drops it.
 
     python fresh/screen.py show sympy__sympy-30596
     python fresh/screen.py keep sympy__sympy-30596 --tests <test>... \
-        --drop "<test>=<reason>" ... --reviewer <who>
+        --drop "<test>||<reason>" ... --reviewer <who>
     python fresh/screen.py drop sympy__sympy-30596 --reason "..." --reviewer <who>
 
-The unscreened list stays in FAIL_TO_PASS_measured; FAIL_TO_PASS becomes the kept
-tests. Rebuilding a task with build_task.py resets its screening.
+The unscreened lists stay in FAIL_TO_PASS_measured / PASS_TO_PASS_measured;
+FAIL_TO_PASS becomes the kept tests. --exclude-p2p removes PASS_TO_PASS tests
+that fail even with the gold patch in this environment (each with a reason). Rebuilding a task with build_task.py resets its screening.
 """
 
 import argparse
@@ -47,7 +48,7 @@ def test_sources(task, names):
         func = name.split("::")[-1]
         m = re.search(rf"(?m)^\+def {re.escape(func)}\(.*?(?=^[+ ]def |^[+ ]class |^diff --git |^@@ |\Z)",
                       task["test_patch"], re.S)
-        out[name] = m.group(0) if m else "(not added by the test patch)"
+        out[name] = m.group(0) if m else "(no test function by this name; the full test patch:)\n" + task["test_patch"]
     return out
 
 
@@ -60,11 +61,18 @@ def cmd_show(args):
     print(f"\n## Current screening\n{json.dumps(task.get('screening'), indent=2)}")
 
 
-def record(task, decision, kept, dropped, reviewer, note):
+def record(task, decision, kept, dropped, reviewer, note, p2p_excluded=None):
     task["FAIL_TO_PASS_measured"] = json.dumps(measured_f2p(task))
     task["FAIL_TO_PASS"] = json.dumps(kept)
+    p2p_all = json.loads(task.get("PASS_TO_PASS_measured") or task["PASS_TO_PASS"])
+    p2p_excluded = p2p_excluded or {}
+    unknown = set(p2p_excluded) - set(p2p_all)
+    if unknown:
+        sys.exit(f"not in measured PASS_TO_PASS: {sorted(unknown)}")
+    task["PASS_TO_PASS_measured"] = json.dumps(p2p_all)
+    task["PASS_TO_PASS"] = json.dumps([t for t in p2p_all if t not in p2p_excluded])
     task["screening"] = {
-        "decision": decision, "kept": kept, "dropped": dropped,
+        "decision": decision, "kept": kept, "dropped": dropped, "p2p_excluded": p2p_excluded,
         "reviewer": reviewer, "note": note,
         "date": datetime.date.today().isoformat(),
     }
@@ -74,7 +82,7 @@ def cmd_keep(args):
     tasks = load()
     task = find(tasks, args.instance)
     measured = measured_f2p(task)
-    dropped = dict(d.split("=", 1) for d in args.drop)
+    dropped = dict(d.split("||", 1) for d in args.drop)
     unknown = (set(args.tests) | set(dropped)) - set(measured)
     if unknown:
         sys.exit(f"not in measured FAIL_TO_PASS: {sorted(unknown)}")
@@ -83,7 +91,8 @@ def cmd_keep(args):
         sys.exit(f"every measured test needs a keep or drop decision; undecided: {sorted(undecided)}")
     if not args.tests:
         sys.exit("keeping a task needs at least one test; use `drop` instead")
-    record(task, "keep", sorted(args.tests), dropped, args.reviewer, args.note)
+    excluded = dict(d.split("||", 1) for d in args.exclude_p2p)
+    record(task, "keep", sorted(args.tests), dropped, args.reviewer, args.note, excluded)
     TASKS.write_text(json.dumps(tasks, indent=2) + "\n")
     print(f"{args.instance}: keep, FAIL_TO_PASS {len(measured)} -> {len(args.tests)}")
 
@@ -105,7 +114,9 @@ def main():
     s = sub.add_parser("keep")
     s.add_argument("instance")
     s.add_argument("--tests", nargs="+", default=[])
-    s.add_argument("--drop", nargs="*", default=[], metavar="TEST=REASON")
+    s.add_argument("--drop", nargs="*", default=[], metavar="TEST||REASON")
+    s.add_argument("--exclude-p2p", nargs="*", default=[], metavar="TEST||REASON",
+                   help="PASS_TO_PASS tests that fail regardless of the fix in this environment")
     s.add_argument("--reviewer", required=True)
     s.add_argument("--note", default="")
     s.set_defaults(fn=cmd_keep)
