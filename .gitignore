@@ -12,3 +12,5 @@ interview-prep.md
 # Docs copied into the package dir by mcp's prepack script (canonical copies live at the repo root)
 mcp/*.md
 demo.md
+# stored gzipped as tasks.json.gz (over GitHub's 100 MB file limit)
+eval/fresh/tasks.json
