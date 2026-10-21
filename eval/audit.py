@@ -69,7 +69,7 @@ def _commands(path):
                 yield "codex_web_search", d
 
 
-PACKAGE_HOSTS = re.compile(r"(^|\.)(pypi\.org|files\.pythonhosted\.org|registry\.npmjs\.org|registry\.yarnpkg\.com)$")
+PACKAGE_HOSTS = re.compile(r"(^|\.)(pypi\.org|files\.pythonhosted\.org|registry\.npmjs\.org|registry\.yarnpkg\.com|nuget\.org|crates\.io|repo1?\.maven\.org|repo\.maven\.apache\.org|plugins\.gradle\.org|services\.gradle\.org|proxy\.golang\.org)$")
 
 
 def _all_blocked(cmd, blocked_log):

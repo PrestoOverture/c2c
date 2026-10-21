@@ -47,7 +47,12 @@ new file mode 100644
 
 def load_dataset():
     if DATASET.endswith(".json"):
-        return {r["instance_id"]: r for r in json.loads(Path(DATASET).read_text())}
+        path = Path(DATASET)
+        if not path.exists() and path.with_suffix(".json.gz").exists():
+            # the repo stores the task file gzipped (it exceeds GitHub's 100 MB file limit)
+            import gzip
+            return {r["instance_id"]: r for r in json.loads(gzip.open(path.with_suffix(".json.gz"), "rt").read())}
+        return {r["instance_id"]: r for r in json.loads(path.read_text())}
     from datasets import load_dataset as hf_load
 
     return {r["instance_id"]: r for r in hf_load(DATASET, split="test")}

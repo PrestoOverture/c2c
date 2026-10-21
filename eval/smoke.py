@@ -34,6 +34,7 @@ C2C_PACKAGE = "claude2codex@0.3.6"
 
 RUN_CAP_S = 90 * 60
 CLAUDE_START_MAX = 0.85  # a Claude arm waits for the 5h reset only if it would start above this
+CODEX_START_MAX = 0.80  # same for Codex (arm C); a c2c run spends ~7% of the Codex 5h window
 RESET_GUARD_S = 15 * 60  # ...or if the window resets within this long (the 5h delta would be lost)
 
 UNATTENDED = (
@@ -125,8 +126,12 @@ def _retry(read, tries=4):
     return None
 
 
-def snapshot():
-    return {"at": time.time(), "claude": _retry(claude_usage), "codex": _retry(codex_usage)}
+def snapshot(arm=None):
+    """Usage of both plans; an arm that never touches one side skips reading it
+    (a cloud runner may have no login for it)."""
+    claude = _retry(claude_usage) if arm != "B" else None
+    codex = _retry(codex_usage) if arm in (None, "B", "C") else None
+    return {"at": time.time(), "claude": claude, "codex": codex}
 
 
 def wait_for_headroom(side, read):
@@ -136,7 +141,7 @@ def wait_for_headroom(side, read):
     if not u or "five_hour" not in u:
         return
     w = u["five_hour"]
-    too_full = side == "claude" and w["utilization"] > CLAUDE_START_MAX
+    too_full = w["utilization"] > (CLAUDE_START_MAX if side == "claude" else CODEX_START_MAX)
     resets_mid_run = w["resets_at"] - time.time() < RESET_GUARD_S
     if too_full or resets_mid_run:
         until = w["resets_at"] + 60
@@ -208,6 +213,9 @@ def c2c_lite_text():
 def arm_command(arm, prompt, run_dir):
     if arm == "A":
         return CLAUDE_BASE + ["--append-system-prompt", HEADLESS.lstrip(), prompt]
+    if arm == "S":  # round-2 difficulty probe: arm A with Sonnet, never reported as a result
+        base = [SONNET if a == OPUS else a for a in CLAUDE_BASE]
+        return base + ["--append-system-prompt", HEADLESS.lstrip(), prompt]
     if arm == "B":
         return ["codex", "exec", "--json", "-m", CODEX_MODEL, "-c", f"model_reasoning_effort={EFFORT}",
                 "-c", CODEX_NO_WEB, "-s", "danger-full-access", "--skip-git-repo-check", prompt]

@@ -1,6 +1,7 @@
 """Pilot runner: every (task, arm, repeat), shuffled with a fixed seed, resumable.
 
     C2C_EVAL_DATASET=fresh/tasks.json python pilot.py [--limit N] [--plan]
+    C2C_EVAL_DATASET=fresh/tasks.json python pilot.py --tasks round2/probe.txt --arms S --repeats 1 --prefix probe
 
 Each run reuses smoke.py's machinery (fresh workspace + container, quota
 headroom checks, Claude/Codex usage snapshots before and after) and is then
@@ -11,6 +12,7 @@ where it stopped; --limit runs at most N pending runs (one "batch").
 
 import argparse
 import json
+import os
 import random
 import secrets
 import shutil
@@ -22,7 +24,7 @@ from pathlib import Path
 import audit
 import blockproxy
 import smoke
-from run import EVAL_DIR, RESULTS_DIR, load_dataset, score
+from run import EVAL_DIR, RESULTS_DIR, load_dataset, pull_images, score
 
 ARMS = ["A", "B", "C", "D", "E"]
 REPEATS = 3
@@ -33,15 +35,18 @@ proxy = blockproxy.BlockProxy().start()  # one per runner process; log_path set 
 WS_ROOT = Path("/tmp/ws")  # deliberately outside the repo: agents walk parents for AGENTS.md
 
 
-def plan():
-    ids = [l.strip() for l in PILOT_FILE.read_text().splitlines() if l.strip() and not l.startswith("#")]
-    runs = [(iid, arm, k) for iid in ids for arm in ARMS for k in range(1, REPEATS + 1)]
+PREFIX = "pilot"  # run ids are <PREFIX>-<task>-<arm>-r<k>; --prefix keeps other rounds apart
+
+
+def plan(task_file=PILOT_FILE, arms=ARMS, repeats=REPEATS):
+    ids = [l.strip() for l in task_file.read_text().splitlines() if l.strip() and not l.startswith("#")]
+    runs = [(iid, arm, k) for iid in ids for arm in arms for k in range(1, repeats + 1)]
     random.Random(SEED).shuffle(runs)
     return runs
 
 
 def run_id_of(iid, arm, k):
-    return f"pilot-{iid.split('__')[1]}-{arm}-r{k}"
+    return f"{PREFIX}-{iid.split('__')[1]}-{arm}-r{k}"
 
 
 def grade(run_id):
@@ -64,6 +69,23 @@ def grade(run_id):
     return grades
 
 
+def grade_fields(grades):
+    if grades is None:  # agent-only run (cloud agent job); grade_existing fills these in
+        return {"grades": None, "resolved": None, "grades_disagree": None}
+    return {"grades": grades, "resolved": all(g["resolved"] for g in grades),
+            "grades_disagree": len({g["resolved"] for g in grades}) > 1}
+
+
+def grade_existing(run_id):
+    """Grade a run whose agent ran elsewhere (cloud agent job without the gold data)."""
+    path = RESULTS_DIR / run_id / "run.json"
+    record = json.loads(path.read_text())
+    record.update(grade_fields(grade(run_id)))
+    record["audit"] = audit.audit_run(RESULTS_DIR / run_id)
+    path.write_text(json.dumps(record, indent=2) + "\n")
+    return record
+
+
 def ensure_docker():
     """Docker Desktop has quit on its own between runs; start it and wait."""
     if subprocess.run(["docker", "info"], capture_output=True).returncode == 0:
@@ -77,7 +99,7 @@ def ensure_docker():
     sys.exit("docker did not come up within 5 minutes")
 
 
-def do_run(inst, arm, run_id, template):
+def do_run(inst, arm, run_id, template, grade_now=True):
     ensure_docker()
     run_dir = RESULTS_DIR / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -99,13 +121,24 @@ def do_run(inst, arm, run_id, template):
                                  problem_statement=inst["problem_statement"])
         cmd = smoke.arm_command(arm, prompt, opaque)
 
-        before = smoke.snapshot()
+        before = smoke.snapshot(arm)
         proxy.log_path = run_dir / "blocked.log"
         outcome = smoke.run_agent(cmd, ws, run_dir / "agent.jsonl", env=smoke.agent_env(opaque, proxy.url))
         proxy.log_path = None
         time.sleep(30)  # let usage counters settle
-        after = smoke.snapshot()
+        after = smoke.snapshot(arm)
         subprocess.run(["docker", "rm", "-f", ctr], capture_output=True)
+        log_text = (run_dir / "agent.jsonl").read_text(errors="ignore")
+        if '"error":"authentication_failed"' in log_text:
+            # not an agent outcome: leave no run.json so the run stays pending
+            sys.exit(f"{run_id}: agent could not authenticate; fix the login and rerun")
+        jobs_text = "".join(f.read_text(errors="ignore") for f in (opaque / "c2c-jobs").glob("*.json"))
+        if ('"error":"rate_limit"' in log_text or "hit your limit" in log_text
+                or "hit your usage limit" in jobs_text):
+            sys.exit(f"{run_id}: Claude or Codex hit the plan's usage limit mid-run; rerun after the reset")
+        # the work container writes into the bind-mounted checkout as root; on a cloud
+        # runner those files can be unreadable to git here, so take ownership back first
+        subprocess.run(["sudo", "-n", "chown", "-R", f"{os.getuid()}:{os.getgid()}", str(ws)], capture_output=True)
         patch = smoke.collect_patch(ws, base)
         if (opaque / "c2c-jobs").exists():
             shutil.copytree(opaque / "c2c-jobs", run_dir / "c2c-jobs")
@@ -116,14 +149,12 @@ def do_run(inst, arm, run_id, template):
         shutil.rmtree(opaque, ignore_errors=True)
     (run_dir / "predictions.jsonl").write_text(json.dumps(
         {"instance_id": inst["instance_id"], "model_name_or_path": f"arm-{arm}", "model_patch": patch}) + "\n")
-    grades = grade(run_id)
+    grades = grade(run_id) if grade_now else None
     record = {
         "run_id": run_id, "arm": arm, "instance_id": inst["instance_id"],
         "models": {"opus": smoke.OPUS, "sonnet": smoke.SONNET, "codex": smoke.CODEX_MODEL, "effort": smoke.EFFORT},
         **outcome, "patch_lines": patch.count("\n"),
-        "grades": grades,
-        "resolved": all(g["resolved"] for g in grades),
-        "grades_disagree": len({g["resolved"] for g in grades}) > 1,
+        **grade_fields(grades),
         "usage_before": before, "usage_after": after,
         "claude_delta": smoke.delta(before, after, "claude"),
         "codex_delta": smoke.delta(before, after, "codex"),
@@ -138,12 +169,28 @@ def do_run(inst, arm, run_id, template):
 
 
 def main():
+    global PREFIX
     p = argparse.ArgumentParser()
     p.add_argument("--limit", type=int, default=None, help="run at most N pending runs")
     p.add_argument("--plan", action="store_true", help="print the run order and progress, run nothing")
+    p.add_argument("--tasks", type=Path, default=PILOT_FILE, help="task list, relative to eval/")
+    p.add_argument("--arms", nargs="+", default=ARMS, choices=ARMS + ["S"])
+    p.add_argument("--repeats", type=int, default=REPEATS)
+    p.add_argument("--prefix", default="pilot")
+    p.add_argument("--no-grade", action="store_true", help="run agents only; grade later with --grade-existing")
+    p.add_argument("--grade-existing", nargs="+", metavar="RUN_ID", help="grade runs whose agent ran elsewhere")
+    p.add_argument("--rmi", action="store_true",
+                   help="pull each task image before its run and remove it after (disk too small for all)")
     args = p.parse_args()
 
-    runs = plan()
+    PREFIX = args.prefix
+    if args.grade_existing:
+        for run_id in args.grade_existing:
+            r = grade_existing(run_id)
+            print(f"{run_id}: resolved={r['resolved']}{' (grades disagree)' if r['grades_disagree'] else ''}", flush=True)
+        return
+    task_file = args.tasks if args.tasks.is_absolute() else EVAL_DIR / args.tasks
+    runs = plan(task_file, args.arms, args.repeats)
     pending = [r for r in runs if not (RESULTS_DIR / run_id_of(*r) / "run.json").exists()]
     if args.plan:
         for i, r in enumerate(runs, 1):
@@ -162,7 +209,13 @@ def main():
         run_id = run_id_of(iid, arm, k)
         shutil.rmtree(RESULTS_DIR / run_id, ignore_errors=True)  # a half-finished earlier attempt
         print(f"[{n}/{len(batch)}] {run_id}: running", flush=True)
-        r = do_run(data[iid], arm, run_id, template)
+        if args.rmi:
+            ensure_docker()
+            pull_images([iid])
+        r = do_run(data[iid], arm, run_id, template, grade_now=not args.no_grade)
+        if args.rmi:
+            subprocess.run(["docker", "rmi", "-f", data[iid]["image"]], capture_output=True)
+            subprocess.run(["docker", "image", "prune", "-f"], capture_output=True)
         print(f"[{n}/{len(batch)}] {run_id}: {r['duration_s'] // 60} min, exit {r['exit_code']}"
               f"{' TIMEOUT' if r['timed_out'] else ''}, resolved={r['resolved']}"
               f"{' (grades disagree)' if r['grades_disagree'] else ''}, "

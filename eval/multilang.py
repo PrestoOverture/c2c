@@ -71,8 +71,9 @@ def cmd_import(ids):
 
 # ---------- grading ----------
 
-def docker(*args, input=None, timeout=CMD_TIMEOUT_S):
-    return subprocess.run(["docker", *args], input=input, capture_output=True, text=True, timeout=timeout)
+def docker(*args, input=None, timeout=None):
+    return subprocess.run(["docker", *args], input=input, capture_output=True, text=True,
+                          timeout=timeout or CMD_TIMEOUT_S)
 
 
 def apply_patch(ctr, patch, name):
