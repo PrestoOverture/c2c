@@ -252,7 +252,8 @@ Python 3.12，Poetry。从项目根目录运行。
 | `CODEX_MODEL`           | Codex 默认               | 模型覆盖                                                      |
 | `CODEX_APPROVAL_POLICY` | `never`                | 审批策略（默认自主执行）                                              |
 | `CODEX_PERMISSIONS`     | 未设置                    | 权限配置透传                                                    |
-| `CODEX_JOB_TIMEOUT_MS`  | `1800000`              | 单任务最大时长（30 分钟）                                            |
+| `CODEX_JOB_TIMEOUT_MS`  | `7200000`              | 单任务总时长硬上限（2 小时） |
+| `C2C_IDLE_TIMEOUT_MS` | `1200000` | 运行中的尝试连续无 Codex 通知时超时（20 分钟），`0` 禁用；排队和等待依赖的时间不计入 |
 | `CODEX_QUIET_MS`        | `30000`                | 判定活跃目标已完成前的静默等待时间                                         |
 | `GOAL_OBJECTIVE_MAX`    | `2000`                 | 渲染后 goal-objective 的最大长度；超限的合同会被 `codex_implement` 在提交时拒绝 |
 | `C2C_STATE_DIR`         | `~/.claude2codex/jobs` | 持久化任务注册表（每任务一个原子写入的 JSON 文件）                              |

@@ -26,6 +26,8 @@ export interface JobConfig {
   permissions?: string;
   /** Overall maximum job timeout duration in milliseconds */
   jobTimeoutMs: number;
+  /** Maximum notification-free time per running attempt; 0 disables */
+  idleTimeoutMs: number;
   /** Quiet period duration in milliseconds before concluding single-turn jobs */
   quietMs: number;
   /** Inactivity warning threshold duration in milliseconds for stall detection */
@@ -587,6 +589,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
   let lastCodexError: string | undefined;
   let quietTimer: ReturnType<typeof setTimeout> | undefined;
   let stallTimer: ReturnType<typeof setTimeout> | undefined;
+  let idleTimer: ReturnType<typeof setTimeout> | undefined;
   let settle!: () => void;
   const doneSignal = new Promise<void>((res) => (settle = res));
   const progress = (event: JobProgressEvent["event"], message: string) =>
@@ -627,6 +630,15 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
       finalize("done");
       settle();
     }, cfg.quietMs);
+  }
+
+  function armIdleTimer() {
+    clearTimeout(idleTimer);
+    if (cfg.idleTimeoutMs === 0) return;
+    idleTimer = setTimeout(() => {
+      finalize("timeout", `no Codex notification for ${cfg.idleTimeoutMs}ms (C2C_IDLE_TIMEOUT_MS)`);
+      settle();
+    }, cfg.idleTimeoutMs);
   }
 
   /**
@@ -677,6 +689,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
       writeLog("info", "job_resumed", { job_id: job.id, stalled_for_ms: stalledForMs });
       progress("resumed", `job resumed after ${stalledForMs}ms`);
     }
+    armIdleTimer();
     job.lastActivityAt = now.toISOString();
     store.save(job);
     if (activeTurn) armStallTimer();
@@ -689,6 +702,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
    * @param error - Error description string (optional)
    */
   function finalize(state: JobState, error?: string) {
+    clearTimeout(idleTimer);
     clearStallTimer();
     // A job that never ran a turn did no work; reporting it "done" would pass a no-op off as success.
     if (state === "done" && job.turns === 0) {
@@ -705,6 +719,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
    * @param params - Notification parameters payload
    */
   function handleNotification(method: string, params: Json) {
+    if (job.state !== "starting" && job.state !== "running") return;
     writeLog("debug", "codex_notification", {
       job_id: job.id,
       attempt: job.attempts ?? 1,
@@ -834,11 +849,12 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
   }
 
   const overallTimer = setTimeout(() => {
-    finalize("timeout", `job exceeded ${cfg.jobTimeoutMs}ms`);
+    finalize("timeout", `job exceeded ${cfg.jobTimeoutMs}ms (CODEX_JOB_TIMEOUT_MS)`);
     settle();
   }, timeoutMs);
 
   try {
+    armIdleTimer();
     await client.initialize();
 
     const threadParams: Record<string, unknown> = {
@@ -895,6 +911,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     const failure = processError ?? (error instanceof Error ? error : new Error(String(error)));
     return { error: failure, processFailure: client.exited };
   } finally {
+    clearTimeout(idleTimer);
     clearTimeout(overallTimer);
     clearTimeout(quietTimer);
     clearStallTimer();

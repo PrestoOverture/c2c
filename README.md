@@ -231,7 +231,8 @@ Codex then enters its goal-continuation loop: after each turn, it checks "did I 
 | `CODEX_MODEL` | Codex default | Model override |
 | `CODEX_APPROVAL_POLICY` | `never` | Approval policy (autonomous by default) |
 | `CODEX_PERMISSIONS` | Unset | Permissions profile passed to Codex |
-| `CODEX_JOB_TIMEOUT_MS` | `1800000` | Maximum job duration (30 min) |
+| `CODEX_JOB_TIMEOUT_MS` | `7200000` | Overall maximum job duration (2 hours) |
+| `C2C_IDLE_TIMEOUT_MS` | `1200000` | Timeout after no Codex notifications during a running attempt (20 min); `0` disables. Queued/dependency wait time excluded |
 | `CODEX_QUIET_MS` | `30000` | Quiet period before treating an active goal as finished |
 | `GOAL_OBJECTIVE_MAX` | `2000` | Maximum rendered goal-objective length; `codex_implement` rejects over-limit contracts at submit time |
 | `C2C_STATE_DIR` | `~/.claude2codex/jobs` | Persistent job registry (atomic per-job JSON files) |
