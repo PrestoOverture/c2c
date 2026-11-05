@@ -116,7 +116,7 @@ If a Codex job itself fails (error, 0 tokens, no handoff), report it and wait; d
 Full formats: the c2c-workflow prompt.`;
 
 const server = new McpServer(
-  { name: "c2c-codex", version: "0.3.6" },
+  { name: "c2c-codex", version: "0.3.7" },
   { instructions: SERVER_INSTRUCTIONS },
 );
 const reasoningEffort = z.enum(["low", "medium", "high", "xhigh", "max", "ultra"]);
