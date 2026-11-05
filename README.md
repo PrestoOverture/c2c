@@ -72,7 +72,7 @@ Codex resumes the same thread (keeping all context from the first attempt) and f
 
 ## Full Workflow
 
-![Workflow: you decide, Claude drafts the Goal Contract, you approve, Codex implements, Claude reviews the handoff (failed conditions loop back as a Delta Contract), you give final approval](./assets/workflow.svg)
+![Workflow: you decide, Claude drafts the Goal Contract, you approve, Codex implements, Claude reviews the handoff (failed conditions loop back as a Delta Contract), you give final approval, then the next task starts](./assets/workflow.svg)
 
 ## Three-Layer Prompt Architecture
 

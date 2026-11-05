@@ -80,7 +80,7 @@ Codex 恢复同一个线程（保留第一次尝试的全部上下文），只�
 
 ## 完整工作流
 
-![工作流：你决定做什么 → Claude 起草 Goal Contract → 你批准 → Codex 实现 → Claude 审查交接（条件未通过则以 Delta Contract 返工）→ 你最终批准](./assets/workflow.zh-CN.svg)
+![工作流：你决定做什么 → Claude 起草 Goal Contract → 你批准 → Codex 实现 → Claude 审查交接（条件未通过则以 Delta Contract 返工）→ 你最终批准 → 下一个任务](./assets/workflow.zh-CN.svg)
 
 
 
