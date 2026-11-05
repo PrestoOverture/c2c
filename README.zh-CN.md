@@ -22,14 +22,7 @@
 
 这个项目建立在这个前提上：把规划和审查（人的判断力仍然占主导）与实现（模型已经足够强）分开，用一种契约格式把它们连接起来，迫使工程师在最重要的部分(问题定义和验收标准)上做到清晰。
 
-```mermaid
-flowchart LR
-    用户 -->|决定做什么| Claude
-    Claude -->|Goal Contract| Codex
-    Codex -->|结构化交接| Claude
-    Claude -->|审查结论| 用户
-    Claude -.->|Delta Contract 修正| Codex
-```
+![你决定做什么，Claude Code 撰写 Goal Contract 并审查，Codex 实现并提交交接；审查不通过时发 Delta Contract 返工](./assets/roles.zh-CN.svg)
 
 
 
@@ -65,7 +58,7 @@ Goal Contract 是一份结构化规格说明，精确告诉 Codex **要做什么
 ### Success Conditions
 - [ ] GET /health 返回 200，JSON body 为 {"version": "<package.json 版本>"}。
 - [ ] `npm test` 通过，包含新端点的测试。
-- [ ] 不影响其他路由。
+- [ ] `git diff --stat` 只列出 src/routes.ts 和 src/routes.test.ts。
 ```
 
 **为什么要这样结构化？** Codex 在面对明确、可验证的指令时表现最佳。模糊的请求产生模糊的结果。契约格式强制你想清楚：做什么、不做什么、怎么证明做对了。
@@ -87,19 +80,7 @@ Codex 恢复同一个线程（保留第一次尝试的全部上下文），只�
 
 ## 完整工作流
 
-```mermaid
-flowchart TD
-    A[用户决定做什么] --> B[Claude 起草 Goal Contract]
-    B --> C{用户批准？}
-    C -->|是| D[Codex 实现]
-    C -->|否| B
-    D --> E[Claude 审查产出]
-    E --> F{所有条件通过？}
-    F -->|是| G[用户最终批准]
-    F -->|否| H[Claude 起草 Delta Contract]
-    H --> D
-    G --> I[完成 - 更新文档]
-```
+![工作流：你决定做什么 → Claude 起草 Goal Contract → 你批准 → Codex 实现 → Claude 审查交接（条件未通过则以 Delta Contract 返工）→ 你最终批准](./assets/workflow.zh-CN.svg)
 
 
 
@@ -123,15 +104,15 @@ Codex 最终工作时的 prompt 由三层组成，但只有两层来自 claude2c
 
 **模型与推理强度。** c2c 直接沿用 Codex CLI 的配置（`~/.codex/config.toml`），自身不设任何默认值。调用 `codex_config` 可查看任务实际将使用的模型和强度。如需覆盖：在 MCP server 的 `env` 中设置 `CODEX_MODEL`（作用于所有任务），或在单个任务中传入 `reasoning_effort`。
 
-```sh
-npx claude2codex
-```
-
-
-
 ### MCP 配置
 
-添加到你的 Claude Code MCP 设置中：
+在 Claude Code 中注册服务器（user 范围，所有项目都可用）：
+
+```sh
+claude mcp add --scope user codex -- npx -y claude2codex
+```
+
+或手动添加到 MCP 设置中：
 
 ```json
 {
@@ -240,6 +221,8 @@ Python 3.12，Poetry。从项目根目录运行。
 4. 将完整契约作为输入发送
 
 之后 Codex 进入目标持续循环：每一轮结束后它会检查"目标达成了吗？"如果没有，就继续。任务在目标达到终态（`complete` 或 `budget_limited`）或线程沉默时结束。
+
+只有当 Codex 连续 `C2C_IDLE_TIMEOUT_MS`（默认 20 分钟）没有任何事件，或整个任务超过 `CODEX_JOB_TIMEOUT_MS` 硬上限（2 小时）时，任务才会被中止。持续在干活的长任务不会被杀掉。
 
 ## 环境变量
 

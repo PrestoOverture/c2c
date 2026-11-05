@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 250" width="1060" height="250" role="img" aria-label="c2c workflow"><title>c2c workflow</title>
+<style>
+  text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+  .card { fill: #ffffff; stroke: #d0d7de; stroke-width: 1; }
+  .t { fill: #1f2328; font-weight: 600; }
+  .m { fill: #59636e; }
+  .ln { stroke: #8c959f; stroke-width: 1.5; fill: none; }
+  .ah { fill: #8c959f; }
+  .you { fill: #59636e; } .cl { fill: #c15f3c; } .cx { fill: #0969da; }
+  .lnc { stroke: #c15f3c; stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+  .ahc { fill: #c15f3c; }
+  .lbl { fill: #59636e; font-size: 12.5px; }
+  .lblc { fill: #c15f3c; font-size: 12.5px; }
+  @media (prefers-color-scheme: dark) {
+    .card { fill: #161b22; stroke: #3d444d; }
+    .t { fill: #e6edf3; } .m, .lbl, .you { fill: #9198a1; }
+    .ln { stroke: #6e7681; } .ah { fill: #6e7681; }
+    .cl, .ahc, .lblc { fill: #e08a68; } .lnc { stroke: #e08a68; }
+    .cx { fill: #4493f8; }
+  }
+</style>
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+  <marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahc"/></marker>
+</defs>
+<rect x="24" y="92" width="150" height="66" rx="10" class="card"/>
+<circle cx="38" cy="108" r="3.5" class="you"/>
+<text x="47" y="112" class="you" text-anchor="start" font-size="10.5" letter-spacing="0.6">YOU</text>
+<text x="99.0" y="138" class="t" text-anchor="middle" font-size="13.5">Decide what to build</text>
+<line x1="177" y1="125.0" x2="193" y2="125.0" class="ln" marker-end="url(#a)"/>
+<rect x="196" y="92" width="150" height="66" rx="10" class="card"/>
+<circle cx="210" cy="108" r="3.5" class="cl"/>
+<text x="219" y="112" class="cl" text-anchor="start" font-size="10.5" letter-spacing="0.6">CLAUDE</text>
+<text x="271.0" y="138" class="t" text-anchor="middle" font-size="13.5">Draft Goal Contract</text>
+<line x1="349" y1="125.0" x2="365" y2="125.0" class="ln" marker-end="url(#a)"/>
+<rect x="368" y="92" width="150" height="66" rx="10" class="card"/>
+<circle cx="382" cy="108" r="3.5" class="you"/>
+<text x="391" y="112" class="you" text-anchor="start" font-size="10.5" letter-spacing="0.6">YOU</text>
+<text x="443.0" y="138" class="t" text-anchor="middle" font-size="13.5">Approve contract</text>
+<line x1="521" y1="125.0" x2="537" y2="125.0" class="ln" marker-end="url(#a)"/>
+<rect x="540" y="92" width="150" height="66" rx="10" class="card"/>
+<circle cx="554" cy="108" r="3.5" class="cx"/>
+<text x="563" y="112" class="cx" text-anchor="start" font-size="10.5" letter-spacing="0.6">CODEX</text>
+<text x="615.0" y="138" class="t" text-anchor="middle" font-size="13.5">Implement</text>
+<line x1="693" y1="125.0" x2="709" y2="125.0" class="ln" marker-end="url(#a)"/>
+<rect x="712" y="92" width="150" height="66" rx="10" class="card"/>
+<circle cx="726" cy="108" r="3.5" class="cl"/>
+<text x="735" y="112" class="cl" text-anchor="start" font-size="10.5" letter-spacing="0.6">CLAUDE</text>
+<text x="787.0" y="138" class="t" text-anchor="middle" font-size="13.5">Review handoff</text>
+<line x1="865" y1="125.0" x2="881" y2="125.0" class="ln" marker-end="url(#a)"/>
+<rect x="884" y="92" width="150" height="66" rx="10" class="card"/>
+<circle cx="898" cy="108" r="3.5" class="you"/>
+<text x="907" y="112" class="you" text-anchor="start" font-size="10.5" letter-spacing="0.6">YOU</text>
+<text x="959.0" y="138" class="t" text-anchor="middle" font-size="13.5">Final approval</text>
+<path d="M443.0,88 C443.0,40 271.0,40 271.0,86" class="ln" marker-end="url(#a)"/>
+<text x="357.0" y="46" class="lbl" text-anchor="middle">changes requested</text>
+<path d="M787.0,162 C787.0,214 615.0,214 615.0,164" class="lnc" marker-end="url(#ac)"/>
+<text x="701.0" y="218" class="lblc" text-anchor="middle">condition failed → Delta Contract</text>
+</svg>

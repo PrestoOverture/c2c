@@ -22,14 +22,7 @@ This is why Goal Contracts are structured the way they are. They don't explain h
 
 This project is built on that premise: split planning and review (where human judgment still dominates) from implementation (where models now excel), and connect them with a contract format that forces clarity on the parts that matter most.
 
-```mermaid
-flowchart LR
-    User -->|decides what to build| Claude
-    Claude -->|Goal Contract| Codex
-    Codex -->|structured handoff| Claude
-    Claude -->|review verdict| User
-    Claude -.->|Delta Contract if review fails| Codex
-```
+![You decide what to build, Claude Code writes the Goal Contract and reviews, Codex implements and hands back; failed reviews go back as a Delta Contract](./assets/roles.svg)
 
 - **You** — decide what to build and give final approval.
 - **Claude Code** — the architect and reviewer. Defines the problem, writes the contract, verifies the result.
@@ -59,7 +52,7 @@ Add a /health endpoint that returns 200 OK with the server version.
 ### Success Conditions
 - [ ] GET /health returns 200 with JSON body {"version": "<package.json version>"}.
 - [ ] `npm test` passes including a new test for the endpoint.
-- [ ] No other routes are affected.
+- [ ] `git diff --stat` lists only src/routes.ts and src/routes.test.ts.
 ```
 
 **Why structure it this way?** Codex works best with unambiguous, verifiable instructions. Vague requests produce vague results. The contract format forces clarity: what to do, what not to do, and how to prove it worked.
@@ -79,19 +72,7 @@ Codex resumes the same thread (keeping all context from the first attempt) and f
 
 ## Full Workflow
 
-```mermaid
-flowchart TD
-    A[User decides what to build] --> B[Claude drafts Goal Contract]
-    B --> C{User approves?}
-    C -->|yes| D[Codex implements]
-    C -->|no| B
-    D --> E[Claude reviews output]
-    E --> F{All conditions met?}
-    F -->|yes| G[User gives final approval]
-    F -->|no| H[Claude drafts Delta Contract]
-    H --> D
-    G --> I[Done - update docs]
-```
+![Workflow: you decide, Claude drafts the Goal Contract, you approve, Codex implements, Claude reviews the handoff (failed conditions loop back as a Delta Contract), you give final approval](./assets/workflow.svg)
 
 ## Three-Layer Prompt Architecture
 
@@ -113,13 +94,15 @@ Requires [Codex CLI](https://github.com/openai/codex) and Node.js 18+.
 
 **Model & effort.** c2c uses whatever model and reasoning effort your Codex CLI is configured with (`~/.codex/config.toml`); it has no defaults of its own. Call `codex_config` to see what jobs will run with. To override, set `CODEX_MODEL` in the MCP server's `env` (all jobs) or pass `reasoning_effort` per job.
 
-```sh
-npx claude2codex
-```
-
 ### MCP Configuration
 
-Add to your Claude Code MCP settings:
+Register the server with Claude Code (user scope, so every project gets it):
+
+```sh
+claude mcp add --scope user codex -- npx -y claude2codex
+```
+
+Or add it to your MCP settings by hand:
 
 ```json
 {
@@ -220,6 +203,8 @@ Under the hood, each job:
 4. Sends the full contract as input
 
 Codex then enters its goal-continuation loop: after each turn, it checks "did I achieve the goal?" If not, it keeps going. The job finishes when the goal reaches a terminal state (`complete` or `budget_limited`) or the thread goes quiet.
+
+A job is cut off only when Codex stops producing events for `C2C_IDLE_TIMEOUT_MS` (20 min by default) or the whole job passes the `CODEX_JOB_TIMEOUT_MS` hard cap (2 h). A long job that keeps working is not killed.
 
 ## Environment Variables
 

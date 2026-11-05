@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 940 240" width="940" height="240" role="img" aria-label="Roles: you, Claude Code, Codex"><title>Roles: you, Claude Code, Codex</title>
+<style>
+  text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+  .card { fill: #ffffff; stroke: #d0d7de; stroke-width: 1; }
+  .t { fill: #1f2328; font-weight: 600; }
+  .m { fill: #59636e; }
+  .ln { stroke: #8c959f; stroke-width: 1.5; fill: none; }
+  .ah { fill: #8c959f; }
+  .you { fill: #59636e; } .cl { fill: #c15f3c; } .cx { fill: #0969da; }
+  .lnc { stroke: #c15f3c; stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+  .ahc { fill: #c15f3c; }
+  .lbl { fill: #59636e; font-size: 12.5px; }
+  .lblc { fill: #c15f3c; font-size: 12.5px; }
+  @media (prefers-color-scheme: dark) {
+    .card { fill: #161b22; stroke: #3d444d; }
+    .t { fill: #e6edf3; } .m, .lbl, .you { fill: #9198a1; }
+    .ln { stroke: #6e7681; } .ah { fill: #6e7681; }
+    .cl, .ahc, .lblc { fill: #e08a68; } .lnc { stroke: #e08a68; }
+    .cx { fill: #4493f8; }
+  }
+</style>
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+  <marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahc"/></marker>
+</defs>
+<rect x="20" y="50" width="180" height="140" rx="12" class="card"/>
+<rect x="90" y="50" width="40" height="3" rx="1.5" class="you"/>
+<text x="110" y="84" class="you" text-anchor="middle" font-size="10.5" letter-spacing="0.8">OWNER</text>
+<text x="110" y="112" class="t" text-anchor="middle" font-size="17">You</text>
+<text x="110" y="142" class="m" text-anchor="middle" font-size="12.5">decides what to build</text>
+<text x="110" y="161" class="m" text-anchor="middle" font-size="12.5">gives final approval</text>
+<rect x="380" y="50" width="180" height="140" rx="12" class="card"/>
+<rect x="450" y="50" width="40" height="3" rx="1.5" class="cl"/>
+<text x="470" y="84" class="cl" text-anchor="middle" font-size="10.5" letter-spacing="0.8">ARCHITECT · REVIEWER</text>
+<text x="470" y="112" class="t" text-anchor="middle" font-size="17">Claude Code</text>
+<text x="470" y="142" class="m" text-anchor="middle" font-size="12.5">writes the contract</text>
+<text x="470" y="161" class="m" text-anchor="middle" font-size="12.5">verifies the result</text>
+<rect x="740" y="50" width="180" height="140" rx="12" class="card"/>
+<rect x="810" y="50" width="40" height="3" rx="1.5" class="cx"/>
+<text x="830" y="84" class="cx" text-anchor="middle" font-size="10.5" letter-spacing="0.8">IMPLEMENTER</text>
+<text x="830" y="112" class="t" text-anchor="middle" font-size="17">OpenAI Codex</text>
+<text x="830" y="142" class="m" text-anchor="middle" font-size="12.5">writes code, runs tests</text>
+<text x="830" y="161" class="m" text-anchor="middle" font-size="12.5">reports back</text>
+<line x1="208" y1="104" x2="372" y2="104" class="ln" marker-end="url(#a)"/>
+<text x="290" y="95" class="lbl" text-anchor="middle">what to build</text>
+<line x1="372" y1="146" x2="208" y2="146" class="ln" marker-end="url(#a)"/>
+<text x="290" y="165" class="lbl" text-anchor="middle">review verdict</text>
+<line x1="568" y1="92" x2="732" y2="92" class="ln" marker-end="url(#a)"/>
+<text x="650" y="83" class="lbl" text-anchor="middle">Goal Contract</text>
+<line x1="732" y1="124" x2="568" y2="124" class="ln" marker-end="url(#a)"/>
+<text x="650" y="115" class="lbl" text-anchor="middle">structured handoff</text>
+<line x1="568" y1="158" x2="732" y2="158" class="lnc" marker-end="url(#ac)"/>
+<text x="650" y="177" class="lblc" text-anchor="middle">Delta Contract (rework)</text>
+</svg>
