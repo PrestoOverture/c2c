@@ -16,3 +16,6 @@ demo.md
 eval/fresh/tasks.json
 
 .DS_Store
+
+# Eval report and archived history (local only)
+reports/

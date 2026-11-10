@@ -1,4 +1,4 @@
-"""Round-2 A vs C analysis, as pre-registered in docs/eval.md ("Amendment ... no difficulty filter").
+"""Round-2 A vs C analysis, as pre-registered in reports/eval.md ("Amendment ... no difficulty filter").
 
     python round2/analyze.py            # from eval/
 

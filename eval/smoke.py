@@ -9,7 +9,7 @@ after each run it records Claude Pro (5h / 7d utilization from a tiny probe)
 and Codex Plus (account/rateLimits/read) usage. The final patch goes to
 results/smoke-<arm>/predictions.jsonl for `run.py score --run-id smoke-<arm>`.
 
-Smoke-only shortcuts (see docs/eval.md): agents run on the host, so there is no
+Smoke-only shortcuts (see reports/eval.md): agents run on the host, so there is no
 network block and no filesystem isolation beyond the agents' own instructions.
 """
 

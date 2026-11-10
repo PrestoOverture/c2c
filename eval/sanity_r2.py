@@ -4,7 +4,7 @@
 
 Disk only holds a few task images at once, so each repo's images are pulled,
 checked and removed before the next repo. Per task: grade the gold patch; if it
-resolves within the time limit (rebuild + test + print, docs/eval.md "Round 2
+resolves within the time limit (rebuild + test + print, reports/eval.md "Round 2
 design"), grade the no-op patch too. Outcomes go to results/sanity-r2.json,
 keyed by instance id; ids already there are skipped.
 """

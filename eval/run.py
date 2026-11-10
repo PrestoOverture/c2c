@@ -8,7 +8,7 @@ Subcommands:
   sanity            gold + noop runs on the pilot; asserts 10/10 and 0/10
 
 Every run lives in results/<run_id>/: predictions.jsonl, harness logs, report,
-summary.json. Agent arms (A–D, see docs/eval.md) will write the same
+summary.json. Agent arms (A–D, see reports/eval.md) will write the same
 predictions.jsonl shape, so `score` is the single grading path for all of them.
 """
 
