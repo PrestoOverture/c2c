@@ -8,6 +8,7 @@ import { parseHandoff, type Handoff } from "./contracts.ts";
 import { writeLog } from "./log.ts";
 import { createJobStore } from "./store.ts";
 import { collectEvidence, type Evidence } from "./evidence.ts";
+import { appendOutcome } from "./outcomes.ts";
 
 /**
  * Configuration options governing Codex execution, timeouts, retries, and concurrency.
@@ -79,6 +80,10 @@ export interface Job {
   id: string;
   /** Job type classification: "implement" for new contracts or "rework" for delta contracts */
   kind: "implement" | "rework";
+  /** Rework lineage; optional for records saved by older servers */
+  parentJobId?: string | null;
+  rootJobId?: string | null;
+  reworkRound?: number;
   /** Current lifecycle status of the job */
   state: JobState;
   /** Associated Codex thread identifier if thread has been initialized */
@@ -160,6 +165,8 @@ export interface StartJobOptions {
   dependsOn?: string;
   /** Existing thread identifier to resume for rework jobs */
   resumeThreadId?: string;
+  /** Previous job selected by the rework handler */
+  parentJobId?: string;
   /** Job execution configuration settings */
   config: JobConfig;
   /** Optional reasoning effort level override for Codex */
@@ -272,8 +279,13 @@ export function startJob(opts: StartJobOptions): Job {
   const isBlocked = dependency !== undefined && dependency.state !== "done";
   const queued = !isBlocked && (queue.length > 0 || activeJobCount() >= opts.config.maxConcurrent);
   const startedAt = new Date().toISOString();
+  const id = randomUUID().slice(0, 8);
+  const parent = opts.parentJobId ? getJob(opts.parentJobId) : undefined;
   const job: Job = {
-    id: randomUUID().slice(0, 8),
+    id,
+    parentJobId: opts.kind === "rework" ? opts.parentJobId ?? null : null,
+    rootJobId: opts.kind === "implement" ? id : parent?.rootJobId ?? (parent?.kind === "implement" ? parent.id : null),
+    reworkRound: opts.kind === "implement" ? 0 : (parent?.reworkRound ?? 0) + 1,
     kind: opts.kind,
     state: isBlocked ? "blocked" : queued ? "queued" : "starting",
     goalSet: false,
@@ -342,6 +354,7 @@ function finish(job: Job, state: JobState, client?: CodexAppServer, error?: stri
   job.error = error;
   job.endedAt = new Date().toISOString();
   if (job.finalMessage) job.handoff = parseHandoff(job.finalMessage);
+  appendOutcome(job);
   store.save(job);
   writeLog(state === "error" || state === "timeout" ? "error" : "info", "job_state_changed", {
     job_id: job.id,

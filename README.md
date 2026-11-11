@@ -227,11 +227,14 @@ A job is cut off only when Codex stops producing events for `C2C_IDLE_TIMEOUT_MS
 | `C2C_IDLE_TIMEOUT_MS` | `1200000` | Timeout after no Codex notifications during a running attempt (20 min); `0` disables. Queued/dependency wait time excluded |
 | `CODEX_QUIET_MS` | `30000` | Quiet period before treating an active goal as finished |
 | `GOAL_OBJECTIVE_MAX` | `2000` | Maximum rendered goal-objective length; `codex_implement` rejects over-limit contracts at submit time |
-| `C2C_STATE_DIR` | `~/.claude2codex/jobs` | Persistent job registry (atomic per-job JSON files) |
+| `C2C_STATE_DIR` | `~/.claude2codex/jobs` | Persistent job registry (atomic per-job JSON files) and append-only `outcomes.jsonl` |
+| `C2C_MAX_JOBS` | `500` | Maximum retained job records (minimum 1); does not prune outcome history |
 | `C2C_LOG_LEVEL` | `info` | Structured JSON logs on stderr: `silent`, `error`, `info`, `debug` |
 | `C2C_RETRIES` | `1` | Automatic retries for process failures before the first turn starts |
 | `C2C_MAX_CONCURRENT` | `2` | Max simultaneously active Codex jobs; overflow queues FIFO |
 | `C2C_STALL_WARN_MS` | `120000` | Stall watchdog threshold; emits stalled/resumed events; `0` disables |
+
+Each finished job appends one summary to `C2C_STATE_DIR/outcomes.jsonl` (mode `0600`), including rework lineage, usage, evidence summaries and the sorted `caught_by` checks. The log contains no prompts, transcripts or command output and survives job pruning; `C2C_MAX_JOBS` controls only job-record retention. Persistence failures degrade gracefully with at most one warning.
 
 ## No Codex? Use c2c-lite
 

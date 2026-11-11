@@ -4,7 +4,6 @@ import { join } from "node:path";
 import type { Job } from "./jobs.ts";
 import { writeLog } from "./log.ts";
 
-const MAX_JOBS = 50;
 let warned = false;
 
 /**
@@ -24,7 +23,7 @@ export interface JobStore {
  *
  * @param error - The error instance or error message describing the persistence failure
  */
-function warnOnce(error: unknown) {
+export function warnOnce(error: unknown) {
   if (warned) return;
   warned = true;
   writeLog("error", "persistence_degraded", {
@@ -48,6 +47,8 @@ export function defaultStateDir(): string {
  * @returns JobStore instance providing lookup, listing, and save methods
  */
 export function createJobStore(dir = defaultStateDir()): JobStore {
+  const configured = Number.parseInt(process.env.C2C_MAX_JOBS ?? "", 10);
+  const maxJobs = Number.isFinite(configured) ? Math.max(1, configured) : 500;
   const records = new Map<string, Job>();
   let enabled = true;
 
@@ -72,7 +73,7 @@ export function createJobStore(dir = defaultStateDir()): JobStore {
       }
     }
     for (const job of interrupted) atomicWrite(dir, job);
-    prune(dir, records);
+    prune(dir, records, maxJobs);
   } catch (error) {
     enabled = false;
     warnOnce(error);
@@ -105,7 +106,7 @@ export function createJobStore(dir = defaultStateDir()): JobStore {
       if (!enabled) return;
       try {
         atomicWrite(dir, record);
-        prune(dir, records);
+        prune(dir, records, maxJobs);
       } catch (error) {
         enabled = false;
         warnOnce(error);
@@ -133,11 +134,11 @@ function atomicWrite(dir: string, job: Job) {
  * @param dir - Directory path containing persisted job files
  * @param records - Map of active in-memory job records
  */
-function prune(dir: string, records: Map<string, Job>) {
+function prune(dir: string, records: Map<string, Job>, maxJobs: number) {
   const entries = [...records.values()].sort((a, b) =>
     Date.parse(b.endedAt ?? b.startedAt) - Date.parse(a.endedAt ?? a.startedAt),
   );
-  for (const job of entries.slice(MAX_JOBS)) {
+  for (const job of entries.slice(maxJobs)) {
     records.delete(job.id);
     try {
       unlinkSync(join(dir, `${job.id}.json`));

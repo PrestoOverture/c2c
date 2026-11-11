@@ -68,6 +68,9 @@ function jobSummary(job: Job, transcriptTail = 15) {
   return {
     job_id: job.id,
     kind: job.kind,
+    parent_job_id: job.parentJobId ?? null,
+    root_job_id: job.rootJobId ?? (job.kind === "implement" ? job.id : null),
+    rework_round: job.reworkRound ?? (job.kind === "implement" ? 0 : 1),
     state: job.state,
     thread_id: job.threadId ?? null,
     goal: job.goal ?? null,
@@ -400,7 +403,10 @@ server.registerTool(
     const resolvedContext = await resolveContextFiles(input.context_files, jobConfig.cwd);
     if (resolvedContext.missing.length) return missingContextFiles(resolvedContext.missing);
     let threadId = input.thread_id;
-    const prev = input.job_id ? getJob(input.job_id) : undefined;
+    const prev = input.job_id ? getJob(input.job_id) : threadId
+      ? listJobs().filter((job) => job.threadId === threadId)
+        .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt))[0]
+      : undefined;
     if (!threadId && input.job_id && !prev) return textResult({ error: `unknown job_id ${input.job_id}` }, true);
     const verifyCommands = input.verify_commands ?? prev?.verify_commands;
     const setupCommands = input.setup_commands ?? prev?.setup_commands;
@@ -425,6 +431,7 @@ server.registerTool(
         scope,
       }),
       resumeThreadId: threadId,
+      parentJobId: input.job_id ?? prev?.id,
       contextFiles: resolvedContext.files?.map((file) => file.path),
       verify_commands: verifyCommands,
       setup_commands: setupCommands,
@@ -464,7 +471,7 @@ server.registerTool(
     title: "Check a Codex job",
     description:
       "Status of a blocked, queued, running, or finished Codex job: dependency, state, queue position, thread id, " +
-      "goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript.",
+      "parent_job_id, root_job_id, rework_round, goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
     },
@@ -484,7 +491,7 @@ server.registerTool(
       "Final result of a finished job: Codex's final message, the parsed structured handoff " +
       "(Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is " +
       "itself a review failure), server verification evidence (including falsification.unfalsified and changes.tests_modified / out_of_scope / new_unclassified), and final goal state. Read evidence first for " +
-      "mechanical pass/fail; review judges intent and constraints. Errors if the job is not finished.",
+      "mechanical pass/fail; review judges intent and constraints. Includes parent_job_id, root_job_id and rework_round. Errors if the job is not finished.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
     },

@@ -44,16 +44,16 @@ test("job persistence round-trips and interrupts active, queued, or blocked jobs
   expect(createJobStore(dir).getJob("blocked")?.state).toBe("error");
 });
 
-test("job persistence retains only the 50 most recent records", () => {
+test("job persistence retains only the 500 most recent records", () => {
   const dir = mkdtempSync(join(tmpdir(), "c2c-retention-"));
   dirs.push(dir);
   const store = createJobStore(dir);
-  for (let index = 0; index < 55; index++) {
+  for (let index = 0; index < 505; index++) {
     const record = job(String(index), "done");
     record.startedAt = new Date(1_700_000_000_000 + index).toISOString();
     store.save(record);
   }
-  expect(createJobStore(dir).listJobs()).toHaveLength(50);
+  expect(createJobStore(dir).listJobs()).toHaveLength(500);
   expect(createJobStore(dir).getJob("0")).toBeUndefined();
-  expect(createJobStore(dir).getJob("54")).toBeDefined();
+  expect(createJobStore(dir).getJob("504")).toBeDefined();
 });

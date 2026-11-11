@@ -141,12 +141,12 @@ Read-only view of the Codex CLI model, default reasoning effort, version, and cu
 
 ### `codex_status`
 
-Status of a blocked, queued, running, or finished Codex job: dependency, state, queue position, thread id, goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript.
+Status of a blocked, queued, running, or finished Codex job: dependency, state, queue position, thread id, parent_job_id, root_job_id, rework_round, goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript.
 
 - `job_id` — Job id returned by codex_implement or codex_rework.
 
 ### `codex_result`
 
-Final result of a finished job: Codex's final message, the parsed structured handoff (Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is itself a review failure), server verification evidence (including falsification.unfalsified and changes.tests_modified / out_of_scope / new_unclassified), and final goal state. Read evidence first for mechanical pass/fail; review judges intent and constraints. Errors if the job is not finished.
+Final result of a finished job: Codex's final message, the parsed structured handoff (Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is itself a review failure), server verification evidence (including falsification.unfalsified and changes.tests_modified / out_of_scope / new_unclassified), and final goal state. Read evidence first for mechanical pass/fail; review judges intent and constraints. Includes parent_job_id, root_job_id and rework_round. Errors if the job is not finished.
 
 - `job_id` — Job id returned by codex_implement or codex_rework.

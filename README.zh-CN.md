@@ -246,7 +246,8 @@ Python 3.12，Poetry。从项目根目录运行。
 | `C2C_IDLE_TIMEOUT_MS` | `1200000` | 运行中的尝试连续无 Codex 通知时超时（20 分钟），`0` 禁用；排队和等待依赖的时间不计入 |
 | `CODEX_QUIET_MS`        | `30000`                | 判定活跃目标已完成前的静默等待时间                                         |
 | `GOAL_OBJECTIVE_MAX`    | `2000`                 | 渲染后 goal-objective 的最大长度；超限的合同会被 `codex_implement` 在提交时拒绝 |
-| `C2C_STATE_DIR`         | `~/.claude2codex/jobs` | 持久化任务注册表（每任务一个原子写入的 JSON 文件）                              |
+| `C2C_STATE_DIR`         | `~/.claude2codex/jobs` | 持久化任务注册表（每任务一个原子写入的 JSON 文件）及仅追加的 `outcomes.jsonl`                              |
+| `C2C_MAX_JOBS` | `500` | 保留的任务记录上限（最小为 1）；不裁剪结果日志 |
 | `C2C_LOG_LEVEL`         | `info`                 | stderr 上的结构化 JSON 日志：`silent`、`error`、`info`、`debug`      |
 | `C2C_RETRIES`           | `1`                    | 首个 turn 开始前的进程故障自动重试次数                                    |
 | `C2C_MAX_CONCURRENT`    | `2`                    | 同时活跃的 Codex 任务上限；超出按 FIFO 排队                              |
@@ -254,6 +255,8 @@ Python 3.12，Poetry。从项目根目录运行。
 
 
 
+
+每个结束的任务会向 `C2C_STATE_DIR/outcomes.jsonl` 追加一条摘要（权限 `0600`），包含返工链、用量、证据摘要和排序后的 `caught_by` 检查项。日志不包含提示词、转录或命令输出，且不受任务裁剪影响；`C2C_MAX_JOBS` 仅控制任务记录的保留数量。持久化失败时正常降级，最多警告一次。
 
 ## 没有 Codex？用 c2c-lite
 
