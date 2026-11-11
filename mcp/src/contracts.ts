@@ -15,6 +15,8 @@ export interface GoalContract {
   context_files?: ContextFile[];
   verify_commands?: string[];
   setup_commands?: string[];
+  test_paths?: string[];
+  scope?: string[];
 }
 
 /**
@@ -31,6 +33,8 @@ export interface DeltaContract {
   context_files?: ContextFile[];
   verify_commands?: string[];
   setup_commands?: string[];
+  test_paths?: string[];
+  scope?: string[];
 }
 
 /**
@@ -95,15 +99,22 @@ function renderContextFiles(contextFiles?: ContextFile[]): string[] {
   ];
 }
 
-function renderVerification(c: { verify_commands?: string[]; setup_commands?: string[] }): string[] {
-  if (!c.verify_commands?.length) return [];
+function renderVerification(c: Pick<GoalContract, "verify_commands" | "setup_commands" | "test_paths" | "scope">): string[] {
+  if (!c.verify_commands?.length && c.test_paths === undefined && c.scope === undefined) return [];
   return [
     "",
     "### Server Verification",
-    "After Codex finishes, the server will re-run these commands in a clean checkout containing a snapshot of your tracked edits and untracked non-ignored files. Ignored files are absent; use setup commands for dependencies. Outside git, commands run in place. Server evidence decides pass/fail; the handoff does not.",
-    ...(c.setup_commands?.length ? ["Setup (run first, stop on failure):", ...c.setup_commands.map((x) => `- ${x}`)] : []),
-    "Verification (each must exit 0):",
-    ...c.verify_commands.map((x) => `- ${x}`),
+    ...(c.verify_commands?.length ? [
+      "After Codex finishes, the server will re-run these commands in a clean checkout containing a snapshot of your tracked edits and untracked non-ignored files. Ignored files are absent; use setup commands for dependencies. Outside git, commands run in place. Server evidence decides pass/fail; the handoff does not.",
+      ...(c.setup_commands?.length ? ["Setup (run first, stop on failure):", ...c.setup_commands.map((x) => `- ${x}`)] : []),
+      "Verification (each must exit 0):",
+      ...c.verify_commands.map((x) => `- ${x}`),
+    ] : ["No verify_commands were supplied; server evidence is null and setup/verification do not run."]),
+    ...(c.test_paths !== undefined ? [
+      `Declared test_paths (git glob pathspecs relative to the job cwd): ${JSON.stringify(c.test_paths)}`,
+      "Test files are declared by test_paths; new tests belong under test_paths. After verification passes, the server reverts production changes to HEAD, keeps only test-file changes, and expects the checks to fail. Commands that still pass are flagged as unfalsified without changing evidence.passed.",
+    ] : []),
+    ...(c.scope !== undefined ? [`Declared scope (git glob pathspecs relative to the job cwd): ${JSON.stringify(c.scope)}. Changes outside scope and test_paths are flagged for review.`] : []),
   ];
 }
 

@@ -101,6 +101,8 @@ const EXAMPLE_GOAL: GoalContract = {
   ],
   verify_commands: ["npm test"],
   setup_commands: ["npm ci"],
+  test_paths: ["test/**/*.test.js"],
+  scope: ["src/wordfreq.js"],
 };
 
 const EXAMPLE_DELTA: DeltaContract = {
@@ -108,6 +110,8 @@ const EXAMPLE_DELTA: DeltaContract = {
   failed_conditions: ["`npm test` exits 0; test/wordfreq.test.js covers case folding, punctuation, ties, and n <= 0."],
   verify_commands: EXAMPLE_GOAL.verify_commands,
   setup_commands: EXAMPLE_GOAL.setup_commands,
+  test_paths: EXAMPLE_GOAL.test_paths,
+  scope: EXAMPLE_GOAL.scope,
 };
 
 /** Strips the shared protocol prefix, asserting the rendered prompt really starts with it. */

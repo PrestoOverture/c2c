@@ -6,8 +6,8 @@ Everything the c2c MCP server puts in front of Claude Code, verbatim. Read this 
 
 | Layer | When Claude sees it | Size |
 |---|---|---|
-| [Server instructions](#1-server-instructions) | Automatically, injected into the system prompt on connect | 742 chars |
-| [`c2c-workflow` Prompt](#2-the-c2c-workflow-prompt) | Only when the user runs `/mcp__<server>__c2c-workflow` | 2748 chars |
+| [Server instructions](#1-server-instructions) | Automatically, injected into the system prompt on connect | 797 chars |
+| [`c2c-workflow` Prompt](#2-the-c2c-workflow-prompt) | Only when the user runs `/mcp__<server>__c2c-workflow` | 3313 chars |
 | [Tool descriptions](#3-tool-descriptions) | Automatically, as tool definitions | 6 tools |
 
 ## 1. Server instructions
@@ -17,8 +17,8 @@ Always in context, so kept short. They activate only when the user asks to deleg
 ```text
 When the user asks to delegate work to Codex (or to use c2c), act as architect and reviewer, not implementer:
 1. Draft a Goal Contract and get the user's approval (show the user the contract) before calling codex_implement.
-2. codex_estimate, then codex_implement: pass verify_commands (setup_commands for dependencies); poll codex_status and report progress.
-3. Read evidence first in codex_result: the server re-runs verify_commands; review judges intent and constraints, never trusts the handoff alone. On failure, send a Delta Contract via codex_rework.
+2. codex_estimate, then codex_implement: pass verify_commands, test_paths and scope (setup_commands for dependencies); poll codex_status and report progress.
+3. Read evidence first in codex_result: read unfalsified, tests_modified, out_of_scope and new_unclassified; review judges intent and constraints, never trusts the handoff alone. On failure, send a Delta Contract via codex_rework.
 If a Codex job itself fails (error, 0 tokens, no handoff), report it and wait; don't implement the task yourself unless the user explicitly asks.
 Full formats: the c2c-workflow prompt.
 ```
@@ -33,8 +33,8 @@ You are the **architect and reviewer**. Codex is the **implementer**. You draft 
 ## Workflow
 
 1. **User decides** what to build or fix.
-2. **You draft a Goal Contract** (format below). Show it to the user for approval.
-3. **You send it** — `codex_estimate` to check budget, then `codex_implement`. Pass verification commands as `verify_commands` and dependency setup as `setup_commands`.
+2. **You draft a Goal Contract** (format below), declaring test_paths for tests (including new tests) and scope for allowed production changes as git glob pathspecs relative to the job cwd. Show it to the user for approval.
+3. **You send it** — `codex_estimate` to check budget, then `codex_implement`. Pass verification commands as `verify_commands`, dependency setup as `setup_commands`, and the declared `test_paths` and `scope`.
 4. **You poll** — `codex_status` until terminal. Report progress to the user.
 5. **You review** — `codex_result`: read evidence first, then the handoff. Review judges intent (see Review below).
 6. **User approves** your findings.
@@ -75,7 +75,7 @@ Only what Codex would get wrong without being told. One line of
 
 1. Read server evidence first: `verify_commands` are re-run in a clean working-tree snapshot after Codex exits. Evidence decides mechanical pass/fail, regardless of the handoff's claims. If evidence is null, run the checks independently.
 2. Review judges intent: inspect whether the changes meet the goal and constraints. Handoff must be complete (all four sections); missing handoff = review failure.
-3. Verify falsifiability: each command-based success condition must fail when the defect is present. A check that passes regardless is a review failure.
+3. Read `evidence.falsification.unfalsified`: after passing verification the server reverts production changes to HEAD, keeps declared test changes, and re-runs checks. Review skipped_reason if it did not run. Read `evidence.changes.tests_modified`, `out_of_scope` and `new_unclassified` for test edits/deletions and undeclared changes. Flags do not change evidence.passed or job state. Verify falsifiability: each command-based success condition must fail when the defect is present. A check that passes regardless is a review failure.
 4. Include the project's own typecheck/build/test/lint in `verify_commands`; use `setup_commands` for dependencies (ignored files are absent from the snapshot).
 5. Flag security issues and constraint violations.
 6. Report findings to the user. Fix small issues (typos, imports, test gaps found by your own falsifiability check) directly; do not rewrite the implementation.
@@ -87,7 +87,7 @@ Shipped with every install and read whenever Claude calls a tool, so hard limits
 
 ### `codex_implement`
 
-Start a Codex implementation job for a Goal Contract. Sets the contract as a Codex thread goal (the /goal loop keeps Codex iterating until the objective is achieved or the token budget is hit) and sends the full contract as the first turn. Returns a job_id immediately; poll codex_status, then fetch codex_result when done. Language-agnostic: verification commands come from the caller via verify_commands. Read server evidence first; review judges intent.
+Start a Codex implementation job for a Goal Contract. Sets the contract as a Codex thread goal (the /goal loop keeps Codex iterating until the objective is achieved or the token budget is hit) and sends the full contract as the first turn. Returns a job_id immediately; poll codex_status, then fetch codex_result when done. Language-agnostic: verification commands come from the caller via verify_commands, with declared test_paths and scope for falsification and change flags. Read server evidence first; review judges intent.
 
 - `goal` — What the code must do when this task is done. The rendered thread-goal objective has a GOAL_OBJECTIVE_MAX budget of 2000 characters; over-limit calls are rejected.
 - `constraints` — Only what Codex would get wrong without being told: genuine risks, not a review checklist.
@@ -96,13 +96,15 @@ Start a Codex implementation job for a Goal Contract. Sets the contract as a Cod
 - `cwd` (optional) — Working directory for Codex. Defaults to the project directory.
 - `context_files` (optional) — Files or directories Codex should read before implementing.
 - `verify_commands` (optional) — Shell commands the server re-runs after Codex exits in a clean working-tree snapshot; each must exit 0. Read evidence first; review judges intent.
-- `setup_commands` (optional) — Shell commands run before verification in the same environment (e.g. install dependencies); stop on first failure. With no verify_commands, nothing runs.
+- `setup_commands` (optional) — Shell commands run before verification and falsification in each snapshot (e.g. install dependencies); stop on first failure. With no verify_commands, nothing runs.
+- `test_paths` (optional) — Declared test files: git glob pathspecs relative to job cwd, including new tests. After verification passes, the server keeps only test changes and re-runs checks; commands that still pass appear in falsification.unfalsified. Rework inherits unless overridden; [] clears.
+- `scope` (optional) — Allowed production files: git glob pathspecs relative to job cwd. Changes outside scope and test_paths are flagged; added files matching neither are new_unclassified. Rework inherits unless overridden; [] clears.
 - `depends_on` (optional) — Job id of a prior job that must succeed before this job starts.
 - `reasoning_effort` (optional) — Optional Codex reasoning effort; omitted uses the Codex default.
 
 ### `codex_estimate`
 
-Read-only estimate made before starting a job. Measures the fully rendered Goal Contract prompt and returns approx_prompt_tokens using an approximate characters/4 heuristic, plus local completed-job history.
+Read-only estimate made before starting a job. Measures the fully rendered Goal Contract prompt and returns approx_prompt_tokens using an approximate characters/4 heuristic, plus local completed-job history. Includes verify_commands, setup_commands, test_paths and scope in the prompt estimate.
 
 - `goal` — What the code must do when this task is done. The rendered thread-goal objective has a GOAL_OBJECTIVE_MAX budget of 2000 characters; over-limit calls are rejected.
 - `constraints` — Only what Codex would get wrong without being told: genuine risks, not a review checklist.
@@ -110,11 +112,13 @@ Read-only estimate made before starting a job. Measures the fully rendered Goal 
 - `cwd` (optional) — Working directory used to resolve relative context_files paths. Defaults to the project directory.
 - `context_files` (optional) — Files or directories included in the rendered prompt.
 - `verify_commands` (optional) — Shell commands the server re-runs after Codex exits in a clean working-tree snapshot; each must exit 0. Read evidence first; review judges intent.
-- `setup_commands` (optional) — Shell commands run before verification in the same environment (e.g. install dependencies); stop on first failure. With no verify_commands, nothing runs.
+- `setup_commands` (optional) — Shell commands run before verification and falsification in each snapshot (e.g. install dependencies); stop on first failure. With no verify_commands, nothing runs.
+- `test_paths` (optional) — Declared test files: git glob pathspecs relative to job cwd, including new tests. After verification passes, the server keeps only test changes and re-runs checks; commands that still pass appear in falsification.unfalsified. Rework inherits unless overridden; [] clears.
+- `scope` (optional) — Allowed production files: git glob pathspecs relative to job cwd. Changes outside scope and test_paths are flagged; added files matching neither are new_unclassified. Rework inherits unless overridden; [] clears.
 
 ### `codex_rework`
 
-Resume the Codex thread from a previous implement job and hand it a Delta Contract (review findings + failed success conditions). The existing thread goal is reactivated, so the /goal loop continues until the objective passes. Returns a new job_id. Inherits verify_commands and setup_commands from job_id unless overridden (use [] to clear); read its own evidence first, then review intent.
+Resume the Codex thread from a previous implement job and hand it a Delta Contract (review findings + failed success conditions). The existing thread goal is reactivated, so the /goal loop continues until the objective passes. Returns a new job_id. Inherits verify_commands and setup_commands, test_paths and scope from job_id unless overridden (use [] to clear); read its own evidence first, then review intent.
 
 - `job_id` (optional) — The original implement job's id (preferred; resolves the thread to resume).
 - `thread_id` (optional) — Codex thread id, if the job registry is gone (e.g. after a restart).
@@ -124,7 +128,9 @@ Resume the Codex thread from a previous implement job and hand it a Delta Contra
 - `cwd` (optional) — Working directory for Codex. Defaults to the project directory.
 - `context_files` (optional) — Files or directories Codex should read before implementing.
 - `verify_commands` (optional) — Shell commands the server re-runs after Codex exits in a clean working-tree snapshot; each must exit 0. Read evidence first; review judges intent.
-- `setup_commands` (optional) — Shell commands run before verification in the same environment (e.g. install dependencies); stop on first failure. With no verify_commands, nothing runs.
+- `setup_commands` (optional) — Shell commands run before verification and falsification in each snapshot (e.g. install dependencies); stop on first failure. With no verify_commands, nothing runs.
+- `test_paths` (optional) — Declared test files: git glob pathspecs relative to job cwd, including new tests. After verification passes, the server keeps only test changes and re-runs checks; commands that still pass appear in falsification.unfalsified. Rework inherits unless overridden; [] clears.
+- `scope` (optional) — Allowed production files: git glob pathspecs relative to job cwd. Changes outside scope and test_paths are flagged; added files matching neither are new_unclassified. Rework inherits unless overridden; [] clears.
 - `reasoning_effort` (optional) — Optional Codex reasoning effort; omitted uses the Codex default.
 
 ### `codex_config`
@@ -141,6 +147,6 @@ Status of a blocked, queued, running, or finished Codex job: dependency, state, 
 
 ### `codex_result`
 
-Final result of a finished job: Codex's final message, the parsed structured handoff (Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is itself a review failure), server verification evidence, and final goal state. Read evidence first for mechanical pass/fail; review judges intent and constraints. Errors if the job is not finished.
+Final result of a finished job: Codex's final message, the parsed structured handoff (Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is itself a review failure), server verification evidence (including falsification.unfalsified and changes.tests_modified / out_of_scope / new_unclassified), and final goal state. Read evidence first for mechanical pass/fail; review judges intent and constraints. Errors if the job is not finished.
 
 - `job_id` — Job id returned by codex_implement or codex_rework.

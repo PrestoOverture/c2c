@@ -103,6 +103,8 @@ export interface Job {
   handoff?: Handoff;
   verify_commands?: string[];
   setup_commands?: string[];
+  test_paths?: string[];
+  scope?: string[];
   evidence?: Evidence | null;
   /** Error description string if job ended in error or timeout state */
   error?: string;
@@ -166,6 +168,8 @@ export interface StartJobOptions {
   onProgress?: (event: JobProgressEvent) => void;
   verify_commands?: string[];
   setup_commands?: string[];
+  test_paths?: string[];
+  scope?: string[];
 }
 
 /**
@@ -279,6 +283,8 @@ export function startJob(opts: StartJobOptions): Job {
     transcript: [],
     verify_commands: opts.verify_commands,
     setup_commands: opts.setup_commands,
+    test_paths: opts.test_paths,
+    scope: opts.scope,
     evidence: null,
     ...(opts.contextFiles ? { contextFiles: opts.contextFiles } : {}),
     ...(opts.dependsOn ? { dependsOn: opts.dependsOn } : {}),
@@ -586,6 +592,8 @@ async function runJob(job: Job, opts: StartJobOptions) {
         cwd: opts.config.cwd,
         verify_commands: job.verify_commands,
         setup_commands: job.setup_commands,
+        test_paths: job.test_paths,
+        scope: job.scope,
         timeoutMs: opts.config.verifyTimeoutMs,
         onProgress: report,
       });

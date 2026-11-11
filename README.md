@@ -184,16 +184,20 @@ Python 3.12, Poetry. Run from project root.
 
 | Tool | Description |
 |------|-------------|
-| `codex_implement` | Start a Codex job from a Goal Contract. Supports `context_files` (read-first references, validated to exist) and `depends_on` (start only after a prior job succeeds). Returns a job ID immediately. |
+| `codex_implement` | Start a Codex job from a Goal Contract. Supports `context_files` (read-first references, validated to exist), `verify_commands` / `setup_commands`, `test_paths` / `scope`, and `depends_on` (start only after a prior job succeeds). Returns a job ID immediately. |
 | `codex_status` | Check job progress: state, queue position, dependency, turns, goal status, token usage, time since last activity, transcript, and server verification `evidence`. |
 | `codex_result` | Fetch the finished job's structured handoff and server verification `evidence`. Read evidence first; review judges intent. |
-| `codex_rework` | Resume the Codex thread with a Delta Contract (also accepts `context_files`, `verify_commands`, and `setup_commands`). Inherits both command lists from `job_id` unless overridden; `[]` clears a list. |
-| `codex_estimate` | Read-only pre-job cost estimate: rendered-prompt size (including `verify_commands` and `setup_commands`), thread-goal objective size against `GOAL_OBJECTIVE_MAX`, plus token statistics from your local completed jobs. |
+| `codex_rework` | Resume the Codex thread with a Delta Contract (also accepts `context_files`, `verify_commands`, `setup_commands`, `test_paths`, and `scope`). Inherits both command lists and pathspec lists from `job_id` unless overridden; `[]` clears a list. |
+| `codex_estimate` | Read-only pre-job cost estimate: rendered-prompt size (including `verify_commands`, `setup_commands`, `test_paths`, and `scope`), thread-goal objective size against `GOAL_OBJECTIVE_MAX`, plus token statistics from your local completed jobs. |
 | `codex_config` | Read-only view of Codex's current model, version, and settings. |
 
 Jobs are persisted (`C2C_STATE_DIR`), so status, results, and rework survive server restarts. Jobs beyond the concurrency cap queue FIFO; a stall watchdog reports when a running job stops making progress. See [PATTERNS.md](./PATTERNS.md) for field-tested guidance on writing contracts that pass review on the first try.
 
 Pass optional `verify_commands: string[]` to `codex_implement`: after Codex exits, the server runs each shell command (`sh -c`, server environment) in a temporary detached worktree containing tracked edits and untracked non-ignored files. Ignored files are absent; use optional `setup_commands: string[]` to install dependencies first in the same snapshot. Setup stops at its first failure; all verification commands run. Outside git, commands run in place. The job stays `running` and holds its slot until evidence is saved, then becomes `done` even if checks fail. Evidence records the environment, base commit, pass/fail, exit codes, timeouts, durations, and the last 4000 characters of combined output per command. Without verification commands, evidence is `null` and neither setup nor verification runs.
+
+Declare optional `test_paths: string[]` and `scope: string[]` as Git glob pathspecs relative to the job cwd (for example, `test_paths: ["test/**/*.test.ts"]`, `scope: ["src/**"]`). Test classification uses only `test_paths`; put new tests under those paths. In worktrees, `evidence.changes` lists repo-root-relative `files` with added/modified/deleted status and test/production class, `tests_modified` (pre-existing tests edited or deleted), `out_of_scope` (changes outside both declarations, only when scope is given), and `new_unclassified` (added files matching neither declaration). Without test_paths, all changes are production; without scope, out_of_scope is empty.
+
+After verification passes, with non-empty test_paths and production changes, the server builds a second snapshot of HEAD plus only the declared test changes, including additions and deletions. It runs setup again, then the same verification commands with the same per-command timeout. `evidence.falsification` records `ran`, `skipped_reason` when skipped or setup fails, `setup`, `commands` with `still_passes`, and `unfalsified` commands that still pass after reverting production changes. Review these flags: they never change evidence.passed or job state. Both snapshots are removed and pruned; the source tree, index, HEAD and branches are untouched. Rework inherits test_paths and scope unless overridden; `[]` clears a declaration.
 
 ## How the Goal Loop Works
 

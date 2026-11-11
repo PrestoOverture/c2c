@@ -72,6 +72,9 @@ Setup (run first, stop on failure):
 - npm ci
 Verification (each must exit 0):
 - npm test
+Declared test_paths (git glob pathspecs relative to the job cwd): ["test/**/*.test.js"]
+Test files are declared by test_paths; new tests belong under test_paths. After verification passes, the server reverts production changes to HEAD, keeps only test-file changes, and expects the checks to fail. Commands that still pass are flagged as unfalsified without changing evidence.passed.
+Declared scope (git glob pathspecs relative to the job cwd): ["src/wordfreq.js"]. Changes outside scope and test_paths are flagged for review.
 ```
 
 ## 3. Thread-goal objective
@@ -104,4 +107,7 @@ Setup (run first, stop on failure):
 - npm ci
 Verification (each must exit 0):
 - npm test
+Declared test_paths (git glob pathspecs relative to the job cwd): ["test/**/*.test.js"]
+Test files are declared by test_paths; new tests belong under test_paths. After verification passes, the server reverts production changes to HEAD, keeps only test-file changes, and expects the checks to fail. Commands that still pass are flagged as unfalsified without changing evidence.passed.
+Declared scope (git glob pathspecs relative to the job cwd): ["src/wordfreq.js"]. Changes outside scope and test_paths are flagged for review.
 ```

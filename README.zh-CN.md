@@ -201,17 +201,21 @@ Python 3.12，Poetry。从项目根目录运行。
 
 | 工具                | 说明                                                                                                    |
 | ----------------- | ----------------------------------------------------------------------------------------------------- |
-| `codex_implement` | 从 Goal Contract 启动一个 Codex 任务。支持 `context_files`（先读参考文件，校验存在性）和 `depends_on`（前序任务成功后才启动）。立即返回 job ID。 |
+| `codex_implement` | 从 Goal Contract 启动一个 Codex 任务。支持 `context_files`（先读参考文件，校验存在性）、`verify_commands` / `setup_commands`、`test_paths` / `scope` 和 `depends_on`（前序任务成功后才启动）。立即返回 job ID。 |
 | `codex_status`    | 查看任务进度：状态、队列位置、依赖、轮次、目标状态、token 用量、距上次活动的时间、活动记录及服务端验证 `evidence`。 |
 | `codex_result`    | 获取已完成任务的结构化交接报告及服务端验证 `evidence`。先读 evidence，审查负责判断实现是否符合意图。 |
-| `codex_rework`    | 用 Delta Contract 恢复 Codex 线程进行返工（同样支持 `context_files`、`verify_commands`、`setup_commands`）。未覆盖时从 `job_id` 继承两组命令；`[]` 清空对应列表。 |
-| `codex_estimate`  | 只读的任务前成本预估：渲染后的 prompt 规模（包含 `verify_commands` 和 `setup_commands`）、thread-goal objective 相对 `GOAL_OBJECTIVE_MAX` 的规模，以及本机已完成任务的 token 统计。 |
+| `codex_rework`    | 用 Delta Contract 恢复 Codex 线程进行返工（同样支持 `context_files`、`verify_commands`、`setup_commands`、`test_paths`、`scope`）。未覆盖时从 `job_id` 继承命令和路径列表；`[]` 清空对应列表。 |
+| `codex_estimate`  | 只读的任务前成本预估：渲染后的 prompt 规模（包含 `verify_commands`、`setup_commands`、`test_paths` 和 `scope`）、thread-goal objective 相对 `GOAL_OBJECTIVE_MAX` 的规模，以及本机已完成任务的 token 统计。 |
 | `codex_config`    | 只读查看 Codex 当前模型、版本和配置。                                                                                |
 
 
 任务会持久化（`C2C_STATE_DIR`），因此状态查询、结果获取和返工在 server 重启后依然可用。超出并发上限的任务按 FIFO 排队；停滞看门狗会在运行中的任务失去进展时主动上报。关于如何写出"一次过审"的合同，参见实战指南 [PATTERNS.zh-CN.md](./PATTERNS.zh-CN.md)。
 
 可向 `codex_implement` 传入可选的 `verify_commands: string[]`：Codex 退出后，服务端在临时 detached worktree 中以 `sh -c` 和服务端环境逐条运行命令，快照包含已跟踪文件的改动及未被忽略的未跟踪文件。被 git 忽略的文件不会复制；可用 `setup_commands: string[]` 先在同一快照中安装依赖。Setup 首次失败即停止，验证命令则全部执行。非 git 目录直接原地运行。验证期间任务保持 `running` 并占用并发名额，evidence 保存后变为 `done`，即使检查失败也不变为 error。Evidence 记录环境、基准 commit、通过与否、退出码、超时、耗时及每条命令合并输出的最后 4000 个字符。未提供验证命令时 evidence 为 `null`，setup 和验证均不执行。
+
+可选的 `test_paths: string[]` 和 `scope: string[]` 是相对于任务 cwd 的 Git glob pathspec，例如 `test_paths: ["test/**/*.test.ts"]`、`scope: ["src/**"]`。测试分类只依据 test_paths；新增测试也应放在这些路径下。在 worktree 中，`evidence.changes.files` 列出仓库根目录相对路径、added/modified/deleted 状态及 test/production 分类；`tests_modified` 标记已有测试的修改或删除，不含新增测试；`out_of_scope` 列出不匹配 scope 和 test_paths 的改动（仅在传入 scope 时）；`new_unclassified` 列出两个声明均不匹配的新增文件。没有 test_paths 时全部归为 production；没有 scope 时 out_of_scope 为空。
+
+验证通过、test_paths 非空且存在生产文件改动时，服务端建立第二份快照：HEAD 加上声明的测试文件改动，保留测试的新增、修改和删除，撤销生产文件改动。服务端重新执行 setup 和相同的验证命令，使用相同的逐命令超时。`evidence.falsification` 记录 `ran`、跳过或 setup 失败时的 `skipped_reason`、`setup`、含 `still_passes` 的 `commands`，以及撤销生产改动后仍然通过的 `unfalsified` 命令。这些标记供复核使用，不改变 evidence.passed 或任务状态。两份快照都会移除并 prune，源工作区、索引、HEAD 和分支保持不变。返工未覆盖时继承 test_paths 和 scope；`[]` 清空对应声明。
 
 ## Goal Loop 的工作原理
 

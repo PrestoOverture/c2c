@@ -13,12 +13,29 @@ export interface CommandEvidence {
   output_tail: string;
 }
 
+export interface ChangeEvidence {
+  files: { path: string; status: "added" | "modified" | "deleted"; class: "test" | "production" }[];
+  tests_modified: string[];
+  out_of_scope: string[];
+  new_unclassified: string[];
+}
+
+export interface FalsificationEvidence {
+  ran: boolean;
+  skipped_reason?: string;
+  setup: CommandEvidence[];
+  commands: (CommandEvidence & { still_passes: boolean })[];
+  unfalsified: string[];
+}
+
 export interface Evidence {
   environment: "worktree" | "in_place";
   base_commit: string | null;
   passed: boolean;
   setup: CommandEvidence[];
   commands: CommandEvidence[];
+  changes?: ChangeEvidence;
+  falsification: FalsificationEvidence;
   error?: string;
 }
 
@@ -26,6 +43,8 @@ interface EvidenceOptions {
   cwd: string;
   verify_commands?: string[];
   setup_commands?: string[];
+  test_paths?: string[];
+  scope?: string[];
   timeoutMs?: number;
   onProgress?: (message: string) => void;
 }
@@ -86,15 +105,88 @@ function runCommand(command: string, cwd: string, timeoutMs: number): Promise<Co
   });
 }
 
+const succeeded = (result: CommandEvidence) => result.exit_code === 0 && !result.timed_out;
+const names = (output: string) => output.split("\0").filter(Boolean);
+const pathspecs = (paths: string[]) => paths.map((path) => `:(glob)${path}`);
+
+// Ask git from the job cwd so globs are cwd-relative. --full-name keeps all
+// reported paths repo-root relative, including deleted and untracked files.
+async function matchingFiles(cwd: string, paths?: string[]): Promise<Set<string>> {
+  if (!paths?.length) return new Set();
+  const specs = pathspecs(paths);
+  return new Set([
+    ...names(await git(cwd, ["ls-files", "--full-name", "--cached", "--others", "--exclude-standard", "-z", "--", ...specs])),
+    ...names(await git(cwd, ["diff", "--no-relative", "--name-only", "--no-renames", "-z", "HEAD", "--", ...specs])),
+  ]);
+}
+
+async function collectChanges(repo: string, cwd: string, opts: EvidenceOptions): Promise<ChangeEvidence> {
+  const tests = await matchingFiles(cwd, opts.test_paths);
+  const scope = await matchingFiles(cwd, opts.scope);
+  const changed = names(await git(repo, ["diff", "--no-relative", "--name-status", "--no-renames", "-z", "HEAD", "--"]));
+  const files = new Map<string, ChangeEvidence["files"][number]>();
+  for (let i = 0; i < changed.length; i += 2) {
+    const path = changed[i + 1];
+    files.set(path, { path, status: changed[i] === "A" ? "added" : changed[i] === "D" ? "deleted" : "modified", class: tests.has(path) ? "test" : "production" });
+  }
+  for (const path of names(await git(repo, ["ls-files", "--others", "--exclude-standard", "-z"]))) {
+    files.set(path, { path, status: "added", class: tests.has(path) ? "test" : "production" });
+  }
+  const all = [...files.values()].sort((a, b) => a.path.localeCompare(b.path));
+  return {
+    files: all,
+    tests_modified: all.filter((f) => f.class === "test" && f.status !== "added").map((f) => f.path),
+    out_of_scope: opts.scope === undefined ? [] : all.filter((f) => !tests.has(f.path) && !scope.has(f.path)).map((f) => f.path),
+    new_unclassified: all.filter((f) => f.status === "added" && !tests.has(f.path) && !scope.has(f.path)).map((f) => f.path),
+  };
+}
+
+// Both snapshots use the same byte-preserving patch/copy path. Filtering the
+// patch at the source retains only declared test changes in the second snapshot.
+async function populateSnapshot(repo: string, sourceCwd: string, worktree: string, base: string, paths?: string[]) {
+  await git(repo, ["worktree", "add", "--detach", worktree, base]);
+  const specs = paths ? pathspecs(paths) : [];
+  const patch = await gitRaw(paths ? sourceCwd : repo, ["diff", "--no-relative", "--binary", "--no-renames", "--no-ext-diff", "--no-textconv", base, "--", ...specs]);
+  if (patch.length) await git(worktree, ["apply", "--binary", "-"], patch);
+  const untracked = names(await git(paths ? sourceCwd : repo, ["ls-files", "--full-name", "--others", "--exclude-standard", "-z", "--", ...specs]));
+  for (const file of untracked) {
+    const target = join(worktree, file);
+    await mkdir(dirname(target), { recursive: true });
+    await cp(join(repo, file), target, { dereference: false, verbatimSymlinks: true });
+  }
+}
+
+async function runChecks(opts: EvidenceOptions, cwd: string, label = "") {
+  const setup: CommandEvidence[] = [];
+  const commands: CommandEvidence[] = [];
+  const timeout = opts.timeoutMs ?? 600_000;
+  for (const command of opts.setup_commands ?? []) {
+    opts.onProgress?.(`${label}setup: ${command}`);
+    const result = await runCommand(command, cwd, timeout);
+    setup.push(result);
+    if (!succeeded(result)) return { setup, commands, passed: false };
+  }
+  for (const command of opts.verify_commands ?? []) {
+    opts.onProgress?.(`${label}verify: ${command}`);
+    commands.push(await runCommand(command, cwd, timeout));
+  }
+  return { setup, commands, passed: commands.every(succeeded) };
+}
+
 /** Run caller-supplied checks, without consulting the worker's output or handoff. */
-export async function collectEvidence(opts: EvidenceOptions): Promise<Evidence | null> {
-  if (!opts.verify_commands?.length) return null;
+export async function collectEvidence(input: EvidenceOptions): Promise<Evidence | null> {
+  if (!input.verify_commands?.length) return null;
+  // A blank pathspec matches every file; it would silently classify the whole tree as tests.
+  const patterns = (paths?: string[]) => paths?.filter((path) => path.trim() !== "");
+  const opts = { ...input, test_paths: patterns(input.test_paths), scope: patterns(input.scope) };
+  let classificationError: string | undefined;
   const evidence: Evidence = {
     environment: "worktree", base_commit: null, passed: false, setup: [], commands: [],
+    falsification: { ran: false, setup: [], commands: [], unfalsified: [] },
   };
   let repo: string | undefined;
   let temp: string | undefined;
-  let worktree: string | undefined;
+  const worktrees: string[] = [];
   const fail = (error: unknown) => {
     evidence.passed = false;
     const message = error instanceof Error ? error.message : String(error);
@@ -112,47 +204,59 @@ export async function collectEvidence(opts: EvidenceOptions): Promise<Evidence |
     if (repo) {
       repo = await realpath(repo);
       evidence.base_commit = (await git(repo, ["rev-parse", "HEAD"])).trim();
-      temp = await mkdtemp(join(tmpdir(), "c2c-evidence-"));
-      worktree = join(temp, "snapshot");
-      await git(repo, ["worktree", "add", "--detach", worktree, "HEAD"]);
-      const patch = await gitRaw(repo, ["diff", "--binary", "--no-ext-diff", "--no-textconv", "HEAD", "--"]);
-      if (patch.length) await git(worktree, ["apply", "--binary", "-"], patch);
-      const untracked = (await git(repo, ["ls-files", "--others", "--exclude-standard", "-z"]))
-        .split("\0").filter(Boolean);
-      for (const file of untracked) {
-        const target = join(worktree, file);
-        await mkdir(dirname(target), { recursive: true });
-        await cp(join(repo, file), target, { dereference: false, verbatimSymlinks: true });
+      // A bad declaration (e.g. a pattern outside the repository) must not cost the
+      // verification run itself: flags never decide evidence.passed.
+      try { evidence.changes = await collectChanges(repo, sourceCwd, opts); } catch (error) {
+        classificationError = error instanceof Error ? error.message : String(error);
       }
+      temp = await mkdtemp(join(tmpdir(), "c2c-evidence-"));
+      const worktree = join(temp, "snapshot");
+      worktrees.push(worktree);
+      await populateSnapshot(repo, sourceCwd, worktree, evidence.base_commit);
       cwd = join(worktree, relative(repo, sourceCwd));
     }
-    const timeout = opts.timeoutMs ?? 600_000;
-    let setupPassed = true;
-    for (const command of opts.setup_commands ?? []) {
-      opts.onProgress?.(`setup: ${command}`);
-      const result = await runCommand(command, cwd, timeout);
-      evidence.setup.push(result);
-      if (result.exit_code !== 0 || result.timed_out) { setupPassed = false; break; }
-    }
-    if (setupPassed) {
-      for (const command of opts.verify_commands) {
-        opts.onProgress?.(`verify: ${command}`);
-        evidence.commands.push(await runCommand(command, cwd, timeout));
+    Object.assign(evidence, await runChecks(opts, cwd));
+    const falsification = evidence.falsification;
+    if (!evidence.passed) falsification.skipped_reason = "evidence failed";
+    else if (!repo) falsification.skipped_reason = "non-git cwd (not a worktree)";
+    else if (classificationError) falsification.skipped_reason = `change classification failed: ${classificationError}`;
+    else if (!opts.test_paths?.length) falsification.skipped_reason = "no test_paths";
+    else if (!evidence.changes?.files.some((f) => f.class === "production")) {
+      falsification.skipped_reason = "no production changes (only test files changed or no changes)";
+    } else {
+      const reverted = join(temp!, "reverted");
+      worktrees.push(reverted);
+      try {
+        await populateSnapshot(repo, sourceCwd, reverted, evidence.base_commit!, opts.test_paths);
+        const checks = await runChecks(opts, join(reverted, relative(repo, sourceCwd)), "falsification: ");
+        falsification.setup = checks.setup;
+        if (checks.setup.some((result) => !succeeded(result))) {
+          falsification.skipped_reason = "setup failed in reverted snapshot";
+        } else {
+          falsification.ran = true; // ran = the verify commands actually ran against reverted production code
+          falsification.commands = checks.commands.map((result) => ({ ...result, still_passes: succeeded(result) }));
+          falsification.unfalsified = falsification.commands.filter((result) => result.still_passes).map((result) => result.command);
+        }
+      } catch (error) {
+        falsification.skipped_reason = `falsification snapshot failed: ${String(error)}`;
       }
     }
-    evidence.passed = setupPassed && evidence.commands.every((result) => result.exit_code === 0 && !result.timed_out);
   } catch (error) {
     fail(error);
   } finally {
-    if (repo && worktree) {
-      try { await git(repo, ["worktree", "remove", "--force", "--force", worktree]); } catch (error) { fail(error); }
+    for (const worktree of worktrees.reverse()) {
+      try { await git(repo!, ["worktree", "remove", "--force", "--force", worktree]); } catch (error) {
+        if (worktree === join(temp!, "reverted")) evidence.falsification.skipped_reason = `falsification cleanup failed: ${String(error)}`;
+        else fail(error);
+      }
     }
     if (temp) {
       try { await rm(temp, { recursive: true, force: true }); } catch (error) { fail(error); }
     }
-    if (repo && worktree) {
+    if (repo && worktrees.length) {
       try { await git(repo, ["worktree", "prune"]); } catch (error) { fail(error); }
     }
   }
+  if (!evidence.falsification.ran && !evidence.passed) evidence.falsification.skipped_reason = "evidence failed";
   return evidence;
 }

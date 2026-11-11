@@ -345,3 +345,263 @@ test("worker errors never run evidence; verification appears only in the turn pr
   expect(renderGoalContract(full)).toContain("unique-setup");
   expect(renderObjectiveDetails(full, 2000)).toEqual(renderObjectiveDetails(contract, 2000));
 });
+
+test("falsification removes the production fix so a new test exercising it fails, without changing source state", async () => {
+  const { repo, cwd } = repository();
+  writeFileSync(join(cwd, "tracked.txt"), "value=broken\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-qm", "buggy production");
+  writeFileSync(join(cwd, "tracked.txt"), "value=fixed\n");
+  git(repo, "add", ".");
+  writeFileSync(join(cwd, "regression.check"), '. ./tracked.txt\ntest "$value" = fixed\n');
+  const before = sourceState(repo);
+  const evidence = await collectEvidence({
+    cwd, test_paths: ["*.check"], scope: ["tracked.txt"], verify_commands: ["sh regression.check"],
+  });
+  expect(evidence?.passed).toBe(true);
+  expect(evidence?.falsification).toMatchObject({ ran: true, setup: [], unfalsified: [] });
+  expect(evidence?.falsification.skipped_reason).toBeUndefined();
+  expect(evidence?.falsification.commands).toHaveLength(1);
+  expect(evidence?.falsification.commands[0]).toMatchObject({ command: "sh regression.check", still_passes: false, exit_code: 1, timed_out: false });
+  expect(sourceState(repo)).toEqual(before);
+  expect(git(repo, "worktree", "list", "--porcelain").match(/^worktree /gm)).toHaveLength(1);
+});
+
+test("reverted snapshot keeps new, edited and deleted declared tests, restores production, and classifies every change", async () => {
+  const { repo, cwd } = repository();
+  mkdirSync(join(cwd, "checks"));
+  writeFileSync(join(cwd, "checks/edit"), "old test\n");
+  writeFileSync(join(cwd, "checks/delete"), "old test\n");
+  writeFileSync(join(cwd, "checks/staged-delete"), "old test\n");
+  writeFileSync(join(repo, "outside.txt"), "old outside\n");
+  git(repo, "add", ".");
+  git(repo, "commit", "-qm", "test fixtures");
+  writeFileSync(join(cwd, "checks/edit"), "changed test\n");
+  git(repo, "add", ".");
+  // Keep raw non-UTF-8 test edits and unusual names, too.
+  writeFileSync(join(cwd, "checks/edit"), Buffer.from([0xe9, 0x0a]));
+  rmSync(join(cwd, "checks/delete"));
+  git(repo, "rm", "-q", "sub dir/checks/staged-delete");
+  writeFileSync(join(cwd, "checks/new\n'check"), "new test\n");
+  writeFileSync(join(cwd, "checks/staged-new"), "staged test\n");
+  git(repo, "add", "sub dir/checks/staged-new");
+  writeFileSync(join(cwd, "tracked.txt"), "after\n");
+  rmSync(join(cwd, "deleted.txt"));
+  writeFileSync(join(cwd, "new-production"), "new production\n");
+  writeFileSync(join(repo, "outside.txt"), "changed outside\n");
+  writeFileSync(join(repo, "unclassified"), "unclassified\n");
+  writeFileSync(join(cwd, "ignored.txt"), "ignored\n");
+  const before = sourceState(repo);
+  const command = [
+    "test \"$(od -An -tx1 checks/edit | tr -d ' \\n')\" = e90a",
+    "test ! -e checks/delete", "test ! -e checks/staged-delete",
+    `test "$(cat ${quote("checks/new\n'check")})" = 'new test'`,
+    "test \"$(cat checks/staged-new)\" = 'staged test'",
+    "test ! -e ignored.txt",
+    "if test \"$(cat tracked.txt)\" = after; then test ! -e deleted.txt && test -e new-production && test -e ../unclassified && grep -q changed ../outside.txt && echo full-ok; else test \"$(cat tracked.txt)\" = before && test -f deleted.txt && test ! -e new-production && test ! -e ../unclassified && grep -q old ../outside.txt && echo reverted-ok; fi",
+  ].join(" && ");
+  const evidence = await collectEvidence({
+    cwd, test_paths: ["checks/**"], scope: ["tracked.txt", "deleted.txt", "new-production"], verify_commands: [command],
+  });
+  expect(evidence?.passed).toBe(true);
+  expect(evidence?.commands[0].output_tail).toBe("full-ok\n");
+  expect(evidence?.falsification.commands[0]).toMatchObject({ still_passes: true, output_tail: "reverted-ok\n" });
+  expect(evidence?.falsification.unfalsified).toEqual([command]);
+  const changes = evidence!.changes!;
+  const file = (path: string, status: string, kind: string) => ({ path, status, class: kind });
+  expect(changes.files).toHaveLength(10);
+  expect(changes.files).toEqual(expect.arrayContaining([
+    file("sub dir/checks/edit", "modified", "test"),
+    file("sub dir/checks/delete", "deleted", "test"),
+    file("sub dir/checks/staged-delete", "deleted", "test"),
+    file("sub dir/checks/new\n'check", "added", "test"),
+    file("sub dir/checks/staged-new", "added", "test"),
+    file("sub dir/tracked.txt", "modified", "production"),
+    file("sub dir/deleted.txt", "deleted", "production"),
+    file("sub dir/new-production", "added", "production"),
+    file("outside.txt", "modified", "production"),
+    file("unclassified", "added", "production"),
+  ]));
+  expect(changes.tests_modified.sort()).toEqual(["sub dir/checks/delete", "sub dir/checks/edit", "sub dir/checks/staged-delete"]);
+  expect(changes.out_of_scope.sort()).toEqual(["outside.txt", "unclassified"]);
+  expect(changes.new_unclassified).toEqual(["unclassified"]);
+  expect(sourceState(repo)).toEqual(before);
+});
+
+test("git globs match deleted tests relative to cwd, including parent paths; no naming heuristics or implicit scope", async () => {
+  const { repo, cwd } = repository();
+  rmSync(join(cwd, "deleted.txt"));
+  git(repo, "add", ".");
+  writeFileSync(join(cwd, "new.test.ts"), "new\n");
+  writeFileSync(join(cwd, "binary.dat"), Buffer.from([0, 9]));
+  const declared = await collectEvidence({ cwd, test_paths: ["../sub dir/deleted.*"], scope: [], verify_commands: ["true"] });
+  expect(declared?.changes).toMatchObject({
+    tests_modified: ["sub dir/deleted.txt"],
+    new_unclassified: ["sub dir/new.test.ts"],
+  });
+  expect(declared?.changes?.files).toContainEqual({ path: "sub dir/deleted.txt", status: "deleted", class: "test" });
+  expect(declared?.changes?.out_of_scope.sort()).toEqual(["sub dir/binary.dat", "sub dir/new.test.ts"]);
+  const undeclared = await collectEvidence({ cwd, verify_commands: ["true"] });
+  expect(undeclared?.changes?.files.every((f) => f.class === "production")).toBe(true);
+  expect(undeclared?.changes?.tests_modified).toEqual([]);
+  expect(undeclared?.changes?.out_of_scope).toEqual([]);
+  expect(undeclared?.changes?.new_unclassified).toEqual(["sub dir/new.test.ts"]);
+});
+
+test("falsification explains evidence failure, absent test_paths, non-git cwd and test-only changes", async () => {
+  const { repo, cwd } = repository();
+  writeFileSync(join(cwd, "tracked.txt"), "after\n");
+  const before = sourceState(repo);
+  const failed = await collectEvidence({ cwd, test_paths: ["checks/**"], verify_commands: ["false"] });
+  expect(failed?.falsification).toEqual({ ran: false, skipped_reason: "evidence failed", setup: [], commands: [], unfalsified: [] });
+  for (const test_paths of [undefined, []]) {
+    const absent = await collectEvidence({ cwd, test_paths, verify_commands: ["true"] });
+    expect(absent?.falsification).toMatchObject({ ran: false, skipped_reason: "no test_paths", commands: [], unfalsified: [] });
+  }
+  const inPlace = await collectEvidence({ cwd: scratch(), test_paths: ["checks/**"], verify_commands: ["true"] });
+  expect(inPlace?.falsification).toMatchObject({ ran: false, skipped_reason: "non-git cwd (not a worktree)" });
+  const testsOnly = await collectEvidence({ cwd, test_paths: ["tracked.txt"], verify_commands: ["true"] });
+  expect(testsOnly?.falsification).toMatchObject({ ran: false, skipped_reason: "no production changes (only test files changed or no changes)" });
+  expect(sourceState(repo)).toEqual(before);
+});
+
+test("setup failing only in the reverted snapshot stops falsification without failing evidence, and cleans both worktrees", async () => {
+  const { repo, cwd } = repository();
+  writeFileSync(join(cwd, "tracked.txt"), "fixed\n");
+  writeFileSync(join(cwd, "new.check"), "test\n");
+  const before = sourceState(repo);
+  const evidence = await collectEvidence({
+    cwd, test_paths: ["*.check"],
+    setup_commands: ["grep -q fixed tracked.txt", "touch dependency"],
+    verify_commands: ["test -f dependency"],
+  });
+  expect(evidence?.passed).toBe(true);
+  expect(evidence?.setup).toHaveLength(2);
+  expect(evidence?.falsification).toMatchObject({ ran: false, skipped_reason: "setup failed in reverted snapshot", commands: [], unfalsified: [] });
+  expect(evidence?.falsification.setup).toHaveLength(1);
+  expect(evidence?.falsification.setup[0].exit_code).toBe(1);
+  expect(sourceState(repo)).toEqual(before);
+});
+
+test("falsification shares the per-command timeout and still runs later commands after a failure", async () => {
+  const { repo, cwd } = repository();
+  writeFileSync(join(cwd, "tracked.txt"), "fixed\n");
+  const before = sourceState(repo);
+  const evidence = await collectEvidence({
+    cwd, test_paths: ["*.check"], timeoutMs: 100,
+    verify_commands: ["if grep -q fixed tracked.txt; then exit 0; else echo reverted; sleep 5; fi", "true"],
+  });
+  expect(evidence?.passed).toBe(true);
+  expect(evidence?.falsification.commands[0]).toMatchObject({ still_passes: false, timed_out: true, output_tail: "reverted\n" });
+  expect(evidence?.falsification.commands[1]).toMatchObject({ still_passes: true, exit_code: 0 });
+  expect(evidence?.falsification.unfalsified).toEqual(["true"]);
+  expect(sourceState(repo)).toEqual(before);
+});
+
+test("a reverted-snapshot creation failure is advisory and even partially created worktrees are cleaned", async () => {
+  const { dir, repo, cwd } = repository();
+  const marker = join(dir, "checkout-marker");
+  writeFileSync(join(repo, ".git/hooks/post-checkout"), `#!/bin/sh\nif test -e ${quote(marker)}; then exit 5; fi\ntouch ${quote(marker)}\n`, { mode: 0o755 });
+  writeFileSync(join(cwd, "tracked.txt"), "after\n");
+  const before = sourceState(repo);
+  const evidence = await collectEvidence({ cwd, test_paths: ["*.check"], verify_commands: ["true"] });
+  expect(evidence?.passed).toBe(true);
+  expect(evidence?.error).toBeUndefined();
+  expect(evidence?.falsification.ran).toBe(false);
+  expect(evidence?.falsification.skipped_reason).toContain("falsification snapshot failed");
+  expect(evidence?.falsification.commands).toEqual([]);
+  expect(evidence?.falsification.unfalsified).toEqual([]);
+  expect(sourceState(repo)).toEqual(before);
+});
+
+test("server persists advisory flags and declarations across restart, rework inherits them, and [] clears or overrides", async () => {
+  const { dir, repo, cwd } = repository();
+  const promptFile = join(dir, "prompt.txt");
+  writeFileSync(join(cwd, "tracked.txt"), "after\n");
+  writeFileSync(join(cwd, "new.check"), "declared test\n");
+  writeFileSync(join(cwd, "unclassified"), "undeclared\n");
+  const before = sourceState(repo);
+  let client = await connect(dir, { MOCK_PROMPT_FILE: promptFile });
+  const input = { ...contract, cwd, verify_commands: ["true"], setup_commands: ["echo setup"], test_paths: ["*.check"], scope: ["tracked.txt"] };
+  const estimate = await call(client, "codex_estimate", input);
+  const started = await call(client, "codex_implement", input);
+  const finished = await done(client, started.job_id);
+  expect(finished.state).toBe("done");
+  expect(finished.evidence.passed).toBe(true);
+  expect(finished.evidence.falsification).toMatchObject({ ran: true, unfalsified: ["true"] });
+  expect(finished.evidence.falsification.setup[0].output_tail).toBe("setup\n");
+  expect(finished.evidence.changes.new_unclassified).toEqual(["sub dir/unclassified"]);
+  expect(finished.evidence.changes.out_of_scope).toEqual(["sub dir/unclassified"]);
+  expect(estimate.prompt_chars).toBe(readFileSync(promptFile, "utf8").length);
+  const prompt = readFileSync(promptFile, "utf8");
+  expect(prompt).toContain('test_paths');
+  expect(prompt).toContain('"*.check"');
+  expect(prompt).toContain('"tracked.txt"');
+  expect(prompt).toContain("new tests belong under test_paths");
+  expect(renderObjectiveDetails(input, 2000)).toEqual(renderObjectiveDetails(contract, 2000));
+  const persisted = JSON.parse(readFileSync(join(dir, "state", `${started.job_id}.json`), "utf8"));
+  expect(persisted.test_paths).toEqual(input.test_paths);
+  expect(persisted.scope).toEqual(input.scope);
+  expect(persisted.evidence).toEqual(finished.evidence);
+  await client.close();
+  clients.splice(clients.indexOf(client), 1);
+  client = await connect(dir, { MOCK_PROMPT_FILE: promptFile });
+  expect((await status(client, started.job_id)).evidence).toEqual(finished.evidence);
+  expect((await call(client, "codex_result", { job_id: started.job_id })).evidence).toEqual(finished.evidence);
+  const delta = { job_id: started.job_id, cwd, findings: ["Review flags"], failed_conditions: [] };
+  const rework = await call(client, "codex_rework", delta);
+  const reworked = await done(client, rework.job_id);
+  expect(reworked.state).toBe("done");
+  expect(reworked.evidence.falsification.unfalsified).toEqual(["true"]);
+  expect(reworked.evidence.changes).toEqual(finished.evidence.changes);
+  const inherited = JSON.parse(readFileSync(join(dir, "state", `${rework.job_id}.json`), "utf8"));
+  expect(inherited.test_paths).toEqual(input.test_paths);
+  expect(inherited.scope).toEqual(input.scope);
+  expect(readFileSync(promptFile, "utf8")).toContain('"*.check"');
+  const cleared = await call(client, "codex_rework", { ...delta, test_paths: [], scope: [], setup_commands: [] });
+  const clearedResult = await done(client, cleared.job_id);
+  expect(clearedResult.evidence.falsification).toMatchObject({ ran: false, skipped_reason: "no test_paths" });
+  expect(clearedResult.evidence.changes.files.every((f: any) => f.class === "production")).toBe(true);
+  expect(clearedResult.evidence.changes.out_of_scope).toHaveLength(3);
+  expect(clearedResult.evidence.changes.new_unclassified.sort()).toEqual(["sub dir/new.check", "sub dir/unclassified"]);
+  const clearedJob = JSON.parse(readFileSync(join(dir, "state", `${cleared.job_id}.json`), "utf8"));
+  expect(clearedJob.test_paths).toEqual([]);
+  expect(clearedJob.scope).toEqual([]);
+  const overridden = await call(client, "codex_rework", { ...delta, test_paths: ["tracked.txt"], scope: ["*"] });
+  const overrideResult = await done(client, overridden.job_id);
+  expect(overrideResult.evidence.changes.tests_modified).toEqual(["sub dir/tracked.txt"]);
+  expect(overrideResult.evidence.changes.out_of_scope).toEqual([]);
+  expect(overrideResult.evidence.changes.new_unclassified).toEqual([]);
+  expect(sourceState(repo)).toEqual(before);
+});
+
+
+test("declaring paths without verify_commands still gives null evidence and does not run setup", async () => {
+  const dir = scratch();
+  const client = await connect(dir);
+  const input = { ...contract, cwd: dir, test_paths: ["checks/**"], scope: ["src/**"], setup_commands: ["touch must-not-run"] };
+  const started = await call(client, "codex_implement", input);
+  expect((await done(client, started.job_id)).evidence).toBeNull();
+  expect(existsSync(join(dir, "must-not-run"))).toBe(false);
+  const prompt = renderGoalContract(input);
+  expect(prompt).toContain("server evidence is null");
+  expect(prompt).toContain('"checks/**"');
+  expect(prompt).toContain('"src/**"');
+});
+
+test("a test_paths pattern outside the repository does not cost the verification run; blank patterns are ignored", async () => {
+  const { cwd } = repository();
+  writeFileSync(join(cwd, "tracked.txt"), "after\n");
+  const outside = await collectEvidence({ cwd, verify_commands: ["test \"$(cat tracked.txt)\" = after"], test_paths: ["/etc/**"] });
+  expect(outside?.passed).toBe(true);
+  expect(outside?.error).toBeUndefined();
+  expect(outside?.commands).toHaveLength(1);
+  expect(outside?.changes).toBeUndefined();
+  expect(outside?.falsification.ran).toBe(false);
+  expect(outside?.falsification.skipped_reason).toContain("change classification failed");
+
+  const blank = await collectEvidence({ cwd, verify_commands: ["true"], test_paths: [""], scope: [" "] });
+  expect(blank?.changes?.files).toEqual([{ path: "sub dir/tracked.txt", status: "modified", class: "production" }]);
+  expect(blank?.changes?.out_of_scope).toEqual(["sub dir/tracked.txt"]);
+  expect(blank?.falsification).toMatchObject({ ran: false, skipped_reason: "no test_paths" });
+});
