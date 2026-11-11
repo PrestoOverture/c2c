@@ -3,7 +3,7 @@
 // then a two-turn goal-continuation loop ending with goal status "complete".
 
 import { createInterface } from "node:readline";
-import { appendFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
 
 if (process.env.SPAWN_MARKER_FILE) writeFileSync(process.env.SPAWN_MARKER_FILE, "spawned");
 
@@ -29,6 +29,10 @@ const HANDOFF = [
 ].join("\n");
 
 let goal: { objective: string; status: string; tokensUsed: number; tokenBudget?: number } | null = null;
+
+function persistGoal() {
+  if (process.env.MOCK_GOAL_FILE) writeFileSync(process.env.MOCK_GOAL_FILE, JSON.stringify(goal));
+}
 
 // Upstream API error as the real app-server reports it: a JSON string inside `message`.
 function upstreamError(message: string) {
@@ -82,7 +86,10 @@ function runTurn(threadId: string, turnId: string, opts: { continuation: boolean
     });
     if (goal) {
       goal.status = "complete";
-      goal.tokensUsed = 1234;
+      goal.tokensUsed = process.env.MOCK_TOKENS_PER_ROUND
+        ? goal.tokensUsed + Number(process.env.MOCK_TOKENS_PER_ROUND)
+        : 1234;
+      persistGoal();
       send({ method: "thread/goal/updated", params: { threadId, goal } });
     }
     send({
@@ -117,11 +124,12 @@ rl.on("line", (line) => {
       send({ id, result: { thread: { id: "thr_mock_1" } } });
       break;
     case "thread/resume":
+      if (process.env.MOCK_GOAL_FILE) goal = JSON.parse(readFileSync(process.env.MOCK_GOAL_FILE, "utf8"));
       send({ id, result: { thread: { id: params.threadId } } });
       if (process.env.RESUMED_GOAL_STATUS) {
         // Real Codex persists the goal with the thread and replays its last
         // status on resume — e.g. "complete" from the previous round.
-        goal = { objective: "persisted objective", status: process.env.RESUMED_GOAL_STATUS, tokensUsed: 61300 };
+        goal ??= { objective: "persisted objective", status: process.env.RESUMED_GOAL_STATUS, tokensUsed: 61300 };
         send({ method: "thread/goal/updated", params: { threadId: params.threadId, goal } });
       }
       break;
@@ -138,6 +146,7 @@ rl.on("line", (line) => {
         if (process.env.OBJECTIVE_FILE) writeFileSync(process.env.OBJECTIVE_FILE, params.objective);
         goal = { objective: params.objective, status: "active", tokensUsed: 0, tokenBudget: params.tokenBudget };
       }
+      persistGoal();
       send({ id, result: { goal } });
       send({ method: "thread/goal/updated", params: { threadId: params.threadId, goal } });
       break;

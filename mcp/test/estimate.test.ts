@@ -137,7 +137,7 @@ test("estimate uses statistics from completed implement jobs only", async () => 
         cwd: workspace,
       },
     }));
-    expect((await waitForDone(client, rework.job_id)).usage.totalTokens).toBe(9999);
+    expect((await waitForDone(client, rework.job_id)).usage.totalTokens).toBe(0);
 
     const input = {
       goal: "Estimate with context",

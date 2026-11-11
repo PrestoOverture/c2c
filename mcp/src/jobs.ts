@@ -86,6 +86,8 @@ export interface Job {
   goalSet: boolean;
   /** Aggregated token usage statistics mapped by token type */
   usage?: TokenUsage;
+  /** First thread goal token count observed before a rework job's first turn */
+  reworkTokenBaseline?: number;
   /** Current attempt count for this job */
   attempts?: number;
   /** Number of completed turn iterations */
@@ -483,6 +485,12 @@ function mergeUsage(job: Job, usage: TokenUsage | undefined, cumulative = false)
   for (const [key, value] of Object.entries(usage)) {
     job.usage[key] = cumulative ? value : (job.usage[key] ?? 0) + value;
   }
+  // Once a rework baseline is known, the goal is authoritative for totals;
+  // turn usage still supplies the other counters without double-counting.
+  if (job.kind === "rework" && job.reworkTokenBaseline !== undefined && typeof job.goal?.tokensUsed === "number") {
+    job.usage.totalTokens = Math.max(0, job.goal.tokensUsed - job.reworkTokenBaseline);
+    job.usage.threadTotalTokens = job.goal.tokensUsed;
+  }
 }
 
 /**
@@ -494,6 +502,9 @@ function mergeUsage(job: Job, usage: TokenUsage | undefined, cumulative = false)
 function updateGoal(job: Job, params: any) {
   job.goal = extractGoal(params);
   if (typeof job.goal.tokensUsed === "number") {
+    if (job.kind === "rework" && job.turns === 0) {
+      job.reworkTokenBaseline ??= job.goal.tokensUsed;
+    }
     mergeUsage(job, { totalTokens: job.goal.tokensUsed }, true);
   }
   store.save(job);

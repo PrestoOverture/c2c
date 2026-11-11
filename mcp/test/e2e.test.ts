@@ -144,6 +144,8 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
     const reworkStatus = await pollUntilDone(client, rework.job_id);
     expect(reworkStatus.state).toBe("done");
     expect(reworkStatus.context_files).toEqual([reference, examples]);
+    // This mock has no persisted goal by default: single-turn fallback is unchanged.
+    expect(reworkStatus.usage).toEqual({ inputTokens: 20, outputTokens: 500 });
 
     const reworkResult = parsePayload(
       await client.callTool({ name: "codex_result", arguments: { job_id: rework.job_id } }),
@@ -155,6 +157,87 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
     rmSync(tempDir, { recursive: true, force: true });
   }
 }, 30_000);
+
+for (const replayGoal of [false, true]) {
+  test(replayGoal
+    ? "rework by thread_id uses the replayed goal baseline for its round total"
+    : "implement usage has no threadTotalTokens; rework by job_id reports only its round", async () => {
+    const tempDir = mkdtempSync(join(tmpdir(), "c2c-rework-usage-"));
+    const stateDir = join(tempDir, "state");
+    const implementTokens = 1234;
+    const reworkTokens = 567;
+    const threadTokens = implementTokens + reworkTokens;
+    const connect = async (tokensPerRound = implementTokens) => {
+      const transport = new StdioClientTransport({
+        command: "bun",
+        args: [join(mcpDir, "src", "server.ts")],
+        cwd: mcpDir,
+        env: {
+          ...(process.env as Record<string, string>),
+          CODEX_BIN: "bun",
+          CODEX_ARGS: join(mcpDir, "test", "mock-codex.ts"),
+          CODEX_QUIET_MS: "500",
+          CODEX_JOB_TIMEOUT_MS: "10000",
+          MOCK_GOAL_FILE: join(tempDir, "goal.json"),
+          MOCK_TOKENS_PER_ROUND: String(tokensPerRound),
+          ...(replayGoal ? { RESUMED_GOAL_STATUS: "complete" } : {}),
+          C2C_STATE_DIR: stateDir,
+        },
+      });
+      const client = new Client({ name: "rework-usage", version: "1" });
+      await client.connect(transport);
+      return client;
+    };
+    let client = await connect();
+    try {
+      const implement = parsePayload(await client.callTool({
+        name: "codex_implement",
+        arguments: { goal: "Count tokens", constraints: [], success_conditions: ["done"], cwd: tempDir },
+      }));
+      const implemented = await pollUntilDone(client, implement.job_id);
+      expect(implemented.state).toBe("done");
+      expect(implemented.goal.tokensUsed).toBe(implementTokens);
+      expect(implemented.usage.totalTokens).toBe(implementTokens);
+      expect(implemented.usage).not.toHaveProperty("threadTotalTokens");
+
+      await client.close();
+      client = await connect(reworkTokens);
+      const rework = parsePayload(await client.callTool({
+        name: "codex_rework",
+        arguments: {
+          ...(replayGoal ? { thread_id: implemented.thread_id } : { job_id: implement.job_id }),
+          findings: ["Fix the edge case"],
+          failed_conditions: ["done"],
+          cwd: tempDir,
+        },
+      }));
+      const status = await pollUntilDone(client, rework.job_id);
+      expect(status.state).toBe("done");
+      expect(status.turns).toBe(2);
+      expect(status.goal.tokensUsed).toBe(threadTokens);
+      expect(status.usage.totalTokens).toBe(reworkTokens);
+      expect(status.usage.threadTotalTokens).toBe(threadTokens);
+      const saved = JSON.parse(readFileSync(join(stateDir, `${rework.job_id}.json`), "utf8"));
+      expect(saved.reworkTokenBaseline).toBe(implementTokens);
+
+      await client.close();
+      client = await connect();
+      const restored = parsePayload(await client.callTool({
+        name: "codex_status", arguments: { job_id: rework.job_id },
+      }));
+      expect(restored.usage).toEqual(status.usage);
+      expect(restored.goal.tokensUsed).toBe(threadTokens);
+      const result = parsePayload(await client.callTool({
+        name: "codex_result", arguments: { job_id: rework.job_id },
+      }));
+      expect(result.usage.totalTokens).toBe(reworkTokens);
+      expect(result.usage.threadTotalTokens).toBe(threadTokens);
+    } finally {
+      await client.close();
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  }, 30_000);
+}
 
 test("rework reactivates a goal the previous round left complete", async () => {
   const tempDir = mkdtempSync(join(tmpdir(), "c2c-rework-goal-"));
@@ -195,6 +278,10 @@ test("rework reactivates a goal the previous round left complete", async () => {
     const status = await pollUntilDone(client, rework.job_id);
     expect(status.state).toBe("done");
     expect(status.turns).toBeGreaterThanOrEqual(1);
+    // The default mock's final count is below its replayed baseline (61300).
+    expect(status.goal.tokensUsed).toBe(1234);
+    expect(status.usage.totalTokens).toBe(0);
+    expect(status.usage.threadTotalTokens).toBe(1234);
 
     const result = parsePayload(
       await client.callTool({ name: "codex_result", arguments: { job_id: rework.job_id } }),
