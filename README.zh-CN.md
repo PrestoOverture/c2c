@@ -202,14 +202,16 @@ Python 3.12，Poetry。从项目根目录运行。
 | 工具                | 说明                                                                                                    |
 | ----------------- | ----------------------------------------------------------------------------------------------------- |
 | `codex_implement` | 从 Goal Contract 启动一个 Codex 任务。支持 `context_files`（先读参考文件，校验存在性）和 `depends_on`（前序任务成功后才启动）。立即返回 job ID。 |
-| `codex_status`    | 查看任务进度：状态、队列位置、依赖、轮次、目标状态、token 用量、距上次活动的时间、活动记录。                                                     |
-| `codex_result`    | 获取已完成任务的结构化交接报告。                                                                                      |
-| `codex_rework`    | 用 Delta Contract 恢复 Codex 线程进行返工（同样支持 `context_files`）。                                               |
-| `codex_estimate`  | 只读的任务前成本预估：渲染后的 prompt 规模、thread-goal objective 相对 `GOAL_OBJECTIVE_MAX` 的规模，以及本机已完成任务的 token 统计。      |
+| `codex_status`    | 查看任务进度：状态、队列位置、依赖、轮次、目标状态、token 用量、距上次活动的时间、活动记录及服务端验证 `evidence`。 |
+| `codex_result`    | 获取已完成任务的结构化交接报告及服务端验证 `evidence`。先读 evidence，审查负责判断实现是否符合意图。 |
+| `codex_rework`    | 用 Delta Contract 恢复 Codex 线程进行返工（同样支持 `context_files`、`verify_commands`、`setup_commands`）。未覆盖时从 `job_id` 继承两组命令；`[]` 清空对应列表。 |
+| `codex_estimate`  | 只读的任务前成本预估：渲染后的 prompt 规模（包含 `verify_commands` 和 `setup_commands`）、thread-goal objective 相对 `GOAL_OBJECTIVE_MAX` 的规模，以及本机已完成任务的 token 统计。 |
 | `codex_config`    | 只读查看 Codex 当前模型、版本和配置。                                                                                |
 
 
 任务会持久化（`C2C_STATE_DIR`），因此状态查询、结果获取和返工在 server 重启后依然可用。超出并发上限的任务按 FIFO 排队；停滞看门狗会在运行中的任务失去进展时主动上报。关于如何写出"一次过审"的合同，参见实战指南 [PATTERNS.zh-CN.md](./PATTERNS.zh-CN.md)。
+
+可向 `codex_implement` 传入可选的 `verify_commands: string[]`：Codex 退出后，服务端在临时 detached worktree 中以 `sh -c` 和服务端环境逐条运行命令，快照包含已跟踪文件的改动及未被忽略的未跟踪文件。被 git 忽略的文件不会复制；可用 `setup_commands: string[]` 先在同一快照中安装依赖。Setup 首次失败即停止，验证命令则全部执行。非 git 目录直接原地运行。验证期间任务保持 `running` 并占用并发名额，evidence 保存后变为 `done`，即使检查失败也不变为 error。Evidence 记录环境、基准 commit、通过与否、退出码、超时、耗时及每条命令合并输出的最后 4000 个字符。未提供验证命令时 evidence 为 `null`，setup 和验证均不执行。
 
 ## Goal Loop 的工作原理
 
@@ -236,6 +238,7 @@ Python 3.12，Poetry。从项目根目录运行。
 | `CODEX_APPROVAL_POLICY` | `never`                | 审批策略（默认自主执行）                                              |
 | `CODEX_PERMISSIONS`     | 未设置                    | 权限配置透传                                                    |
 | `CODEX_JOB_TIMEOUT_MS`  | `7200000`              | 单任务总时长硬上限（2 小时） |
+| `C2C_VERIFY_TIMEOUT_MS` | `600000` | 每条 setup/验证命令的超时（10 分钟），超时杀死整个进程组；服务端验证前停止 Codex 的任务、空闲和停滞计时器 |
 | `C2C_IDLE_TIMEOUT_MS` | `1200000` | 运行中的尝试连续无 Codex 通知时超时（20 分钟），`0` 禁用；排队和等待依赖的时间不计入 |
 | `CODEX_QUIET_MS`        | `30000`                | 判定活跃目标已完成前的静默等待时间                                         |
 | `GOAL_OBJECTIVE_MAX`    | `2000`                 | 渲染后 goal-objective 的最大长度；超限的合同会被 `codex_implement` 在提交时拒绝 |

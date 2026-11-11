@@ -7,6 +7,7 @@ import { CodexAppServer, type Json } from "./codex-client.ts";
 import { parseHandoff, type Handoff } from "./contracts.ts";
 import { writeLog } from "./log.ts";
 import { createJobStore } from "./store.ts";
+import { collectEvidence, type Evidence } from "./evidence.ts";
 
 /**
  * Configuration options governing Codex execution, timeouts, retries, and concurrency.
@@ -36,6 +37,8 @@ export interface JobConfig {
   retries?: number;
   /** Maximum number of jobs allowed to run concurrently */
   maxConcurrent: number;
+  /** Per-command verification timeout, separate from the worker's timers */
+  verifyTimeoutMs?: number;
 }
 
 /**
@@ -98,6 +101,9 @@ export interface Job {
   finalMessage?: string;
   /** Parsed handoff structure extracted from final message */
   handoff?: Handoff;
+  verify_commands?: string[];
+  setup_commands?: string[];
+  evidence?: Evidence | null;
   /** Error description string if job ended in error or timeout state */
   error?: string;
   /** Resolved list of context file absolute paths */
@@ -158,6 +164,8 @@ export interface StartJobOptions {
   reasoningEffort?: "low" | "medium" | "high" | "xhigh" | "max" | "ultra";
   /** Optional callback for streaming job progress events */
   onProgress?: (event: JobProgressEvent) => void;
+  verify_commands?: string[];
+  setup_commands?: string[];
 }
 
 /**
@@ -179,6 +187,7 @@ export interface JobProgressEvent {
   | "agent_message"
   | "stalled"
   | "resumed"
+  | "verify"
   | "codex_error";
   /** Human-readable message detailing the progress event */
   message: string;
@@ -268,6 +277,9 @@ export function startJob(opts: StartJobOptions): Job {
     attempts: 1,
     turns: 0,
     transcript: [],
+    verify_commands: opts.verify_commands,
+    setup_commands: opts.setup_commands,
+    evidence: null,
     ...(opts.contextFiles ? { contextFiles: opts.contextFiles } : {}),
     ...(opts.dependsOn ? { dependsOn: opts.dependsOn } : {}),
     startedAt,
@@ -539,6 +551,7 @@ function codexErrorMessage(err: any): string | undefined {
  * Result outcome returned by a single job attempt execution.
  */
 interface AttemptResult {
+  verifyPending?: boolean;
   /** Error object if the attempt encountered an exception or process failure */
   error?: Error;
   /** Flag indicating whether the failure was caused by a process exit or spawn failure */
@@ -562,6 +575,24 @@ async function runJob(job: Job, opts: StartJobOptions) {
     writeLog("info", "job_attempt_started", { job_id: job.id, attempt });
 
     const result = await runAttempt(job, opts, Math.max(0, deadline - Date.now()));
+    if (result.verifyPending) {
+      const report = (message: string) => {
+        log(job, "verify", message);
+        store.save(job);
+        opts.onProgress?.({ jobId: job.id, event: "verify", message });
+      };
+      report("worker exited; collecting server verification evidence");
+      job.evidence = await collectEvidence({
+        cwd: opts.config.cwd,
+        verify_commands: job.verify_commands,
+        setup_commands: job.setup_commands,
+        timeoutMs: opts.config.verifyTimeoutMs,
+        onProgress: report,
+      });
+      report(`verification ${job.evidence?.passed ? "passed" : "failed"}`);
+      finish(job, "done");
+      return;
+    }
     if (!result.error || job.state === "done" || job.state === "error" || job.state === "timeout") return;
 
     const retryable = result.processFailure && job.state === "starting" && job.turns === 0;
@@ -596,6 +627,8 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
   let activeTurn = false;
   let stalled = false;
   let processError: Error | undefined;
+  let finalizing = false;
+  let verifyPending = false;
   // Last non-retried Codex `error` notification; fallback text if a failed turn carries none.
   let lastCodexError: string | undefined;
   let quietTimer: ReturnType<typeof setTimeout> | undefined;
@@ -619,13 +652,13 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
       ...(pid === undefined ? {} : { pid }),
     }),
     onExit: (code, error) => {
-      writeLog(job.state === "starting" || job.state === "running" ? "error" : "info", "codex_process_exit", {
+      writeLog(!finalizing && (job.state === "starting" || job.state === "running") ? "error" : "info", "codex_process_exit", {
         job_id: job.id,
         attempt: job.attempts ?? 1,
         code,
         error: error.message,
       });
-      if (job.state === "starting" || job.state === "running") processError = error;
+      if (!finalizing && (job.state === "starting" || job.state === "running")) processError = error;
       settle();
     },
     onNotification: (method, params) => handleNotification(method, params),
@@ -635,6 +668,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
    * Resets and starts the quiet timer; if no further Codex activity occurs within quietMs, finalizes the job as done.
    */
   function armQuietTimer() {
+    if (finalizing) return;
     clearTimeout(quietTimer);
     quietTimer = setTimeout(() => {
       log(job, "quiet", `no goal continuation within ${cfg.quietMs}ms; treating turn as final`);
@@ -713,14 +747,24 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
    * @param error - Error description string (optional)
    */
   function finalize(state: JobState, error?: string) {
+    if (finalizing) return;
+    finalizing = true;
     clearTimeout(idleTimer);
+    clearTimeout(overallTimer);
+    clearTimeout(quietTimer);
     clearStallTimer();
     // A job that never ran a turn did no work; reporting it "done" would pass a no-op off as success.
     if (state === "done" && job.turns === 0) {
       state = "error";
       error = "job ended without running a turn";
     }
-    finish(job, state, client, error);
+    if (state === "done" && job.verify_commands?.length) {
+      verifyPending = true;
+      job.state = "running";
+      client.kill();
+    } else {
+      finish(job, state, client, error);
+    }
   }
 
   /**
@@ -730,7 +774,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
    * @param params - Notification parameters payload
    */
   function handleNotification(method: string, params: Json) {
-    if (job.state !== "starting" && job.state !== "running") return;
+    if (finalizing || (job.state !== "starting" && job.state !== "running")) return;
     writeLog("debug", "codex_notification", {
       job_id: job.id,
       attempt: job.attempts ?? 1,
@@ -845,6 +889,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     // continuation turn; if none starts within quietMs, treat as final.
     try {
       const res: any = await client.request("thread/goal/get", { threadId: job.threadId }, 15_000);
+      if (finalizing) return;
       if (res?.goal) {
         updateGoal(job, res);
         if (job.goal?.status && TERMINAL_GOAL_STATUSES.has(job.goal.status)) {
@@ -917,8 +962,9 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
       ...(opts.reasoningEffort ? { effort: opts.reasoningEffort } : {}),
     });
     await doneSignal;
-    return processError ? { error: processError, processFailure: true } : { processFailure: false };
+    return processError ? { error: processError, processFailure: true } : { processFailure: false, verifyPending };
   } catch (error: any) {
+    if (verifyPending) return { processFailure: false, verifyPending };
     const failure = processError ?? (error instanceof Error ? error : new Error(String(error)));
     return { error: failure, processFailure: client.exited };
   } finally {
@@ -927,5 +973,6 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     clearTimeout(quietTimer);
     clearStallTimer();
     client.kill();
+    if (verifyPending) await client.stop();
   }
 }

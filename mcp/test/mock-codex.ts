@@ -4,8 +4,13 @@
 
 import { createInterface } from "node:readline";
 import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
 
 if (process.env.SPAWN_MARKER_FILE) writeFileSync(process.env.SPAWN_MARKER_FILE, "spawned");
+if (process.env.MOCK_PID_FILE) writeFileSync(process.env.MOCK_PID_FILE, String(process.pid));
+if (process.env.MOCK_EXIT_DELAY_MS) {
+  process.on("SIGTERM", () => setTimeout(() => process.exit(0), Number(process.env.MOCK_EXIT_DELAY_MS)));
+}
 
 function send(obj: Record<string, unknown>) {
   process.stdout.write(JSON.stringify(obj) + "\n");
@@ -80,9 +85,14 @@ function runTurn(threadId: string, turnId: string, opts: { continuation: boolean
     // Goal-continuation loop starts another turn shortly after.
     setTimeout(() => runTurn(threadId, "turn_2", { continuation: true }), 150);
   } else {
+    if (process.env.MOCK_WRITE_FILES) {
+      for (const [path, content] of Object.entries(JSON.parse(process.env.MOCK_WRITE_FILES))) {
+        writeFileSync(join(process.cwd(), path), String(content));
+      }
+    }
     send({
       method: "item/completed",
-      params: { item: { id: `${turnId}-msg`, type: "agentMessage", text: HANDOFF } },
+      params: { item: { id: `${turnId}-msg`, type: "agentMessage", text: process.env.MOCK_HANDOFF ?? HANDOFF } },
     });
     if (goal) {
       goal.status = "complete";
@@ -163,6 +173,7 @@ rl.on("line", (line) => {
         break;
       }
       const prompt = params.input?.map((item: any) => item.text ?? "").join("\n") ?? "";
+      if (process.env.MOCK_PROMPT_FILE) writeFileSync(process.env.MOCK_PROMPT_FILE, prompt);
       const expectedContextPaths = process.env.EXPECT_CONTEXT_PATHS
         ? JSON.parse(process.env.EXPECT_CONTEXT_PATHS)
         : [];

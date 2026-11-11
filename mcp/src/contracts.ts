@@ -13,6 +13,8 @@ export interface GoalContract {
   success_conditions: string[];
   /** Optional list of reference files or directories for Codex to read before starting */
   context_files?: ContextFile[];
+  verify_commands?: string[];
+  setup_commands?: string[];
 }
 
 /**
@@ -27,6 +29,8 @@ export interface DeltaContract {
   constraints?: string[];
   /** Optional list of reference files or directories relevant to the rework task */
   context_files?: ContextFile[];
+  verify_commands?: string[];
+  setup_commands?: string[];
 }
 
 /**
@@ -91,6 +95,18 @@ function renderContextFiles(contextFiles?: ContextFile[]): string[] {
   ];
 }
 
+function renderVerification(c: { verify_commands?: string[]; setup_commands?: string[] }): string[] {
+  if (!c.verify_commands?.length) return [];
+  return [
+    "",
+    "### Server Verification",
+    "After Codex finishes, the server will re-run these commands in a clean checkout containing a snapshot of your tracked edits and untracked non-ignored files. Ignored files are absent; use setup commands for dependencies. Outside git, commands run in place. Server evidence decides pass/fail; the handoff does not.",
+    ...(c.setup_commands?.length ? ["Setup (run first, stop on failure):", ...c.setup_commands.map((x) => `- ${x}`)] : []),
+    "Verification (each must exit 0):",
+    ...c.verify_commands.map((x) => `- ${x}`),
+  ];
+}
+
 /**
  * Combines protocol instructions and a Goal Contract into a complete prompt string for Codex execution.
  *
@@ -112,6 +128,7 @@ export function renderGoalContract(c: GoalContract): string {
     "",
     "### Success Conditions",
     ...c.success_conditions.map((x) => `- [ ] ${x}`),
+    ...renderVerification(c),
   ];
   return lines.join("\n");
 }
@@ -138,6 +155,7 @@ export function renderDeltaContract(d: DeltaContract): string {
     "### Constraints",
     "- Original constraints still apply. Fix only the findings above; do not touch work that passed.",
     ...(d.constraints ?? []).map((x) => `- ${x}`),
+    ...renderVerification(d),
   ];
   return lines.join("\n");
 }

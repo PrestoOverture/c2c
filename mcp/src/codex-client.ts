@@ -46,6 +46,8 @@ export class CodexAppServer {
   private opts: CodexAppServerOptions;
   private stderrTail: string[] = [];
   private exitError?: Error;
+  private resolveExit!: () => void;
+  private exitSignal = new Promise<void>((resolve) => { this.resolveExit = resolve; });
   exited = false;
 
   /**
@@ -84,6 +86,7 @@ export class CodexAppServer {
   private handleExit(code: number | null, error?: Error) {
     if (this.exited) return;
     this.exited = true;
+    this.resolveExit();
     const stderr = this.stderrTail.slice(-10).join(" | ");
     this.exitError = error ?? new Error(
       `codex app-server exited (code ${code})${stderr ? `. stderr: ${stderr}` : ""}`,
@@ -195,5 +198,14 @@ export class CodexAppServer {
    */
   kill() {
     if (!this.exited) this.proc.kill("SIGTERM");
+  }
+
+  /** Stop the worker and wait for its exit before taking a verification snapshot. */
+  async stop(): Promise<void> {
+    this.kill();
+    const timer = setTimeout(() => {
+      if (!this.exited) this.proc.kill("SIGKILL");
+    }, 1000);
+    try { await this.exitSignal; } finally { clearTimeout(timer); }
   }
 }

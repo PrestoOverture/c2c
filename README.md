@@ -185,13 +185,15 @@ Python 3.12, Poetry. Run from project root.
 | Tool | Description |
 |------|-------------|
 | `codex_implement` | Start a Codex job from a Goal Contract. Supports `context_files` (read-first references, validated to exist) and `depends_on` (start only after a prior job succeeds). Returns a job ID immediately. |
-| `codex_status` | Check job progress: state, queue position, dependency, turns, goal status, token usage, time since last activity, transcript. |
-| `codex_result` | Fetch the finished job's structured handoff. |
-| `codex_rework` | Resume the Codex thread with a Delta Contract (also accepts `context_files`). |
-| `codex_estimate` | Read-only pre-job cost estimate: rendered-prompt size, thread-goal objective size against `GOAL_OBJECTIVE_MAX`, plus token statistics from your local completed jobs. |
+| `codex_status` | Check job progress: state, queue position, dependency, turns, goal status, token usage, time since last activity, transcript, and server verification `evidence`. |
+| `codex_result` | Fetch the finished job's structured handoff and server verification `evidence`. Read evidence first; review judges intent. |
+| `codex_rework` | Resume the Codex thread with a Delta Contract (also accepts `context_files`, `verify_commands`, and `setup_commands`). Inherits both command lists from `job_id` unless overridden; `[]` clears a list. |
+| `codex_estimate` | Read-only pre-job cost estimate: rendered-prompt size (including `verify_commands` and `setup_commands`), thread-goal objective size against `GOAL_OBJECTIVE_MAX`, plus token statistics from your local completed jobs. |
 | `codex_config` | Read-only view of Codex's current model, version, and settings. |
 
 Jobs are persisted (`C2C_STATE_DIR`), so status, results, and rework survive server restarts. Jobs beyond the concurrency cap queue FIFO; a stall watchdog reports when a running job stops making progress. See [PATTERNS.md](./PATTERNS.md) for field-tested guidance on writing contracts that pass review on the first try.
+
+Pass optional `verify_commands: string[]` to `codex_implement`: after Codex exits, the server runs each shell command (`sh -c`, server environment) in a temporary detached worktree containing tracked edits and untracked non-ignored files. Ignored files are absent; use optional `setup_commands: string[]` to install dependencies first in the same snapshot. Setup stops at its first failure; all verification commands run. Outside git, commands run in place. The job stays `running` and holds its slot until evidence is saved, then becomes `done` even if checks fail. Evidence records the environment, base commit, pass/fail, exit codes, timeouts, durations, and the last 4000 characters of combined output per command. Without verification commands, evidence is `null` and neither setup nor verification runs.
 
 ## How the Goal Loop Works
 
@@ -217,6 +219,7 @@ A job is cut off only when Codex stops producing events for `C2C_IDLE_TIMEOUT_MS
 | `CODEX_APPROVAL_POLICY` | `never` | Approval policy (autonomous by default) |
 | `CODEX_PERMISSIONS` | Unset | Permissions profile passed to Codex |
 | `CODEX_JOB_TIMEOUT_MS` | `7200000` | Overall maximum job duration (2 hours) |
+| `C2C_VERIFY_TIMEOUT_MS` | `600000` | Per setup/verification command timeout (10 minutes), killing its process group. Codex job/idle/stall timers stop before server verification |
 | `C2C_IDLE_TIMEOUT_MS` | `1200000` | Timeout after no Codex notifications during a running attempt (20 min); `0` disables. Queued/dependency wait time excluded |
 | `CODEX_QUIET_MS` | `30000` | Quiet period before treating an active goal as finished |
 | `GOAL_OBJECTIVE_MAX` | `2000` | Maximum rendered goal-objective length; `codex_implement` rejects over-limit contracts at submit time |

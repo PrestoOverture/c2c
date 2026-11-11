@@ -65,6 +65,13 @@ Appended after the protocol for a new job. Example contract:
 ### Success Conditions
 - [ ] `npm test` exits 0; test/wordfreq.test.js covers case folding, punctuation, ties, and n <= 0.
 - [ ] Deleting the alphabetical tie-break makes `npm test` fail.
+
+### Server Verification
+After Codex finishes, the server will re-run these commands in a clean checkout containing a snapshot of your tracked edits and untracked non-ignored files. Ignored files are absent; use setup commands for dependencies. Outside git, commands run in place. Server evidence decides pass/fail; the handoff does not.
+Setup (run first, stop on failure):
+- npm ci
+Verification (each must exit 0):
+- npm test
 ```
 
 ## 3. Thread-goal objective
@@ -90,4 +97,11 @@ Appended after the protocol when review fails; sent into the same thread, where 
 
 ### Constraints
 - Original constraints still apply. Fix only the findings above; do not touch work that passed.
+
+### Server Verification
+After Codex finishes, the server will re-run these commands in a clean checkout containing a snapshot of your tracked edits and untracked non-ignored files. Ignored files are absent; use setup commands for dependencies. Outside git, commands run in place. Server evidence decides pass/fail; the handoff does not.
+Setup (run first, stop on failure):
+- npm ci
+Verification (each must exit 0):
+- npm test
 ```

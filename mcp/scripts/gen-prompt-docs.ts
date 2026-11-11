@@ -99,11 +99,15 @@ const EXAMPLE_GOAL: GoalContract = {
     "`npm test` exits 0; test/wordfreq.test.js covers case folding, punctuation, ties, and n <= 0.",
     "Deleting the alphabetical tie-break makes `npm test` fail.",
   ],
+  verify_commands: ["npm test"],
+  setup_commands: ["npm ci"],
 };
 
 const EXAMPLE_DELTA: DeltaContract = {
   findings: ["src/wordfreq.js:12 — `topWords(text, 0)` returns one word; it must return []."],
   failed_conditions: ["`npm test` exits 0; test/wordfreq.test.js covers case folding, punctuation, ties, and n <= 0."],
+  verify_commands: EXAMPLE_GOAL.verify_commands,
+  setup_commands: EXAMPLE_GOAL.setup_commands,
 };
 
 /** Strips the shared protocol prefix, asserting the rendered prompt really starts with it. */
