@@ -6,9 +6,10 @@ import { randomUUID } from "node:crypto";
 import { CodexAppServer, type Json } from "./codex-client.ts";
 import { parseHandoff, type Handoff } from "./contracts.ts";
 import { writeLog } from "./log.ts";
-import { createJobStore } from "./store.ts";
+import { createJobStore, defaultStateDir } from "./store.ts";
 import { collectEvidence, type Evidence } from "./evidence.ts";
 import { appendOutcome } from "./outcomes.ts";
+import { prepareIsolation, validateIsolation, type Isolation } from "./isolation.ts";
 
 /**
  * Configuration options governing Codex execution, timeouts, retries, and concurrency.
@@ -111,6 +112,9 @@ export interface Job {
   test_paths?: string[];
   scope?: string[];
   evidence?: Evidence | null;
+  isolation?: Isolation;
+  /** Execution cwd retained for isolated rework, including a repo subdirectory. */
+  isolationCwd?: string;
   /** Error description string if job ended in error or timeout state */
   error?: string;
   /** Resolved list of context file absolute paths */
@@ -151,6 +155,7 @@ export function listJobs(): Job[] {
  * Options provided when submitting a new job for execution.
  */
 export interface StartJobOptions {
+  isolation?: "worktree";
   /** Job type classification: "implement" or "rework" */
   kind: "implement" | "rework";
   /** Rendered prompt string containing protocol instructions and contract body */
@@ -271,6 +276,11 @@ function drainQueue() {
  * @returns The newly created Job object
  */
 export function startJob(opts: StartJobOptions): Job {
+  const parent = opts.parentJobId ? getJob(opts.parentJobId) : undefined;
+  if (opts.kind === "rework" && parent?.isolation) {
+    validateIsolation(parent.isolation, parent.isolationCwd);
+    opts = { ...opts, config: { ...opts.config, cwd: parent.isolationCwd! } };
+  }
   const dependency = opts.dependsOn ? getJob(opts.dependsOn) : undefined;
   if (opts.dependsOn && !dependency) throw new Error(`unknown depends_on job_id ${opts.dependsOn}`);
   if (dependency?.state === "error" || dependency?.state === "timeout") {
@@ -280,7 +290,6 @@ export function startJob(opts: StartJobOptions): Job {
   const queued = !isBlocked && (queue.length > 0 || activeJobCount() >= opts.config.maxConcurrent);
   const startedAt = new Date().toISOString();
   const id = randomUUID().slice(0, 8);
-  const parent = opts.parentJobId ? getJob(opts.parentJobId) : undefined;
   const job: Job = {
     id,
     parentJobId: opts.kind === "rework" ? opts.parentJobId ?? null : null,
@@ -298,6 +307,9 @@ export function startJob(opts: StartJobOptions): Job {
     test_paths: opts.test_paths,
     scope: opts.scope,
     evidence: null,
+    ...(opts.kind === "rework" && parent?.isolation
+      ? { isolation: { ...parent.isolation }, isolationCwd: parent.isolationCwd }
+      : {}),
     ...(opts.contextFiles ? { contextFiles: opts.contextFiles } : {}),
     ...(opts.dependsOn ? { dependsOn: opts.dependsOn } : {}),
     startedAt,
@@ -584,6 +596,13 @@ interface AttemptResult {
  * @param opts - Job start configuration options
  */
 async function runJob(job: Job, opts: StartJobOptions) {
+  if (opts.isolation && !job.isolation) {
+    const prepared = await prepareIsolation(opts.config.cwd, job.id, defaultStateDir());
+    job.isolation = prepared.isolation;
+    job.isolationCwd = prepared.cwd;
+    opts = { ...opts, config: { ...opts.config, cwd: prepared.cwd } };
+    store.save(job);
+  }
   const deadline = Date.now() + opts.config.jobTimeoutMs;
   const maxAttempts = (opts.config.retries ?? 1) + 1;
 
@@ -603,6 +622,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
       report("worker exited; collecting server verification evidence");
       job.evidence = await collectEvidence({
         cwd: opts.config.cwd,
+        base_commit: job.isolation?.base_commit ?? undefined,
         verify_commands: job.verify_commands,
         setup_commands: job.setup_commands,
         test_paths: job.test_paths,

@@ -41,6 +41,8 @@ export interface Evidence {
 
 interface EvidenceOptions {
   cwd: string;
+  /** Isolated jobs retain their original base even if the worker commits. */
+  base_commit?: string;
   verify_commands?: string[];
   setup_commands?: string[];
   test_paths?: string[];
@@ -111,19 +113,19 @@ const pathspecs = (paths: string[]) => paths.map((path) => `:(glob)${path}`);
 
 // Ask git from the job cwd so globs are cwd-relative. --full-name keeps all
 // reported paths repo-root relative, including deleted and untracked files.
-async function matchingFiles(cwd: string, paths?: string[]): Promise<Set<string>> {
+async function matchingFiles(cwd: string, base: string, paths?: string[]): Promise<Set<string>> {
   if (!paths?.length) return new Set();
   const specs = pathspecs(paths);
   return new Set([
     ...names(await git(cwd, ["ls-files", "--full-name", "--cached", "--others", "--exclude-standard", "-z", "--", ...specs])),
-    ...names(await git(cwd, ["diff", "--no-relative", "--name-only", "--no-renames", "-z", "HEAD", "--", ...specs])),
+    ...names(await git(cwd, ["diff", "--no-relative", "--name-only", "--no-renames", "-z", base, "--", ...specs])),
   ]);
 }
 
-async function collectChanges(repo: string, cwd: string, opts: EvidenceOptions): Promise<ChangeEvidence> {
-  const tests = await matchingFiles(cwd, opts.test_paths);
-  const scope = await matchingFiles(cwd, opts.scope);
-  const changed = names(await git(repo, ["diff", "--no-relative", "--name-status", "--no-renames", "-z", "HEAD", "--"]));
+async function collectChanges(repo: string, cwd: string, base: string, opts: EvidenceOptions): Promise<ChangeEvidence> {
+  const tests = await matchingFiles(cwd, base, opts.test_paths);
+  const scope = await matchingFiles(cwd, base, opts.scope);
+  const changed = names(await git(repo, ["diff", "--no-relative", "--name-status", "--no-renames", "-z", base, "--"]));
   const files = new Map<string, ChangeEvidence["files"][number]>();
   for (let i = 0; i < changed.length; i += 2) {
     const path = changed[i + 1];
@@ -203,10 +205,10 @@ export async function collectEvidence(input: EvidenceOptions): Promise<Evidence 
     let cwd = sourceCwd;
     if (repo) {
       repo = await realpath(repo);
-      evidence.base_commit = (await git(repo, ["rev-parse", "HEAD"])).trim();
+      evidence.base_commit = opts.base_commit ?? (await git(repo, ["rev-parse", "HEAD"])).trim();
       // A bad declaration (e.g. a pattern outside the repository) must not cost the
       // verification run itself: flags never decide evidence.passed.
-      try { evidence.changes = await collectChanges(repo, sourceCwd, opts); } catch (error) {
+      try { evidence.changes = await collectChanges(repo, sourceCwd, evidence.base_commit, opts); } catch (error) {
         classificationError = error instanceof Error ? error.message : String(error);
       }
       temp = await mkdtemp(join(tmpdir(), "c2c-evidence-"));

@@ -3,6 +3,7 @@
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Evidence } from "./evidence.ts";
+import type { Isolation } from "./isolation.ts";
 import { defaultStateDir, warnOnce } from "./store.ts";
 
 interface OutcomeJob {
@@ -21,6 +22,7 @@ interface OutcomeJob {
   endedAt?: string;
   handoff?: { valid: boolean };
   evidence?: Evidence | null;
+  isolation?: Isolation;
 }
 
 export function summarizeOutcome(job: OutcomeJob) {
@@ -60,6 +62,7 @@ export function summarizeOutcome(job: OutcomeJob) {
     root_job_id: job.rootJobId ?? (job.kind === "implement" ? job.id : null),
     rework_round: job.reworkRound ?? (job.kind === "implement" ? 0 : 1),
     thread_id: job.threadId ?? null,
+    ...(job.isolation ? { isolation: job.isolation.mode, branch: job.isolation.branch } : {}),
     state: job.state,
     error: job.error ?? null,
     turns: job.turns,

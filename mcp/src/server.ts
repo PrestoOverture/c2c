@@ -81,6 +81,7 @@ function jobSummary(job: Job, transcriptTail = 15) {
     ended_at: job.endedAt ?? null,
     error: job.error ?? null,
     evidence: job.evidence ?? null,
+    ...(job.isolation ? { isolation: job.isolation } : {}),
     ...(!["done", "error", "timeout"].includes(job.state)
       ? { last_activity_at: job.lastActivityAt ?? null }
       : {}),
@@ -242,7 +243,8 @@ server.registerTool(
       "(the /goal loop keeps Codex iterating until the objective is achieved or the token budget is hit) " +
       "and sends the full contract as the first turn. Returns a job_id immediately; poll codex_status, " +
       "then fetch codex_result when done. Language-agnostic: verification commands come from the " +
-      "caller via verify_commands, with declared test_paths and scope for falsification and change flags. Read server evidence first; review judges intent.",
+      "caller via verify_commands, with declared test_paths and scope for falsification and change flags. Read server evidence first; review judges intent. " +
+      "Optional isolation: worktree creates a persistent c2c/<job_id> branch at HEAD and runs in a separate worktree; uncommitted source changes are excluded. Non-git cwd runs in place with a note. Creation failures fail the job.",
     inputSchema: {
       goal: z.string().min(1).describe(`What the code must do when this task is done. ${objectiveBudgetDescription}`),
       constraints: z
@@ -259,6 +261,7 @@ server.registerTool(
         .optional()
         .describe("Optional token budget for the Codex goal loop (thread/goal/set tokenBudget)."),
       cwd: z.string().optional().describe("Working directory for Codex. Defaults to the project directory."),
+      isolation: z.enum(["worktree"]).optional().describe("Opt in to a persistent <C2C_STATE_DIR>/worktrees/<job_id> at HEAD, branch c2c/<job_id>, matching the cwd subdirectory. Defaults to in-place execution with no isolation metadata. Rework reuses this worktree; no automatic merge or cleanup."),
       context_files: contextFiles.optional().describe("Files or directories Codex should read before implementing."),
       ...verificationInputs,
       depends_on: z.string().min(1).optional().describe("Job id of a prior job that must succeed before this job starts."),
@@ -293,6 +296,7 @@ server.registerTool(
     }
     const job = startJob({
       kind: "implement",
+      isolation: input.isolation,
       prompt,
       objective: renderedObjective.objective,
       tokenBudget: input.token_budget,
@@ -380,7 +384,8 @@ server.registerTool(
       "Resume the Codex thread from a previous implement job and hand it a Delta Contract " +
       "(review findings + failed success conditions). The existing thread goal is reactivated, so the " +
       "/goal loop continues until the objective passes. Returns a new job_id. Inherits verify_commands and " +
-      "setup_commands, test_paths and scope from job_id unless overridden (use [] to clear); read its own evidence first, then review intent.",
+      "setup_commands, test_paths and scope from the known parent unless overridden (use [] to clear); read its own evidence first, then review intent. " +
+      "Isolated jobs reuse the same persistent worktree, branch, base commit and cwd (overriding cwd), by job_id or known thread_id, including after restart. Missing worktrees are rejected at submission.",
     inputSchema: {
       job_id: z
         .string()
@@ -399,14 +404,14 @@ server.registerTool(
     },
   },
   async (input) => {
-    const jobConfig = config(input.cwd);
-    const resolvedContext = await resolveContextFiles(input.context_files, jobConfig.cwd);
-    if (resolvedContext.missing.length) return missingContextFiles(resolvedContext.missing);
     let threadId = input.thread_id;
     const prev = input.job_id ? getJob(input.job_id) : threadId
       ? listJobs().filter((job) => job.threadId === threadId)
         .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt))[0]
       : undefined;
+    const jobConfig = config(prev?.isolation ? prev.isolationCwd : input.cwd);
+    const resolvedContext = await resolveContextFiles(input.context_files, jobConfig.cwd);
+    if (resolvedContext.missing.length) return missingContextFiles(resolvedContext.missing);
     if (!threadId && input.job_id && !prev) return textResult({ error: `unknown job_id ${input.job_id}` }, true);
     const verifyCommands = input.verify_commands ?? prev?.verify_commands;
     const setupCommands = input.setup_commands ?? prev?.setup_commands;
@@ -471,7 +476,8 @@ server.registerTool(
     title: "Check a Codex job",
     description:
       "Status of a blocked, queued, running, or finished Codex job: dependency, state, queue position, thread id, " +
-      "parent_job_id, root_job_id, rework_round, goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript.",
+      "parent_job_id, root_job_id, rework_round, goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript. " +
+      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, source_dirty and note; absent for default jobs.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
     },
@@ -491,7 +497,8 @@ server.registerTool(
       "Final result of a finished job: Codex's final message, the parsed structured handoff " +
       "(Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is " +
       "itself a review failure), server verification evidence (including falsification.unfalsified and changes.tests_modified / out_of_scope / new_unclassified), and final goal state. Read evidence first for " +
-      "mechanical pass/fail; review judges intent and constraints. Includes parent_job_id, root_job_id and rework_round. Errors if the job is not finished.",
+      "mechanical pass/fail; review judges intent and constraints. Includes parent_job_id, root_job_id and rework_round. " +
+      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, source_dirty and note; evidence includes committed branch changes against that base. Errors if the job is not finished.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
     },

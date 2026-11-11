@@ -87,13 +87,14 @@ Shipped with every install and read whenever Claude calls a tool, so hard limits
 
 ### `codex_implement`
 
-Start a Codex implementation job for a Goal Contract. Sets the contract as a Codex thread goal (the /goal loop keeps Codex iterating until the objective is achieved or the token budget is hit) and sends the full contract as the first turn. Returns a job_id immediately; poll codex_status, then fetch codex_result when done. Language-agnostic: verification commands come from the caller via verify_commands, with declared test_paths and scope for falsification and change flags. Read server evidence first; review judges intent.
+Start a Codex implementation job for a Goal Contract. Sets the contract as a Codex thread goal (the /goal loop keeps Codex iterating until the objective is achieved or the token budget is hit) and sends the full contract as the first turn. Returns a job_id immediately; poll codex_status, then fetch codex_result when done. Language-agnostic: verification commands come from the caller via verify_commands, with declared test_paths and scope for falsification and change flags. Read server evidence first; review judges intent. Optional isolation: worktree creates a persistent c2c/<job_id> branch at HEAD and runs in a separate worktree; uncommitted source changes are excluded. Non-git cwd runs in place with a note. Creation failures fail the job.
 
 - `goal` — What the code must do when this task is done. The rendered thread-goal objective has a GOAL_OBJECTIVE_MAX budget of 2000 characters; over-limit calls are rejected.
 - `constraints` — Only what Codex would get wrong without being told: genuine risks, not a review checklist.
 - `success_conditions` — Checkable criteria proving the goal is met. At least one must be a runnable command/test; command-based ones should say how they fail when the defect exists. The rendered thread-goal objective has a GOAL_OBJECTIVE_MAX budget of 2000 characters; over-limit calls are rejected.
 - `token_budget` (optional) — Optional token budget for the Codex goal loop (thread/goal/set tokenBudget).
 - `cwd` (optional) — Working directory for Codex. Defaults to the project directory.
+- `isolation` (optional) — Opt in to a persistent <C2C_STATE_DIR>/worktrees/<job_id> at HEAD, branch c2c/<job_id>, matching the cwd subdirectory. Defaults to in-place execution with no isolation metadata. Rework reuses this worktree; no automatic merge or cleanup.
 - `context_files` (optional) — Files or directories Codex should read before implementing.
 - `verify_commands` (optional) — Shell commands the server re-runs after Codex exits in a clean working-tree snapshot; each must exit 0. Read evidence first; review judges intent.
 - `setup_commands` (optional) — Shell commands run before verification and falsification in each snapshot (e.g. install dependencies); stop on first failure. With no verify_commands, nothing runs.
@@ -118,7 +119,7 @@ Read-only estimate made before starting a job. Measures the fully rendered Goal 
 
 ### `codex_rework`
 
-Resume the Codex thread from a previous implement job and hand it a Delta Contract (review findings + failed success conditions). The existing thread goal is reactivated, so the /goal loop continues until the objective passes. Returns a new job_id. Inherits verify_commands and setup_commands, test_paths and scope from job_id unless overridden (use [] to clear); read its own evidence first, then review intent.
+Resume the Codex thread from a previous implement job and hand it a Delta Contract (review findings + failed success conditions). The existing thread goal is reactivated, so the /goal loop continues until the objective passes. Returns a new job_id. Inherits verify_commands and setup_commands, test_paths and scope from the known parent unless overridden (use [] to clear); read its own evidence first, then review intent. Isolated jobs reuse the same persistent worktree, branch, base commit and cwd (overriding cwd), by job_id or known thread_id, including after restart. Missing worktrees are rejected at submission.
 
 - `job_id` (optional) — The original implement job's id (preferred; resolves the thread to resume).
 - `thread_id` (optional) — Codex thread id, if the job registry is gone (e.g. after a restart).
@@ -141,12 +142,12 @@ Read-only view of the Codex CLI model, default reasoning effort, version, and cu
 
 ### `codex_status`
 
-Status of a blocked, queued, running, or finished Codex job: dependency, state, queue position, thread id, parent_job_id, root_job_id, rework_round, goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript.
+Status of a blocked, queued, running, or finished Codex job: dependency, state, queue position, thread id, parent_job_id, root_job_id, rework_round, goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript. Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, source_dirty and note; absent for default jobs.
 
 - `job_id` — Job id returned by codex_implement or codex_rework.
 
 ### `codex_result`
 
-Final result of a finished job: Codex's final message, the parsed structured handoff (Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is itself a review failure), server verification evidence (including falsification.unfalsified and changes.tests_modified / out_of_scope / new_unclassified), and final goal state. Read evidence first for mechanical pass/fail; review judges intent and constraints. Includes parent_job_id, root_job_id and rework_round. Errors if the job is not finished.
+Final result of a finished job: Codex's final message, the parsed structured handoff (Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is itself a review failure), server verification evidence (including falsification.unfalsified and changes.tests_modified / out_of_scope / new_unclassified), and final goal state. Read evidence first for mechanical pass/fail; review judges intent and constraints. Includes parent_job_id, root_job_id and rework_round. Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, source_dirty and note; evidence includes committed branch changes against that base. Errors if the job is not finished.
 
 - `job_id` — Job id returned by codex_implement or codex_rework.

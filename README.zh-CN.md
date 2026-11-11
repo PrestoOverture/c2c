@@ -211,11 +211,15 @@ Python 3.12，Poetry。从项目根目录运行。
 
 任务会持久化（`C2C_STATE_DIR`），因此状态查询、结果获取和返工在 server 重启后依然可用。超出并发上限的任务按 FIFO 排队；停滞看门狗会在运行中的任务失去进展时主动上报。关于如何写出"一次过审"的合同，参见实战指南 [PATTERNS.zh-CN.md](./PATTERNS.zh-CN.md)。
 
+向 `codex_implement` 传入 `isolation: "worktree"`，即可在任务开始时，以仓库 HEAD 为基准创建分支 `c2c/<job_id>` 和持久化工作区 `<C2C_STATE_DIR>/worktrees/<job_id>`。仓库内的子目录 cwd 会映射到工作区中的同一子目录。源工作区保持不变，其暂存、未暂存和未跟踪改动均不带入；`source_dirty` 表示开始时源工作区是否有未提交改动。创建分支或工作区失败会使任务变为 error，并保留 git 错误信息。非 git 目录回退为 `in_place` 并附带说明。不传此选项时，执行方式、持久化记录和输出保持原有行为，不增加隔离元数据。
+
+启用后，`codex_status` 和 `codex_result` 会返回 `isolation: { mode, worktree_path, branch, base_commit, source_dirty, note }`。通过 job ID 或已知 thread ID 调用 `codex_rework`，包括 server 重启后，均复用原工作区、分支、基准 commit 和执行目录；返工中显式传入的 cwd 不会覆盖它。隔离工作区已不存在时，返工在提交时即被拒绝。验证快照取自该隔离工作区，并与记录的基准 commit 比较，因此 Codex 已提交的改动仍计入 `evidence.changes` 和证伪检查。工作区和分支持久保留；暂不提供自动合并或工作区清理。
+
 可向 `codex_implement` 传入可选的 `verify_commands: string[]`：Codex 退出后，服务端在临时 detached worktree 中以 `sh -c` 和服务端环境逐条运行命令，快照包含已跟踪文件的改动及未被忽略的未跟踪文件。被 git 忽略的文件不会复制；可用 `setup_commands: string[]` 先在同一快照中安装依赖。Setup 首次失败即停止，验证命令则全部执行。非 git 目录直接原地运行。验证期间任务保持 `running` 并占用并发名额，evidence 保存后变为 `done`，即使检查失败也不变为 error。Evidence 记录环境、基准 commit、通过与否、退出码、超时、耗时及每条命令合并输出的最后 4000 个字符。未提供验证命令时 evidence 为 `null`，setup 和验证均不执行。
 
 可选的 `test_paths: string[]` 和 `scope: string[]` 是相对于任务 cwd 的 Git glob pathspec，例如 `test_paths: ["test/**/*.test.ts"]`、`scope: ["src/**"]`。测试分类只依据 test_paths；新增测试也应放在这些路径下。在 worktree 中，`evidence.changes.files` 列出仓库根目录相对路径、added/modified/deleted 状态及 test/production 分类；`tests_modified` 标记已有测试的修改或删除，不含新增测试；`out_of_scope` 列出不匹配 scope 和 test_paths 的改动（仅在传入 scope 时）；`new_unclassified` 列出两个声明均不匹配的新增文件。没有 test_paths 时全部归为 production；没有 scope 时 out_of_scope 为空。
 
-验证通过、test_paths 非空且存在生产文件改动时，服务端建立第二份快照：HEAD 加上声明的测试文件改动，保留测试的新增、修改和删除，撤销生产文件改动。服务端重新执行 setup 和相同的验证命令，使用相同的逐命令超时。`evidence.falsification` 记录 `ran`、跳过或 setup 失败时的 `skipped_reason`、`setup`、含 `still_passes` 的 `commands`，以及撤销生产改动后仍然通过的 `unfalsified` 命令。这些标记供复核使用，不改变 evidence.passed 或任务状态。两份快照都会移除并 prune，源工作区、索引、HEAD 和分支保持不变。返工未覆盖时继承 test_paths 和 scope；`[]` 清空对应声明。
+验证通过、test_paths 非空且存在生产文件改动时，服务端建立第二份快照：HEAD（隔离任务使用记录的基准 commit）加上声明的测试文件改动，保留测试的新增、修改和删除，撤销生产文件改动。服务端重新执行 setup 和相同的验证命令，使用相同的逐命令超时。`evidence.falsification` 记录 `ran`、跳过或 setup 失败时的 `skipped_reason`、`setup`、含 `still_passes` 的 `commands`，以及撤销生产改动后仍然通过的 `unfalsified` 命令。这些标记供复核使用，不改变 evidence.passed 或任务状态。两份临时验证快照都会移除并 prune；验证不修改源工作区、索引、HEAD 和分支，任务的隔离工作区仍然保留。返工未覆盖时继承 test_paths 和 scope；`[]` 清空对应声明。
 
 ## Goal Loop 的工作原理
 
@@ -246,7 +250,7 @@ Python 3.12，Poetry。从项目根目录运行。
 | `C2C_IDLE_TIMEOUT_MS` | `1200000` | 运行中的尝试连续无 Codex 通知时超时（20 分钟），`0` 禁用；排队和等待依赖的时间不计入 |
 | `CODEX_QUIET_MS`        | `30000`                | 判定活跃目标已完成前的静默等待时间                                         |
 | `GOAL_OBJECTIVE_MAX`    | `2000`                 | 渲染后 goal-objective 的最大长度；超限的合同会被 `codex_implement` 在提交时拒绝 |
-| `C2C_STATE_DIR`         | `~/.claude2codex/jobs` | 持久化任务注册表（每任务一个原子写入的 JSON 文件）及仅追加的 `outcomes.jsonl`                              |
+| `C2C_STATE_DIR`         | `~/.claude2codex/jobs` | 持久化任务注册表（每任务一个原子写入的 JSON 文件）、仅追加的 `outcomes.jsonl` 及可选的任务 `worktrees/` |
 | `C2C_MAX_JOBS` | `500` | 保留的任务记录上限（最小为 1）；不裁剪结果日志 |
 | `C2C_LOG_LEVEL`         | `info`                 | stderr 上的结构化 JSON 日志：`silent`、`error`、`info`、`debug`      |
 | `C2C_RETRIES`           | `1`                    | 首个 turn 开始前的进程故障自动重试次数                                    |
@@ -257,6 +261,8 @@ Python 3.12，Poetry。从项目根目录运行。
 
 
 每个结束的任务会向 `C2C_STATE_DIR/outcomes.jsonl` 追加一条摘要（权限 `0600`），包含返工链、用量、证据摘要和排序后的 `caught_by` 检查项。日志不包含提示词、转录或命令输出，且不受任务裁剪影响；`C2C_MAX_JOBS` 仅控制任务记录的保留数量。持久化失败时正常降级，最多警告一次。
+
+启用隔离的任务还会记录 `isolation`（模式）和 `branch`。任务记录裁剪不会删除持久化工作区或其分支。
 
 ## 没有 Codex？用 c2c-lite
 

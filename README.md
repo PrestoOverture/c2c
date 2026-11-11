@@ -193,11 +193,15 @@ Python 3.12, Poetry. Run from project root.
 
 Jobs are persisted (`C2C_STATE_DIR`), so status, results, and rework survive server restarts. Jobs beyond the concurrency cap queue FIFO; a stall watchdog reports when a running job stops making progress. See [PATTERNS.md](./PATTERNS.md) for field-tested guidance on writing contracts that pass review on the first try.
 
+Pass `isolation: "worktree"` to `codex_implement` to run Codex in a persistent `<C2C_STATE_DIR>/worktrees/<job_id>` on branch `c2c/<job_id>`, created at the repository's HEAD when the job starts. A cwd inside a repo subdirectory maps to the same subdirectory in the worktree. The source working tree stays untouched; its staged, unstaged and untracked changes are excluded, and `source_dirty` reports whether it had uncommitted changes at start. Worktree or branch creation errors fail the job with the git diagnostic. Outside git, execution falls back to `in_place` with a note. Without this option, execution, records and outputs keep their existing behavior with no isolation metadata.
+
+`codex_status` and `codex_result` expose `isolation: { mode, worktree_path, branch, base_commit, source_dirty, note }` for opted-in jobs. `codex_rework` by job ID or a known thread ID reuses the same worktree, branch, recorded base and execution directory, including after server restart; an explicit rework cwd does not override it. A missing isolated worktree is rejected at submission. Evidence snapshots come from the isolated worktree and compare against the recorded base commit, so committed worker changes remain in `evidence.changes` and falsification. Worktrees and branches persist; automatic merging and worktree cleanup are not provided.
+
 Pass optional `verify_commands: string[]` to `codex_implement`: after Codex exits, the server runs each shell command (`sh -c`, server environment) in a temporary detached worktree containing tracked edits and untracked non-ignored files. Ignored files are absent; use optional `setup_commands: string[]` to install dependencies first in the same snapshot. Setup stops at its first failure; all verification commands run. Outside git, commands run in place. The job stays `running` and holds its slot until evidence is saved, then becomes `done` even if checks fail. Evidence records the environment, base commit, pass/fail, exit codes, timeouts, durations, and the last 4000 characters of combined output per command. Without verification commands, evidence is `null` and neither setup nor verification runs.
 
 Declare optional `test_paths: string[]` and `scope: string[]` as Git glob pathspecs relative to the job cwd (for example, `test_paths: ["test/**/*.test.ts"]`, `scope: ["src/**"]`). Test classification uses only `test_paths`; put new tests under those paths. In worktrees, `evidence.changes` lists repo-root-relative `files` with added/modified/deleted status and test/production class, `tests_modified` (pre-existing tests edited or deleted), `out_of_scope` (changes outside both declarations, only when scope is given), and `new_unclassified` (added files matching neither declaration). Without test_paths, all changes are production; without scope, out_of_scope is empty.
 
-After verification passes, with non-empty test_paths and production changes, the server builds a second snapshot of HEAD plus only the declared test changes, including additions and deletions. It runs setup again, then the same verification commands with the same per-command timeout. `evidence.falsification` records `ran`, `skipped_reason` when skipped or setup fails, `setup`, `commands` with `still_passes`, and `unfalsified` commands that still pass after reverting production changes. Review these flags: they never change evidence.passed or job state. Both snapshots are removed and pruned; the source tree, index, HEAD and branches are untouched. Rework inherits test_paths and scope unless overridden; `[]` clears a declaration.
+After verification passes, with non-empty test_paths and production changes, the server builds a second snapshot of HEAD (the recorded base commit for isolated jobs) plus only the declared test changes, including additions and deletions. It runs setup again, then the same verification commands with the same per-command timeout. `evidence.falsification` records `ran`, `skipped_reason` when skipped or setup fails, `setup`, `commands` with `still_passes`, and `unfalsified` commands that still pass after reverting production changes. Review these flags: they never change evidence.passed or job state. Both temporary evidence snapshots are removed and pruned; verification leaves the source tree, index, HEAD and branches untouched and retains the job's isolated worktree. Rework inherits test_paths and scope unless overridden; `[]` clears a declaration.
 
 ## How the Goal Loop Works
 
@@ -227,7 +231,7 @@ A job is cut off only when Codex stops producing events for `C2C_IDLE_TIMEOUT_MS
 | `C2C_IDLE_TIMEOUT_MS` | `1200000` | Timeout after no Codex notifications during a running attempt (20 min); `0` disables. Queued/dependency wait time excluded |
 | `CODEX_QUIET_MS` | `30000` | Quiet period before treating an active goal as finished |
 | `GOAL_OBJECTIVE_MAX` | `2000` | Maximum rendered goal-objective length; `codex_implement` rejects over-limit contracts at submit time |
-| `C2C_STATE_DIR` | `~/.claude2codex/jobs` | Persistent job registry (atomic per-job JSON files) and append-only `outcomes.jsonl` |
+| `C2C_STATE_DIR` | `~/.claude2codex/jobs` | Persistent job registry (atomic per-job JSON files), append-only `outcomes.jsonl`, and opt-in job `worktrees/` |
 | `C2C_MAX_JOBS` | `500` | Maximum retained job records (minimum 1); does not prune outcome history |
 | `C2C_LOG_LEVEL` | `info` | Structured JSON logs on stderr: `silent`, `error`, `info`, `debug` |
 | `C2C_RETRIES` | `1` | Automatic retries for process failures before the first turn starts |
@@ -235,6 +239,8 @@ A job is cut off only when Codex stops producing events for `C2C_IDLE_TIMEOUT_MS
 | `C2C_STALL_WARN_MS` | `120000` | Stall watchdog threshold; emits stalled/resumed events; `0` disables |
 
 Each finished job appends one summary to `C2C_STATE_DIR/outcomes.jsonl` (mode `0600`), including rework lineage, usage, evidence summaries and the sorted `caught_by` checks. The log contains no prompts, transcripts or command output and survives job pruning; `C2C_MAX_JOBS` controls only job-record retention. Persistence failures degrade gracefully with at most one warning.
+
+Opted-in jobs also log `isolation` (the mode) and `branch`. Job-record retention does not remove persistent worktrees or their branches.
 
 ## No Codex? Use c2c-lite
 

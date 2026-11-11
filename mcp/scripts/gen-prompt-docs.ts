@@ -4,7 +4,8 @@
 //
 //   bun run gen:prompt-docs
 
-import { writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -33,6 +34,9 @@ function fence(text: string, lang = "") {
 export async function renderClaudeDoc(): Promise<string> {
   const env: Record<string, string> = { ...(process.env as Record<string, string>), C2C_LOG_LEVEL: "silent" };
   delete env.GOAL_OBJECTIVE_MAX; // document the default budget
+  // A second server on the real state dir marks the user's running jobs "interrupted".
+  const stateDir = mkdtempSync(join(tmpdir(), "c2c-prompt-docs-"));
+  env.C2C_STATE_DIR = stateDir;
   const transport = new StdioClientTransport({
     command: "bun",
     args: [join(mcpDir, "src", "server.ts")],
@@ -89,6 +93,7 @@ export async function renderClaudeDoc(): Promise<string> {
     ].join("\n");
   } finally {
     await client.close();
+    rmSync(stateDir, { recursive: true, force: true });
   }
 }
 
