@@ -12,7 +12,7 @@ import {
   renderObjectiveDetails,
   type GoalContract,
 } from "./contracts.ts";
-import { startJob, getJob, listJobs, getQueuePosition, type Job, type JobConfig } from "./jobs.ts";
+import { startJob, getJob, listJobs, getQueuePosition, mergeJob, type Job, type JobConfig } from "./jobs.ts";
 import { readCodexConfig } from "./config.ts";
 
 /**
@@ -82,6 +82,7 @@ function jobSummary(job: Job, transcriptTail = 15) {
     error: job.error ?? null,
     evidence: job.evidence ?? null,
     ...(job.isolation ? { isolation: job.isolation } : {}),
+    ...(job.merge ? { merge: job.merge } : {}),
     ...(!["done", "error", "timeout"].includes(job.state)
       ? { last_activity_at: job.lastActivityAt ?? null }
       : {}),
@@ -119,6 +120,7 @@ const SERVER_INSTRUCTIONS = `When the user asks to delegate work to Codex (or to
 2. codex_estimate, then codex_implement: pass verify_commands, test_paths and scope (setup_commands for dependencies); poll codex_status and report progress.
 3. Read evidence first in codex_result: read unfalsified, tests_modified, out_of_scope and new_unclassified; review judges intent and constraints, never trusts the handoff alone. On failure, send a Delta Contract via codex_rework.
 If a Codex job itself fails (error, 0 tokens, no handoff), report it and wait; don't implement the task yourself unless the user explicitly asks.
+For isolated jobs, codex_merge verifies and integrates passing work; cleanup defaults to true.
 Full formats: the c2c-workflow prompt.`;
 
 const server = new McpServer(
@@ -132,7 +134,7 @@ const contextFiles = z.array(z.object({
 }));
 const verificationInputs = {
   verify_commands: z.array(z.string()).optional().describe("Shell commands the server re-runs after Codex exits in a clean working-tree snapshot; each must exit 0. Read evidence first; review judges intent."),
-  setup_commands: z.array(z.string()).optional().describe("Shell commands run before verification and falsification in each snapshot (e.g. install dependencies); stop on first failure. With no verify_commands, nothing runs."),
+  setup_commands: z.array(z.string()).optional().describe("Shell commands run before verification and falsification in each snapshot, and before merged-tree verification (e.g. install dependencies); stop on first failure. With no verify_commands, nothing runs."),
   test_paths: z.array(z.string()).optional().describe("Declared test files: git glob pathspecs relative to job cwd, including new tests. After verification passes, the server keeps only test changes and re-runs checks; commands that still pass appear in falsification.unfalsified. Rework inherits unless overridden; [] clears."),
   scope: z.array(z.string()).optional().describe("Allowed production files: git glob pathspecs relative to job cwd. Changes outside scope and test_paths are flagged; added files matching neither are new_unclassified. Rework inherits unless overridden; [] clears."),
 };
@@ -244,7 +246,7 @@ server.registerTool(
       "and sends the full contract as the first turn. Returns a job_id immediately; poll codex_status, " +
       "then fetch codex_result when done. Language-agnostic: verification commands come from the " +
       "caller via verify_commands, with declared test_paths and scope for falsification and change flags. Read server evidence first; review judges intent. " +
-      "Optional isolation: worktree creates a persistent c2c/<job_id> branch at HEAD and runs in a separate worktree; uncommitted source changes are excluded. Non-git cwd runs in place with a note. Creation failures fail the job.",
+      "Optional isolation: worktree creates a persistent c2c/<job_id> branch at HEAD (or the isolated dependency tip) and runs in a separate worktree; uncommitted source changes are excluded. Non-git cwd runs in place with a note. Creation failures fail the job. Server commits uncommitted output after evidence; codex_merge integrates passing work.",
     inputSchema: {
       goal: z.string().min(1).describe(`What the code must do when this task is done. ${objectiveBudgetDescription}`),
       constraints: z
@@ -261,7 +263,7 @@ server.registerTool(
         .optional()
         .describe("Optional token budget for the Codex goal loop (thread/goal/set tokenBudget)."),
       cwd: z.string().optional().describe("Working directory for Codex. Defaults to the project directory."),
-      isolation: z.enum(["worktree"]).optional().describe("Opt in to a persistent <C2C_STATE_DIR>/worktrees/<job_id> at HEAD, branch c2c/<job_id>, matching the cwd subdirectory. Defaults to in-place execution with no isolation metadata. Rework reuses this worktree; no automatic merge or cleanup."),
+      isolation: z.enum(["worktree"]).optional().describe("Opt in to a persistent <C2C_STATE_DIR>/worktrees/<job_id> at HEAD, branch c2c/<job_id>, matching the cwd subdirectory. Defaults to in-place execution with no isolation metadata. Records target_branch (null for detached source); isolated dependencies supply the branch tip and target. Rework reuses the worktree; use codex_merge to integrate or discard."),
       context_files: contextFiles.optional().describe("Files or directories Codex should read before implementing."),
       ...verificationInputs,
       depends_on: z.string().min(1).optional().describe("Job id of a prior job that must succeed before this job starts."),
@@ -385,7 +387,7 @@ server.registerTool(
       "(review findings + failed success conditions). The existing thread goal is reactivated, so the " +
       "/goal loop continues until the objective passes. Returns a new job_id. Inherits verify_commands and " +
       "setup_commands, test_paths and scope from the known parent unless overridden (use [] to clear); read its own evidence first, then review intent. " +
-      "Isolated jobs reuse the same persistent worktree, branch, base commit and cwd (overriding cwd), by job_id or known thread_id, including after restart. Missing worktrees are rejected at submission.",
+      "Isolated jobs reuse the same persistent worktree, branch, base commit and cwd (overriding cwd), by job_id or known thread_id, including after restart. Missing worktrees after merge cleanup/discard and worktrees being merged are rejected at submission.",
     inputSchema: {
       job_id: z
         .string()
@@ -458,6 +460,27 @@ server.registerTool(
 );
 
 server.registerTool(
+  "codex_merge",
+  {
+    title: "Merge or discard an isolated job",
+    description: "Serially integrate the latest job on the requested worktree lineage. Requires done, no active/pending jobs on the worktree, and evidence.passed=true. Merges with --no-ff in a temporary worktree, re-runs setup + verify, then fast-forwards target_branch. Returns merged, conflict (files), verification_failed (evidence), target_blocked, or refused. Failures preserve target and job trees. cleanup defaults to true: remove job worktree and branch after merging; discard=true removes them without merging. Status/result expose the latest merge record; each attempt logs kind=merge. Cleanup/discard prevents further rework.",
+    inputSchema: {
+      job_id: z.string().min(1).describe("Any job id in the isolated worktree lineage; resolves its latest job."),
+      cleanup: z.boolean().default(true).describe("Remove job worktree and branch after a successful merge."),
+      discard: z.boolean().optional().describe("Remove job worktree and branch without merging. Works for failed work too: needs no passing evidence, only that nothing is active or pending on the worktree."),
+    },
+  },
+  async (input) => {
+    try {
+      const merge = await mergeJob(input.job_id, { cleanup: input.cleanup, discard: input.discard, timeoutMs: config().verifyTimeoutMs });
+      return textResult(merge, merge.status === "refused");
+    } catch (error) {
+      return textResult({ error: String(error instanceof Error ? error.message : error) }, true);
+    }
+  },
+);
+
+server.registerTool(
   "codex_config",
   {
     title: "Read current Codex configuration",
@@ -477,7 +500,7 @@ server.registerTool(
     description:
       "Status of a blocked, queued, running, or finished Codex job: dependency, state, queue position, thread id, " +
       "parent_job_id, root_job_id, rework_round, goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript. " +
-      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, source_dirty and note; absent for default jobs.",
+      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; absent for default jobs. Includes the latest merge attempt when present.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
     },
@@ -498,7 +521,7 @@ server.registerTool(
       "(Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is " +
       "itself a review failure), server verification evidence (including falsification.unfalsified and changes.tests_modified / out_of_scope / new_unclassified), and final goal state. Read evidence first for " +
       "mechanical pass/fail; review judges intent and constraints. Includes parent_job_id, root_job_id and rework_round. " +
-      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, source_dirty and note; evidence includes committed branch changes against that base. Errors if the job is not finished.",
+      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; evidence includes committed branch changes against that base. Includes the latest merge attempt when present. Errors if the job is not finished.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
     },

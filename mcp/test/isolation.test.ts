@@ -76,7 +76,7 @@ test("isolated worker uses the matching subdirectory, excludes dirty source edit
   const status = await done(client, started.job_id);
   expect(status.state).toBe("done");
   const path = join(state, "worktrees", started.job_id);
-  expect(status.isolation).toEqual({ mode: "worktree", worktree_path: path, branch: `c2c/${started.job_id}`, base_commit: base, source_dirty: true, note: null });
+  expect(status.isolation).toEqual({ mode: "worktree", worktree_path: path, branch: `c2c/${started.job_id}`, base_commit: base, target_branch: git(repo, "branch", "--show-current"), source_dirty: true, note: null });
   expect(JSON.parse(readFileSync(join(path, "sub dir/alpha.txt"), "utf8"))).toMatchObject({ cwd: join(path, "sub dir"), threadCwd: join(path, "sub dir"), branch: status.isolation.branch });
   expect(status.evidence.passed).toBe(true);
   expect(status.evidence.changes.files.map((f: any) => f.path)).toEqual(["sub dir/alpha.txt"]);

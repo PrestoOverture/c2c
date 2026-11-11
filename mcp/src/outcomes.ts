@@ -3,6 +3,7 @@
 import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Evidence } from "./evidence.ts";
+import type { MergeResult } from "./merge.ts";
 import type { Isolation } from "./isolation.ts";
 import { defaultStateDir, warnOnce } from "./store.ts";
 
@@ -83,4 +84,16 @@ export function appendOutcome(job: OutcomeJob, dir = defaultStateDir()): void {
   } catch (error) {
     warnOnce(error);
   }
+}
+
+/** Every merge attempt has its own outcome, without verification output tails. */
+export function appendMergeOutcome(job: OutcomeJob, merge: MergeResult, dir = defaultStateDir()): void {
+  const { evidence, ...outcome } = merge;
+  try {
+    appendFileSync(join(dir, "outcomes.jsonl"), `${JSON.stringify({
+      at: merge.at, job_id: job.id, kind: "merge", branch: job.isolation?.branch ?? null,
+      target_branch: job.isolation?.target_branch ?? null, merge: outcome,
+      evidence: evidence ? summarizeOutcome({ ...job, evidence }).evidence : null,
+    })}\n`, { mode: 0o600 });
+  } catch (error) { warnOnce(error); }
 }

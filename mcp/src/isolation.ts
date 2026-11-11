@@ -11,19 +11,20 @@ export interface Isolation {
   worktree_path: string | null;
   branch: string | null;
   base_commit: string | null;
+  target_branch: string | null;
   source_dirty: boolean;
   note: string | null;
 }
 
 const exec = promisify(execFile);
-async function git(cwd: string, args: string[]) {
+export async function git(cwd: string, args: string[]) {
   const { stdout } = await exec("git", args, {
     cwd, env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" }, maxBuffer: 16 * 1024 * 1024,
   });
   return stdout.trim();
 }
 
-export async function prepareIsolation(cwd: string, jobId: string, stateDir: string): Promise<{ cwd: string; isolation: Isolation }> {
+export async function prepareIsolation(cwd: string, jobId: string, stateDir: string, dependency?: Isolation): Promise<{ cwd: string; isolation: Isolation }> {
   const source = await realpath(cwd);
   let repo: string;
   try {
@@ -31,11 +32,12 @@ export async function prepareIsolation(cwd: string, jobId: string, stateDir: str
   } catch (error) {
     if (!String(error).includes("not a git repository")) throw error;
     return { cwd: source, isolation: {
-      mode: "in_place", worktree_path: null, branch: null, base_commit: null,
+      mode: "in_place", worktree_path: null, branch: null, base_commit: null, target_branch: null,
       source_dirty: false, note: "cwd is not inside a git repository; running in place",
     } };
   }
-  const base = await git(repo, ["rev-parse", "HEAD"]);
+  const base = await git(repo, ["rev-parse", dependency?.mode === "worktree" ? `refs/heads/${dependency.branch}` : "HEAD"]);
+  const target = dependency?.mode === "worktree" ? dependency.target_branch : (await git(repo, ["branch", "--show-current"])) || null;
   const sourceDirty = (await git(repo, ["status", "--porcelain", "--untracked-files=all"])).length > 0;
   const branch = `c2c/${jobId}`;
   const worktree = resolve(stateDir, "worktrees", jobId);
@@ -43,7 +45,7 @@ export async function prepareIsolation(cwd: string, jobId: string, stateDir: str
   // A git failure is fatal, including branch collisions and checkout-hook errors.
   await git(repo, ["worktree", "add", "-b", branch, worktree, base]);
   return { cwd: join(worktree, relative(repo, source)), isolation: {
-    mode: "worktree", worktree_path: worktree, branch, base_commit: base,
+    mode: "worktree", worktree_path: worktree, branch, base_commit: base, target_branch: target,
     source_dirty: sourceDirty, note: null,
   } };
 }
@@ -56,5 +58,29 @@ export function validateIsolation(isolation: Isolation, cwd: string | undefined)
     }
   } catch {
     throw new Error(`isolated worktree no longer exists: ${isolation.worktree_path}; cannot submit rework`);
+  }
+}
+
+/** Per-command identity overrides leave the repository configuration untouched. */
+export async function commitIdentity(cwd: string): Promise<string[]> {
+  const args: string[] = [];
+  for (const [key, fallback] of [["user.name", "c2c"], ["user.email", "c2c@localhost"]]) {
+    let value = "";
+    try { value = await git(cwd, ["config", "--get", key]); } catch { /* unset */ }
+    if (!value) args.push("-c", `${key}=${fallback}`);
+  }
+  return args;
+}
+
+/** Capture worker output only after verification, including unstaged/untracked work. */
+export async function commitIsolatedWork(isolation: Isolation, jobId: string): Promise<void> {
+  if (isolation.mode !== "worktree") return;
+  const cwd = isolation.worktree_path!;
+  if (await git(cwd, ["symbolic-ref", "HEAD"]) !== `refs/heads/${isolation.branch}`) {
+    throw new Error("isolated worker changed its checked-out branch");
+  }
+  await git(cwd, ["add", "--all", "--", "."]);
+  if (await git(cwd, ["diff", "--cached", "--name-only"])) {
+    await git(cwd, [...await commitIdentity(cwd), "commit", "--no-verify", "-m", `c2c: capture job ${jobId}`]);
   }
 }

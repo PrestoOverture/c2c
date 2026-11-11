@@ -8,8 +8,9 @@ import { parseHandoff, type Handoff } from "./contracts.ts";
 import { writeLog } from "./log.ts";
 import { createJobStore, defaultStateDir } from "./store.ts";
 import { collectEvidence, type Evidence } from "./evidence.ts";
-import { appendOutcome } from "./outcomes.ts";
-import { prepareIsolation, validateIsolation, type Isolation } from "./isolation.ts";
+import { appendMergeOutcome, appendOutcome } from "./outcomes.ts";
+import { commitIsolatedWork, prepareIsolation, validateIsolation, type Isolation } from "./isolation.ts";
+import { mergeIsolatedWork, type MergeResult } from "./merge.ts";
 
 /**
  * Configuration options governing Codex execution, timeouts, retries, and concurrency.
@@ -113,6 +114,7 @@ export interface Job {
   scope?: string[];
   evidence?: Evidence | null;
   isolation?: Isolation;
+  merge?: MergeResult;
   /** Execution cwd retained for isolated rework, including a repo subdirectory. */
   isolationCwd?: string;
   /** Error description string if job ended in error or timeout state */
@@ -279,6 +281,7 @@ export function startJob(opts: StartJobOptions): Job {
   const parent = opts.parentJobId ? getJob(opts.parentJobId) : undefined;
   if (opts.kind === "rework" && parent?.isolation) {
     validateIsolation(parent.isolation, parent.isolationCwd);
+    if (mergingWorktrees.has(parent.isolation.worktree_path!)) throw new Error("worktree is being merged");
     opts = { ...opts, config: { ...opts.config, cwd: parent.isolationCwd! } };
   }
   const dependency = opts.dependsOn ? getJob(opts.dependsOn) : undefined;
@@ -597,7 +600,7 @@ interface AttemptResult {
  */
 async function runJob(job: Job, opts: StartJobOptions) {
   if (opts.isolation && !job.isolation) {
-    const prepared = await prepareIsolation(opts.config.cwd, job.id, defaultStateDir());
+    const prepared = await prepareIsolation(opts.config.cwd, job.id, defaultStateDir(), job.dependsOn ? getJob(job.dependsOn)?.isolation : undefined);
     job.isolation = prepared.isolation;
     job.isolationCwd = prepared.cwd;
     opts = { ...opts, config: { ...opts.config, cwd: prepared.cwd } };
@@ -630,7 +633,8 @@ async function runJob(job: Job, opts: StartJobOptions) {
         timeoutMs: opts.config.verifyTimeoutMs,
         onProgress: report,
       });
-      report(`verification ${job.evidence?.passed ? "passed" : "failed"}`);
+      report(job.evidence ? `verification ${job.evidence.passed ? "passed" : "failed"}` : "no verification commands; evidence is null");
+      if (job.isolation) await commitIsolatedWork(job.isolation, job.id);
       finish(job, "done");
       return;
     }
@@ -799,7 +803,7 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
       state = "error";
       error = "job ended without running a turn";
     }
-    if (state === "done" && job.verify_commands?.length) {
+    if (state === "done" && (job.verify_commands?.length || job.isolation?.mode === "worktree")) {
       verifyPending = true;
       job.state = "running";
       client.kill();
@@ -1016,4 +1020,42 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
     client.kill();
     if (verifyPending) await client.stop();
   }
+}
+
+// One queue per server, independent of the worker concurrency limit. Rework is
+// locked synchronously before the first git await, so it cannot race verification.
+let mergeTail: Promise<unknown> = Promise.resolve();
+const mergingWorktrees = new Set<string>();
+export function mergeJob(id: string, options: { cleanup?: boolean; discard?: boolean; timeoutMs?: number } = {}): Promise<MergeResult> {
+  const attempt = mergeTail.then(async () => {
+    const requested = getJob(id);
+    if (!requested) throw new Error(`unknown job_id ${id}`);
+    const path = requested.isolation?.worktree_path;
+    const lineage = path ? listJobs().filter((job) => job.isolation?.worktree_path === path) : [requested];
+    const job = lineage.reduce((latest, candidate) => {
+      const time = Date.parse(candidate.startedAt) - Date.parse(latest.startedAt);
+      return time > 0 || (time === 0 && (candidate.reworkRound ?? 0) > (latest.reworkRound ?? 0)) ? candidate : latest;
+    });
+    let result: MergeResult = { job_id: job.id, at: new Date().toISOString(), status: "refused" };
+    try {
+      if (!path || job.isolation?.mode !== "worktree") throw new Error("job is not isolated in a worktree");
+      // Discard exists for work that failed: it needs neither a done job nor passing evidence.
+      if (!options.discard && job.state !== "done") throw new Error(`latest job ${job.id} is ${job.state}, not done`);
+      if (lineage.some((item) => !["done", "error", "timeout"].includes(item.state))) throw new Error("worktree has an active or pending job");
+      if (!options.discard && (job.evidence?.passed !== true || !job.verify_commands?.length)) throw new Error("merge requires passing server evidence and verify_commands");
+      mergingWorktrees.add(path);
+      result = await mergeIsolatedWork({ ...options, job_id: job.id, isolation: job.isolation,
+        cwd: job.isolationCwd!, verify_commands: job.verify_commands, setup_commands: job.setup_commands });
+    } catch (error) {
+      result.error = String(error instanceof Error ? error.message : error);
+    } finally {
+      if (path) mergingWorktrees.delete(path);
+    }
+    job.merge = result;
+    store.save(job);
+    appendMergeOutcome(job, result);
+    return result;
+  });
+  mergeTail = attempt.catch(() => undefined);
+  return attempt;
 }

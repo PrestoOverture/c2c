@@ -158,7 +158,7 @@ async function populateSnapshot(repo: string, sourceCwd: string, worktree: strin
   }
 }
 
-async function runChecks(opts: EvidenceOptions, cwd: string, label = "") {
+export async function runChecks(opts: EvidenceOptions, cwd: string, label = "") {
   const setup: CommandEvidence[] = [];
   const commands: CommandEvidence[] = [];
   const timeout = opts.timeoutMs ?? 600_000;

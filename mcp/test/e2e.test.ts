@@ -63,6 +63,7 @@ test("implement → goal loop → handoff, then rework resumes the thread", asyn
       "codex_config",
       "codex_estimate",
       "codex_implement",
+      "codex_merge",
       "codex_result",
       "codex_rework",
       "codex_status",
