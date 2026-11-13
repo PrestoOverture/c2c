@@ -35,10 +35,28 @@ createInterface({ input: process.stdin }).on("line", (line) => {
       // Delay the write so concurrent tests exercise overlapping worker runs.
       setTimeout(() => {
         const file = `${name}.txt`;
-        const previous = existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : { rounds: 0 };
+        if (prompt.includes("observe:sync")) {
+          writeFileSync("ignored.txt", JSON.stringify({ prompt, unmerged: git("diff", "--name-only", "--diff-filter=U"), head: git("rev-parse", "HEAD") }));
+        }
+        if (prompt.includes("die:conflict")) {
+          process.stderr.write("worker died during conflict\n");
+          process.exit(1);
+        }
+        if (prompt.includes("stall:conflict")) return;
+        const leaveConflict = prompt.includes("leave:conflict");
+        const resolveConflict = prompt.includes("resolve:conflict");
+        const resolvePending = prompt.includes("resolve:pending");
+        const resolution = /resolution:(setext|marker)/.exec(prompt)?.[1];
+        const previous = resolveConflict ? JSON.parse(git("show", `:2:sub dir/${file}`))
+          : leaveConflict || resolvePending || resolution ? { rounds: 0 } : existsSync(file) ? JSON.parse(readFileSync(file, "utf8")) : { rounds: 0 };
         let branch: string | null = null;
         try { branch = git("branch", "--show-current"); } catch { /* non-git fixture */ }
-        writeFileSync(file, JSON.stringify({ cwd: process.cwd(), threadCwd, branch, threadId, rounds: previous.rounds + 1 }));
+        if (!leaveConflict) writeFileSync(file, JSON.stringify({ ...previous,
+          ...(resolvePending ? { resolved: true } : {}),
+          ...(resolveConflict ? { ...JSON.parse(git("show", `:3:sub dir/${file}`)), resolved: true } : {}),
+          cwd: process.cwd(), threadCwd, branch, threadId, rounds: previous.rounds + 1 }));
+        if (resolution) writeFileSync(file, "Title\n=======\n|||||||\n<<<<<<<< literal\n>>>>>>>> literal\n<<<<<<<\tliteral\n>>>>>>>\tliteral\n" +
+          (resolution === "marker" ? "<<<<<<< leftover\n" : ""));
         if (prompt.includes("falsify:true")) {
           writeFileSync("production.txt", "after\n");
           writeFileSync("added.check", "echo checking-committed-test; test ! -e deleted.check && grep -q after production.txt\n");

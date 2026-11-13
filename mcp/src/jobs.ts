@@ -9,7 +9,7 @@ import { writeLog } from "./log.ts";
 import { createJobStore, defaultStateDir } from "./store.ts";
 import { collectEvidence, type Evidence } from "./evidence.ts";
 import { appendMergeOutcome, appendOutcome } from "./outcomes.ts";
-import { commitIsolatedWork, prepareIsolation, validateIsolation, type Isolation } from "./isolation.ts";
+import { commitIsolatedWork, isolatedMergeHead, prepareIsolation, syncIsolationTarget, unresolvedSyncFiles, validateIsolation, type Isolation, type TargetSync } from "./isolation.ts";
 import { mergeIsolatedWork, type MergeResult } from "./merge.ts";
 
 /**
@@ -115,6 +115,7 @@ export interface Job {
   evidence?: Evidence | null;
   isolation?: Isolation;
   merge?: MergeResult;
+  sync?: TargetSync;
   /** Execution cwd retained for isolated rework, including a repo subdirectory. */
   isolationCwd?: string;
   /** Error description string if job ended in error or timeout state */
@@ -158,6 +159,7 @@ export function listJobs(): Job[] {
  */
 export interface StartJobOptions {
   isolation?: "worktree";
+  sync_target?: boolean;
   /** Job type classification: "implement" or "rework" */
   kind: "implement" | "rework";
   /** Rendered prompt string containing protocol instructions and contract body */
@@ -278,7 +280,12 @@ function drainQueue() {
  * @returns The newly created Job object
  */
 export function startJob(opts: StartJobOptions): Job {
-  const parent = opts.parentJobId ? getJob(opts.parentJobId) : undefined;
+  const requestedParent = opts.parentJobId ? getJob(opts.parentJobId) : undefined;
+  const parent = requestedParent ? latestLineageJob(requestedParent) : undefined;
+  if (opts.sync_target && (opts.kind !== "rework" || parent?.isolation?.mode !== "worktree" || !parent.isolation.target_branch)) {
+    throw new Error("sync_target requires a job with worktree isolation and a non-null target_branch");
+  }
+  if (parent) opts = { ...opts, parentJobId: parent.id };
   if (opts.kind === "rework" && parent?.isolation) {
     validateIsolation(parent.isolation, parent.isolationCwd);
     if (mergingWorktrees.has(parent.isolation.worktree_path!)) throw new Error("worktree is being merged");
@@ -312,6 +319,10 @@ export function startJob(opts: StartJobOptions): Job {
     evidence: null,
     ...(opts.kind === "rework" && parent?.isolation
       ? { isolation: { ...parent.isolation }, isolationCwd: parent.isolationCwd }
+      : {}),
+    ...(opts.kind === "rework" && parent?.sync?.status === "conflict" &&
+      (parent.sync.unresolved.length || parent.state === "error" || parent.state === "timeout")
+      ? { sync: { ...parent.sync, files: [...(parent.state === "done" ? parent.sync.unresolved : parent.sync.files)], unresolved: [...parent.sync.unresolved] } }
       : {}),
     ...(opts.contextFiles ? { contextFiles: opts.contextFiles } : {}),
     ...(opts.dependsOn ? { dependsOn: opts.dependsOn } : {}),
@@ -600,11 +611,26 @@ interface AttemptResult {
  */
 async function runJob(job: Job, opts: StartJobOptions) {
   if (opts.isolation && !job.isolation) {
-    const prepared = await prepareIsolation(opts.config.cwd, job.id, defaultStateDir(), job.dependsOn ? getJob(job.dependsOn)?.isolation : undefined);
+    const dependency = job.dependsOn ? getJob(job.dependsOn) : undefined;
+    const latestDependency = dependency ? latestLineageJob(dependency) : undefined;
+    const prepared = await prepareIsolation(opts.config.cwd, job.id, defaultStateDir(), dependency?.isolation, latestDependency?.merge?.status === "merged");
     job.isolation = prepared.isolation;
     job.isolationCwd = prepared.cwd;
     opts = { ...opts, config: { ...opts.config, cwd: prepared.cwd } };
     store.save(job);
+  }
+  if (opts.sync_target) {
+    const pending = job.sync?.files ?? [];
+    job.sync = await syncIsolationTarget(job.isolation!, job.id);
+    if (job.sync.status !== "up_to_date") job.isolation!.base_commit = job.sync.target_commit;
+    if (pending.length) {
+      job.sync.status = "conflict";
+      job.sync.files = [...new Set([...pending, ...job.sync.files])];
+    }
+    store.save(job);
+  }
+  if (job.sync?.status === "conflict") {
+    opts = { ...opts, prompt: `${opts.prompt}\n\n### Target Sync\nMerged target ${JSON.stringify(job.sync.target_branch)} (${job.sync.target_commit}) into this job branch. Resolve the merge conflicts in these repo-relative files before finishing:\n${job.sync.files.map((file) => `- ${JSON.stringify(file)}`).join("\n")}` };
   }
   const deadline = Date.now() + opts.config.jobTimeoutMs;
   const maxAttempts = (opts.config.retries ?? 1) + 1;
@@ -623,6 +649,12 @@ async function runJob(job: Job, opts: StartJobOptions) {
         opts.onProgress?.({ jobId: job.id, event: "verify", message });
       };
       report("worker exited; collecting server verification evidence");
+      const captureBeforeEvidence = (job.sync && job.sync.status !== "up_to_date") ||
+        (job.isolation && await isolatedMergeHead(job.isolation));
+      if (job.sync) job.sync.unresolved = await unresolvedSyncFiles(job.isolation!, job.sync);
+      // Unmerged index entries cannot form a usable evidence patch. Conclude the
+      // merge first, even if the worker failed to remove conflict markers.
+      if (captureBeforeEvidence) await commitIsolatedWork(job.isolation!, job.id);
       job.evidence = await collectEvidence({
         cwd: opts.config.cwd,
         base_commit: job.isolation?.base_commit ?? undefined,
@@ -633,8 +665,16 @@ async function runJob(job: Job, opts: StartJobOptions) {
         timeoutMs: opts.config.verifyTimeoutMs,
         onProgress: report,
       });
+      if (job.sync?.unresolved.length) {
+        job.evidence ??= {
+          environment: "worktree", base_commit: job.isolation!.base_commit, passed: false, setup: [], commands: [],
+          falsification: { ran: false, skipped_reason: "unresolved merge conflicts", setup: [], commands: [], unfalsified: [] },
+        };
+        job.evidence.passed = false;
+        job.evidence.error = [job.evidence.error, `unresolved merge conflicts: ${job.sync.unresolved.join(", ")}`].filter(Boolean).join("; ");
+      }
       report(job.evidence ? `verification ${job.evidence.passed ? "passed" : "failed"}` : "no verification commands; evidence is null");
-      if (job.isolation) await commitIsolatedWork(job.isolation, job.id);
+      if (job.isolation && !captureBeforeEvidence) await commitIsolatedWork(job.isolation, job.id);
       finish(job, "done");
       return;
     }
@@ -1026,16 +1066,21 @@ async function runAttempt(job: Job, opts: StartJobOptions, timeoutMs: number): P
 // locked synchronously before the first git await, so it cannot race verification.
 let mergeTail: Promise<unknown> = Promise.resolve();
 const mergingWorktrees = new Set<string>();
+function latestLineageJob(requested: Job): Job {
+  const path = requested.isolation?.worktree_path;
+  const lineage = path ? [requested, ...listJobs().filter((job) => job.isolation?.worktree_path === path)] : [requested];
+  return lineage.reduce((latest, candidate) => {
+    const time = Date.parse(candidate.startedAt) - Date.parse(latest.startedAt);
+    return time > 0 || (time === 0 && (candidate.reworkRound ?? 0) > (latest.reworkRound ?? 0)) ? candidate : latest;
+  });
+}
 export function mergeJob(id: string, options: { cleanup?: boolean; discard?: boolean; timeoutMs?: number } = {}): Promise<MergeResult> {
   const attempt = mergeTail.then(async () => {
     const requested = getJob(id);
     if (!requested) throw new Error(`unknown job_id ${id}`);
     const path = requested.isolation?.worktree_path;
     const lineage = path ? listJobs().filter((job) => job.isolation?.worktree_path === path) : [requested];
-    const job = lineage.reduce((latest, candidate) => {
-      const time = Date.parse(candidate.startedAt) - Date.parse(latest.startedAt);
-      return time > 0 || (time === 0 && (candidate.reworkRound ?? 0) > (latest.reworkRound ?? 0)) ? candidate : latest;
-    });
+    const job = latestLineageJob(requested);
     let result: MergeResult = { job_id: job.id, at: new Date().toISOString(), status: "refused" };
     try {
       if (!path || job.isolation?.mode !== "worktree") throw new Error("job is not isolated in a worktree");

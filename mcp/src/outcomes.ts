@@ -4,7 +4,7 @@ import { appendFileSync } from "node:fs";
 import { join } from "node:path";
 import type { Evidence } from "./evidence.ts";
 import type { MergeResult } from "./merge.ts";
-import type { Isolation } from "./isolation.ts";
+import type { Isolation, TargetSync } from "./isolation.ts";
 import { defaultStateDir, warnOnce } from "./store.ts";
 
 interface OutcomeJob {
@@ -24,6 +24,7 @@ interface OutcomeJob {
   handoff?: { valid: boolean };
   evidence?: Evidence | null;
   isolation?: Isolation;
+  sync?: TargetSync;
 }
 
 export function summarizeOutcome(job: OutcomeJob) {
@@ -54,6 +55,7 @@ export function summarizeOutcome(job: OutcomeJob) {
     tests_modified: !!evidence?.tests_modified.length,
     out_of_scope: !!evidence?.out_of_scope.length,
     new_unclassified: !!evidence?.new_unclassified.length,
+    conflict_unresolved: !!job.sync?.unresolved.length,
   };
   return {
     at: job.endedAt ?? new Date().toISOString(),
@@ -64,6 +66,7 @@ export function summarizeOutcome(job: OutcomeJob) {
     rework_round: job.reworkRound ?? (job.kind === "implement" ? 0 : 1),
     thread_id: job.threadId ?? null,
     ...(job.isolation ? { isolation: job.isolation.mode, branch: job.isolation.branch } : {}),
+    ...(job.sync ? { sync: job.sync } : {}),
     state: job.state,
     error: job.error ?? null,
     turns: job.turns,

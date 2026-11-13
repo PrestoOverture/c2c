@@ -83,6 +83,7 @@ function jobSummary(job: Job, transcriptTail = 15) {
     evidence: job.evidence ?? null,
     ...(job.isolation ? { isolation: job.isolation } : {}),
     ...(job.merge ? { merge: job.merge } : {}),
+    ...(job.sync ? { sync: job.sync } : {}),
     ...(!["done", "error", "timeout"].includes(job.state)
       ? { last_activity_at: job.lastActivityAt ?? null }
       : {}),
@@ -116,11 +117,11 @@ function textResult(obj: unknown, isError = false) {
  * in context — so they must stay short and must only activate on Codex delegation.
  */
 const SERVER_INSTRUCTIONS = `When the user asks to delegate work to Codex (or to use c2c), act as architect and reviewer, not implementer:
-1. Draft a Goal Contract and get the user's approval (show the user the contract) before calling codex_implement.
+1. Draft a Goal Contract; show it and get user approval before codex_implement.
 2. codex_estimate, then codex_implement: pass verify_commands, test_paths and scope (setup_commands for dependencies); poll codex_status and report progress.
 3. Read evidence first in codex_result: read unfalsified, tests_modified, out_of_scope and new_unclassified; review judges intent and constraints, never trusts the handoff alone. On failure, send a Delta Contract via codex_rework.
 If a Codex job itself fails (error, 0 tokens, no handoff), report it and wait; don't implement the task yourself unless the user explicitly asks.
-For isolated jobs, codex_merge verifies and integrates passing work; cleanup defaults to true.
+Isolated: codex_merge verifies/integrates; cleanup=true. On conflict or verification_failed, codex_rework sync_target:true merges target into the job before work.
 Full formats: the c2c-workflow prompt.`;
 
 const server = new McpServer(
@@ -387,13 +388,14 @@ server.registerTool(
       "(review findings + failed success conditions). The existing thread goal is reactivated, so the " +
       "/goal loop continues until the objective passes. Returns a new job_id. Inherits verify_commands and " +
       "setup_commands, test_paths and scope from the known parent unless overridden (use [] to clear); read its own evidence first, then review intent. " +
-      "Isolated jobs reuse the same persistent worktree, branch, base commit and cwd (overriding cwd), by job_id or known thread_id, including after restart. Missing worktrees after merge cleanup/discard and worktrees being merged are rejected at submission.",
+      "Isolated jobs reuse their worktree, branch, current evidence base and cwd, including after restart. For codex_merge conflict or verification_failed, sync_target:true merges the target tip into the job at launch before the worker starts; conflicts are left for the worker, unresolved markers fail evidence. A merge moves the evidence base to the target tip, excluding target changes. No-op keeps the base. Status/result expose sync metadata. Missing worktrees and worktrees being merged are rejected at submit.",
     inputSchema: {
       job_id: z
         .string()
         .optional()
         .describe("The original implement job's id (preferred; resolves the thread to resume)."),
       thread_id: z.string().optional().describe("Codex thread id, if the job registry is gone (e.g. after a restart)."),
+      sync_target: z.boolean().optional().describe("Merge the lineage target into the job branch at launch for conflict or verification_failed merge rework. Requires worktree isolation and non-null target_branch; never updates the target. Worker resolves conflicts, then server commits before evidence; sync reports target_branch, target_commit, status (clean/conflict/up_to_date), files and unresolved."),
       findings: z.array(z.string()).min(1).describe("What is wrong, with file/line references."),
       failed_conditions: z
         .array(z.string())
@@ -427,6 +429,7 @@ server.registerTool(
     }
     const job = startJob({
       kind: "rework",
+      sync_target: input.sync_target,
       prompt: renderDeltaContract({
         findings: input.findings,
         failed_conditions: input.failed_conditions,
@@ -463,7 +466,7 @@ server.registerTool(
   "codex_merge",
   {
     title: "Merge or discard an isolated job",
-    description: "Serially integrate the latest job on the requested worktree lineage. Requires done, no active/pending jobs on the worktree, and evidence.passed=true. Merges with --no-ff in a temporary worktree, re-runs setup + verify, then fast-forwards target_branch. Returns merged, conflict (files), verification_failed (evidence), target_blocked, or refused. Failures preserve target and job trees. cleanup defaults to true: remove job worktree and branch after merging; discard=true removes them without merging. Status/result expose the latest merge record; each attempt logs kind=merge. Cleanup/discard prevents further rework.",
+    description: "Serially integrate the latest job on the requested worktree lineage. Requires done, no active/pending jobs on the worktree, and evidence.passed=true. Merges with --no-ff in a temporary worktree, re-runs setup + verify, then fast-forwards target_branch. Returns merged, conflict (files), verification_failed (evidence), target_blocked, or refused. For conflict or verification_failed, send a Delta Contract via codex_rework with sync_target:true to merge the target into the job and resolve there. Failures preserve target and job trees. cleanup defaults to true: remove job worktree and branch after merging; discard=true removes them without merging. Status/result expose the latest merge record; each attempt logs kind=merge. Cleanup/discard prevents further rework.",
     inputSchema: {
       job_id: z.string().min(1).describe("Any job id in the isolated worktree lineage; resolves its latest job."),
       cleanup: z.boolean().default(true).describe("Remove job worktree and branch after a successful merge."),
@@ -500,7 +503,7 @@ server.registerTool(
     description:
       "Status of a blocked, queued, running, or finished Codex job: dependency, state, queue position, thread id, " +
       "parent_job_id, root_job_id, rework_round, goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript. " +
-      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; absent for default jobs. Includes the latest merge attempt when present.",
+      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; absent for default jobs. Includes the latest merge attempt and sync (target_branch, target_commit, status, files, unresolved) when present.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
     },
@@ -521,7 +524,7 @@ server.registerTool(
       "(Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is " +
       "itself a review failure), server verification evidence (including falsification.unfalsified and changes.tests_modified / out_of_scope / new_unclassified), and final goal state. Read evidence first for " +
       "mechanical pass/fail; review judges intent and constraints. Includes parent_job_id, root_job_id and rework_round. " +
-      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; evidence includes committed branch changes against that base. Includes the latest merge attempt when present. Errors if the job is not finished.",
+      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; evidence includes committed branch changes against that base. Includes the latest merge attempt and sync (target_branch, target_commit, status, files, unresolved) when present. Errors if the job is not finished.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
     },
@@ -558,6 +561,8 @@ You are the **architect and reviewer**. Codex is the **implementer**. You draft 
 6. **User approves** your findings.
 
 If review fails → draft a **Delta Contract** → \`codex_rework\` (same \`job_id\`, thread resumes) → re-enter at step 4.
+
+For isolated work, use \`codex_merge\` after passing evidence. On \`conflict\` or \`verification_failed\`, send rework with \`sync_target: true\`: the server merges the target tip into the job worktree before the worker starts, lists conflicts in its prompt, and commits resolutions before evidence. Read \`sync.unresolved\`; remaining markers fail evidence. The evidence base moves to the synced tip, excluding target changes; \`up_to_date\` keeps the base. Retry \`codex_merge\` after evidence passes.
 
 ## Goal Contract
 

@@ -204,23 +204,25 @@ Python 3.12，Poetry。从项目根目录运行。
 | `codex_implement` | 从 Goal Contract 启动一个 Codex 任务。支持 `context_files`（先读参考文件，校验存在性）、`verify_commands` / `setup_commands`、`test_paths` / `scope` 和 `depends_on`（前序任务成功后才启动）。立即返回 job ID。 |
 | `codex_status`    | 查看任务进度：状态、队列位置、依赖、轮次、目标状态、token 用量、距上次活动的时间、活动记录及服务端验证 `evidence`。 |
 | `codex_result`    | 获取已完成任务的结构化交接报告及服务端验证 `evidence`。先读 evidence，审查负责判断实现是否符合意图。 |
-| `codex_merge`     | 串行合并同一隔离工作区谱系的最新任务到记录的目标分支；要求 evidence 和合并后验证均通过。`cleanup` 默认为 true；`discard: true` 直接删除工作区和分支，不合并。 |
-| `codex_rework`    | 用 Delta Contract 恢复 Codex 线程进行返工（同样支持 `context_files`、`verify_commands`、`setup_commands`、`test_paths`、`scope`）。未覆盖时从 `job_id` 继承命令和路径列表；`[]` 清空对应列表。 |
+| `codex_merge`     | 串行合并同一隔离工作区谱系的最新任务到记录的目标分支；要求 evidence 和合并后验证均通过。遇到 `conflict` 或 `verification_failed` 时，可通过 `sync_target: true` 返工。`cleanup` 默认为 true；`discard: true` 直接删除工作区和分支，不合并。 |
+| `codex_rework`    | 用 Delta Contract 恢复 Codex 线程进行返工（同样支持 `context_files`、`verify_commands`、`setup_commands`、`test_paths`、`scope`）。可选 `sync_target: true` 在 worker 开始前将隔离任务的目标分支合入任务分支。未覆盖时从 `job_id` 继承命令和路径列表；`[]` 清空对应列表。 |
 | `codex_estimate`  | 只读的任务前成本预估：渲染后的 prompt 规模（包含 `verify_commands`、`setup_commands`、`test_paths` 和 `scope`）、thread-goal objective 相对 `GOAL_OBJECTIVE_MAX` 的规模，以及本机已完成任务的 token 统计。 |
 | `codex_config`    | 只读查看 Codex 当前模型、版本和配置。                                                                                |
 
 
 任务会持久化（`C2C_STATE_DIR`），因此状态查询、结果获取和返工在 server 重启后依然可用。超出并发上限的任务按 FIFO 排队；停滞看门狗会在运行中的任务失去进展时主动上报。关于如何写出"一次过审"的合同，参见实战指南 [PATTERNS.zh-CN.md](./PATTERNS.zh-CN.md)。
 
-向 `codex_implement` 传入 `isolation: "worktree"`，即可在任务开始时，以仓库 HEAD 为基准创建分支 `c2c/<job_id>` 和持久化工作区 `<C2C_STATE_DIR>/worktrees/<job_id>`。隔离任务若通过 `depends_on` 依赖另一个隔离任务，则从依赖任务的分支 tip 创建分支，并继承其目标分支。仓库内的子目录 cwd 会映射到工作区中的同一子目录。源工作区保持不变，其暂存、未暂存和未跟踪改动均不带入；`source_dirty` 表示开始时源工作区是否有未提交改动。创建分支或工作区失败会使任务变为 error，并保留 git 错误信息。非 git 目录回退为 `in_place` 并附带说明。不传此选项时，执行方式、持久化记录和输出保持原有行为，不增加隔离元数据。
+向 `codex_implement` 传入 `isolation: "worktree"`，即可在任务开始时，以仓库 HEAD 为基准创建分支 `c2c/<job_id>` 和持久化工作区 `<C2C_STATE_DIR>/worktrees/<job_id>`。隔离任务若通过 `depends_on` 依赖另一个隔离任务，则从依赖任务的分支 tip 创建分支，并继承其目标分支。若依赖分支已被清理，仅当该谱系最新任务的 merge 记录为 `merged` 时，从目标分支当前 tip 开始；否则报错，说明依赖工作已被丢弃。仓库内的子目录 cwd 会映射到工作区中的同一子目录。源工作区保持不变，其暂存、未暂存和未跟踪改动均不带入；`source_dirty` 表示开始时源工作区是否有未提交改动。创建分支或工作区失败会使任务变为 error，并保留 git 错误信息。非 git 目录回退为 `in_place` 并附带说明。不传此选项时，执行方式、持久化记录和输出保持原有行为，不增加隔离元数据。
 
 启用后，`codex_status` 和 `codex_result` 会返回 `isolation: { mode, worktree_path, branch, base_commit, target_branch, source_dirty, note }`。通过 job ID 或已知 thread ID 调用 `codex_rework`，包括 server 重启后，均复用原工作区、分支、基准 commit 和执行目录；返工中显式传入的 cwd 不会覆盖它。隔离工作区已不存在时，返工在提交时即被拒绝。验证快照取自该隔离工作区，并与记录的基准 commit 比较，因此 Codex 已提交的改动仍计入 `evidence.changes` 和证伪检查。收集 evidence 后，服务端将工作区内剩余的未被忽略的改动提交到任务分支（`--no-verify`，仓库缺少身份配置时使用 c2c 身份）。即使未提供验证命令也会提交，但合并仍要求 evidence 通过。`target_branch` 记录创建时源仓库检出的分支；detached 状态为 null。
 
 调用 `codex_merge { job_id, cleanup?: boolean, discard?: boolean }` 可合并该工作区谱系的最新任务。要求任务为 `done`、工作区没有运行或等待的任务，且 `evidence.passed: true`。所有尝试串行执行：在目标分支当前 tip 的临时工作区中以 `--no-ff` 合并，在对应子目录重新运行 setup 和验证命令，通过后才快进目标分支。目标分支已检出时同步更新其工作区；未检出时使用带旧值校验的 ref 更新。结果为 `merged`、`conflict`（文件列表）、`verification_failed`（合并后 evidence）、`target_blocked`（目标移动、脏文件冲突或无目标分支）；前置条件不满足返回 `refused`。合并未成功时目标分支、源工作区和任务工作区保持不变；临时合并工作区总会删除并 prune。
 
+遇到 `conflict` 或 `verification_failed`，调用 `codex_rework { job_id, findings, failed_conditions, sync_target: true }`。提交时要求任务具有 worktree 隔离且目标分支非 null。任务启动时，服务端在任务工作区将目标 tip T 合入任务分支：无冲突则先提交再启动 worker；有冲突则保留合并现场，并在 worker 提示中追加目标名称和冲突文件列表。Worker 退出后，服务端先提交所有未被忽略的改动，再采集 evidence。原冲突文件中仍有冲突标记时，强制 `evidence.passed: false`，在 `evidence.error` 和 `sync.unresolved` 列出文件，并向 outcome 的 `caught_by` 添加 `conflict_unresolved`。Status/result 和 outcome 提供 `sync: { target_branch, target_commit, status: clean | conflict | up_to_date, files, unresolved }`，仅记录路径，不含文件内容。发生合并后，`isolation.base_commit` 移至 T，使变更标记和证伪仅覆盖任务自身工作及冲突解决；后续返工继承该基准。若任务已包含 T，则 `up_to_date` 且基准不变。其他 git 错误会中止合并并使任务报错，保留诊断信息。服务端提交禁用 hooks 和 GPG 签名，沿用上述身份回退。同步不修改调用方工作区和目标分支。Evidence 通过后重试 `codex_merge`。
+
 合并成功后默认删除任务工作区和分支，`cleanup: false` 可保留。`discard: true` 不合并而直接删除，返回 `discarded`；不要求 evidence 通过（用于丢弃失败的工作），只要求工作区没有运行或等待的任务。合并期间及清理或丢弃后禁止返工。Status/result 返回实际尝试任务的最新 `merge` 记录；每次尝试（包括拒绝）追加 `kind: "merge"` outcome。若合并成功但清理失败，仍返回 `merged`，附带 `cleaned_up: false` 和错误信息。
 
-可向 `codex_implement` 传入可选的 `verify_commands: string[]`：Codex 退出后，服务端在临时 detached worktree 中以 `sh -c` 和服务端环境逐条运行命令，快照包含已跟踪文件的改动及未被忽略的未跟踪文件。被 git 忽略的文件不会复制；可用 `setup_commands: string[]` 先在同一快照中安装依赖。Setup 首次失败即停止，验证命令则全部执行。非 git 目录直接原地运行。验证期间任务保持 `running` 并占用并发名额，evidence 保存后变为 `done`，即使检查失败也不变为 error。Evidence 记录环境、基准 commit、通过与否、退出码、超时、耗时及每条命令合并输出的最后 4000 个字符。未提供验证命令时 evidence 为 `null`，setup 和验证均不执行。
+可向 `codex_implement` 传入可选的 `verify_commands: string[]`：Codex 退出后，服务端在临时 detached worktree 中以 `sh -c` 和服务端环境逐条运行命令，快照包含已跟踪文件的改动及未被忽略的未跟踪文件。被 git 忽略的文件不会复制；可用 `setup_commands: string[]` 先在同一快照中安装依赖。Setup 首次失败即停止，验证命令则全部执行。非 git 目录直接原地运行。验证期间任务保持 `running` 并占用并发名额，evidence 保存后变为 `done`，即使检查失败也不变为 error。Evidence 记录环境、基准 commit、通过与否、退出码、超时、耗时及每条命令合并输出的最后 4000 个字符。未提供验证命令时 evidence 为 `null`，setup 和验证均不执行；但同步仍有未解决冲突时会生成失败的 evidence。
 
 可选的 `test_paths: string[]` 和 `scope: string[]` 是相对于任务 cwd 的 Git glob pathspec，例如 `test_paths: ["test/**/*.test.ts"]`、`scope: ["src/**"]`。测试分类只依据 test_paths；新增测试也应放在这些路径下。在 worktree 中，`evidence.changes.files` 列出仓库根目录相对路径、added/modified/deleted 状态及 test/production 分类；`tests_modified` 标记已有测试的修改或删除，不含新增测试；`out_of_scope` 列出不匹配 scope 和 test_paths 的改动（仅在传入 scope 时）；`new_unclassified` 列出两个声明均不匹配的新增文件。没有 test_paths 时全部归为 production；没有 scope 时 out_of_scope 为空。
 

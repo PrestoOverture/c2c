@@ -36,13 +36,13 @@ function repository() {
   commit(repo, "base");
   return { repo, cwd, base: git(repo, "rev-parse", "HEAD") };
 }
-async function connect(state: string) {
+async function connect(state: string, maxConcurrent = 2, env: Record<string, string> = {}) {
   const client = new Client({ name: "merge-test", version: "1" });
   await client.connect(new StdioClientTransport({
     command: "bun", args: [join(mcpDir, "src/server.ts")], cwd: mcpDir, stderr: "pipe",
     env: { ...process.env as Record<string, string>, CODEX_BIN: "bun", CODEX_ARGS: join(mcpDir, "test/isolation-worker.ts"),
-      C2C_STATE_DIR: state, C2C_LOG_LEVEL: "silent", C2C_RETRIES: "0", C2C_MAX_CONCURRENT: "2",
-      GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" },
+      C2C_STATE_DIR: state, C2C_LOG_LEVEL: "silent", C2C_RETRIES: "0", C2C_MAX_CONCURRENT: String(maxConcurrent),
+      GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1", ...env },
   }));
   clients.push(client);
   return client;
@@ -434,4 +434,409 @@ test("tracked dirty overlap blocks integration without rewriting caller files or
   expect(readFileSync(join(cwd, "alpha.txt"), "utf8")).toBe("dirty caller version\n");
   expect(treeState(status.isolation.worktree_path)).toEqual(worker);
   noTemporaryTrees(repo, 2);
+});
+
+async function conflictFixture(env: Record<string, string> = {}) {
+  const { repo, cwd, base } = repository();
+  const state = scratch();
+  const client = await connect(state, 2, env);
+  const first = await submit(client, cwd, { test_paths: ["*.check"], scope: ["alpha.txt"] });
+  const original = await done(client, first.job_id);
+  writeFileSync(join(cwd, "alpha.txt"), JSON.stringify({ target: true, rounds: 0 }));
+  writeFileSync(join(cwd, "target.txt"), "target production\n");
+  writeFileSync(join(cwd, "target.check"), "target test\n");
+  commit(repo);
+  const target = git(repo, "rev-parse", "HEAD");
+  expect(await call(client, "codex_merge", { job_id: first.job_id })).toMatchObject({ status: "conflict", files: ["sub dir/alpha.txt"] });
+  return { repo, cwd, base, state, client, first, original, target };
+}
+
+test("conflict -> sync resolution -> job-only evidence -> merged target contains both sides", async () => {
+  const { repo, cwd, state, client, first, original, target } = await conflictFixture();
+  const source = treeState(repo);
+  // Server commits must ignore signing and every commit/merge hook, including post hooks.
+  git(repo, "config", "commit.gpgSign", "true");
+  for (const hook of ["pre-commit", "prepare-commit-msg", "commit-msg", "post-commit", "pre-merge-commit", "post-merge"]) {
+    writeFileSync(join(repo, `.git/hooks/${hook}`), "#!/bin/sh\ntouch hook-ran\nexit 1\n", { mode: 0o755 });
+  }
+  const next = await call(client, "codex_rework", { job_id: first.job_id, findings: ["write:alpha resolve:conflict observe:sync"], failed_conditions: [], sync_target: true,
+    verify_commands: ["grep -q '\"resolved\":true' alpha.txt && test -f target.txt && test -f target.check"] });
+  const status = await done(client, next.job_id);
+  expect(status.state).toBe("done");
+  expect(status.sync).toEqual({ target_branch: "main", target_commit: target, status: "conflict", files: ["sub dir/alpha.txt"], unresolved: [] });
+  expect(status.isolation.base_commit).toBe(target);
+  expect(status.isolation.base_commit).not.toBe(original.isolation.base_commit);
+  expect(status.evidence.base_commit).toBe(target);
+  expect(status.evidence.passed).toBe(true);
+  expect(status.evidence.changes.files).toEqual([{ path: "sub dir/alpha.txt", status: "modified", class: "production" }]);
+  expect(status.evidence.changes.tests_modified).toEqual([]);
+  expect(status.evidence.changes.out_of_scope).toEqual([]);
+  expect(status.evidence.changes.new_unclassified).toEqual([]);
+  expect(status.evidence.falsification.ran).toBe(true);
+  expect(status.evidence.falsification.unfalsified).toEqual([]);
+  const tree = status.isolation.worktree_path;
+  const observation = JSON.parse(readFileSync(join(tree, "sub dir/ignored.txt"), "utf8"));
+  expect(observation.unmerged).toBe("sub dir/alpha.txt");
+  expect(observation.prompt).toContain('Merged target "main"');
+  expect(observation.prompt).toContain('"sub dir/alpha.txt"');
+  expect(git(tree, "merge-base", "--is-ancestor", target, "HEAD")).toBe("");
+  expect(git(tree, "rev-list", "--parents", "-n", "1", "HEAD").split(" ")).toHaveLength(3);
+  expect(git(tree, "status", "--porcelain")).toBe("");
+  expect(existsSync(join(tree, "hook-ran"))).toBe(false);
+  expect(treeState(repo)).toEqual(source);
+  expect((await call(client, "codex_result", { job_id: next.job_id })).sync).toEqual(status.sync);
+  expect(outcomes(state).find((o) => o.job_id === next.job_id)).toMatchObject({ sync: status.sync, evidence: { passed: true } });
+  // Rework from an older id, after restart, must inherit the moved base.
+  await client.close();
+  const restarted = await connect(state);
+  const later = await call(restarted, "codex_rework", { job_id: first.job_id, findings: ["write:alpha"], failed_conditions: [],
+    verify_commands: ["test -f alpha.txt && test -f target.txt"] });
+  const inherited = await done(restarted, later.job_id);
+  expect(inherited.isolation.base_commit).toBe(target);
+  expect(inherited.evidence.changes.files.map((f: any) => f.path)).toEqual(["sub dir/alpha.txt"]);
+  const result = await call(restarted, "codex_merge", { job_id: first.job_id });
+  expect(result).toMatchObject({ status: "merged", job_id: later.job_id });
+  const alpha = JSON.parse(readFileSync(join(cwd, "alpha.txt"), "utf8"));
+  expect(alpha).toMatchObject({ target: true, resolved: true, rounds: 3 });
+  expect(alpha.threadId).toBe(original.thread_id);
+  expect(readFileSync(join(cwd, "target.txt"), "utf8")).toBe("target production\n");
+  expect(readFileSync(join(cwd, "target.check"), "utf8")).toBe("target test\n");
+  expect(git(repo, "merge-base", "--is-ancestor", target, "HEAD")).toBe("");
+  noTemporaryTrees(repo, 1);
+});
+
+test("unresolved conflict markers fail evidence even when verification passes, log caught_by and refuse merge", async () => {
+  const { repo, client, first, state, target } = await conflictFixture();
+  const source = treeState(repo);
+  const next = await call(client, "codex_rework", { job_id: first.job_id, sync_target: true,
+    findings: ["write:alpha leave:conflict"], failed_conditions: [], verify_commands: ["test -f alpha.txt"] });
+  const status = await done(client, next.job_id);
+  expect(status.state).toBe("done");
+  expect(status.sync).toMatchObject({ status: "conflict", target_commit: target, unresolved: ["sub dir/alpha.txt"] });
+  expect(status.evidence.commands[0].exit_code).toBe(0);
+  expect(status.evidence.passed).toBe(false);
+  expect(status.evidence.error).toContain("sub dir/alpha.txt");
+  expect(status.evidence.changes.files.map((f: any) => f.path)).toEqual(["sub dir/alpha.txt"]);
+  expect(git(status.isolation.worktree_path, "status", "--porcelain")).toBe("");
+  expect(outcomes(state).find((o) => o.job_id === next.job_id)).toMatchObject({ sync: status.sync, caught_by: expect.arrayContaining(["conflict_unresolved"]) });
+  expect((await call(client, "codex_result", { job_id: next.job_id })).sync).toEqual(status.sync);
+  const refused = await raw(client, "codex_merge", { job_id: first.job_id });
+  expect(refused.isError).toBe(true);
+  expect(refused.data.status).toBe("refused");
+  expect(treeState(repo)).toEqual(source);
+});
+
+test("clean sync commits target before the worker and excludes target files from flags and falsification", async () => {
+  const { repo, cwd } = repository();
+  const client = await connect(scratch());
+  const first = await submit(client, cwd, { test_paths: ["*.check"], scope: ["alpha.txt"] });
+  const original = await done(client, first.job_id);
+  writeFileSync(join(cwd, "target.txt"), "target\n");
+  writeFileSync(join(cwd, "target.check"), "target test\n");
+  commit(repo);
+  const target = git(repo, "rev-parse", "HEAD");
+  const source = treeState(repo);
+  git(repo, "config", "commit.gpgSign", "true");
+  writeFileSync(join(repo, ".git/hooks/post-merge"), "#!/bin/sh\ntouch hook-ran\n", { mode: 0o755 });
+  const next = await call(client, "codex_rework", { job_id: first.job_id, sync_target: true, findings: ["write:alpha observe:sync"], failed_conditions: [],
+    verify_commands: ["test -f alpha.txt && test -f target.txt && test -f target.check"] });
+  const status = await done(client, next.job_id);
+  expect(status.state).toBe("done");
+  expect(status.sync).toEqual({ target_branch: "main", target_commit: target, status: "clean", files: [], unresolved: [] });
+  expect(status.isolation.base_commit).toBe(target);
+  expect(status.evidence.passed).toBe(true);
+  expect(status.evidence.changes).toEqual({ files: [{ path: "sub dir/alpha.txt", status: "added", class: "production" }], tests_modified: [], out_of_scope: [], new_unclassified: [] });
+  expect(status.evidence.falsification.ran).toBe(true);
+  expect(status.evidence.falsification.unfalsified).toEqual([]);
+  const tree = status.isolation.worktree_path;
+  const observation = JSON.parse(readFileSync(join(tree, "sub dir/ignored.txt"), "utf8"));
+  expect(observation.unmerged).toBe("");
+  expect(git(tree, "rev-parse", `${observation.head}^2`)).toBe(target);
+  expect(git(tree, "rev-parse", `${observation.head}^1`)).not.toBe(target);
+  expect(original.isolation.base_commit).not.toBe(target);
+  expect(existsSync(join(tree, "hook-ran"))).toBe(false);
+  expect(treeState(repo)).toEqual(source);
+  expect((await call(client, "codex_merge", { job_id: next.job_id })).status).toBe("merged");
+  expect(existsSync(join(cwd, "alpha.txt"))).toBe(true);
+  expect(existsSync(join(cwd, "target.txt"))).toBe(true);
+});
+
+test("up_to_date sync keeps the evidence base and makes no commit before the worker", async () => {
+  const { repo, cwd, base } = repository();
+  const client = await connect(scratch());
+  const first = await submit(client, cwd);
+  const original = await done(client, first.job_id);
+  writeFileSync(join(cwd, "target.txt"), "already merged by worker\n");
+  commit(repo);
+  const target = git(repo, "rev-parse", "HEAD");
+  git(original.isolation.worktree_path, "-c", "user.name=Test", "-c", "user.email=test@example.com", "merge", "--no-ff", "--no-edit", target);
+  const tip = git(original.isolation.worktree_path, "rev-parse", "HEAD");
+  const next = await call(client, "codex_rework", { job_id: first.job_id, sync_target: true, findings: ["write:alpha observe:sync"], failed_conditions: [] });
+  const status = await done(client, next.job_id);
+  expect(status.sync).toEqual({ target_branch: "main", target_commit: target, status: "up_to_date", files: [], unresolved: [] });
+  expect(target).not.toBe(base);
+  expect(status.isolation.base_commit).toBe(original.isolation.base_commit);
+  expect(status.evidence.base_commit).toBe(base);
+  expect(status.evidence.changes.files.map((f: any) => f.path)).toEqual(["sub dir/alpha.txt", "sub dir/target.txt"]);
+  const observation = JSON.parse(readFileSync(join(status.isolation.worktree_path, "sub dir/ignored.txt"), "utf8"));
+  expect(observation.head).toBe(tip);
+});
+
+test("sync_target rejects non-isolated, unknown-thread and detached-target jobs at submit", async () => {
+  const { repo, cwd } = repository();
+  const state = scratch();
+  const client = await connect(state);
+  const plain = await submit(client, cwd, { isolation: undefined });
+  await done(client, plain.job_id);
+  git(repo, "checkout", "--detach", "-q");
+  const detached = await submit(client, cwd);
+  const status = await done(client, detached.job_id);
+  expect(status.isolation.target_branch).toBeNull();
+  const before = outcomes(state).length;
+  for (const identity of [{ job_id: plain.job_id }, { thread_id: "unknown-thread" }, { job_id: detached.job_id }]) {
+    const rejected = await raw(client, "codex_rework", { ...identity, sync_target: true, findings: ["write:alpha"], failed_conditions: [] });
+    expect(rejected.isError).toBe(true);
+    expect(rejected.data.error).toContain("sync_target requires");
+  }
+  expect(outcomes(state)).toHaveLength(before);
+});
+
+for (const discard of [false, true]) test(`dependent of ${discard ? "discarded" : "merged and cleaned"} latest rework lineage handles missing branch after restart`, async () => {
+  const { repo, cwd } = repository();
+  const state = scratch();
+  let client = await connect(state);
+  const first = await submit(client, cwd);
+  await done(client, first.job_id);
+  const next = await call(client, "codex_rework", { job_id: first.job_id, findings: ["write:alpha"], failed_conditions: [] });
+  const latest = await done(client, next.job_id);
+  const merged = await call(client, "codex_merge", { job_id: first.job_id, discard });
+  expect(merged).toMatchObject({ status: discard ? "discarded" : "merged", job_id: next.job_id, cleaned_up: true });
+  expect(existsSync(latest.isolation.worktree_path)).toBe(false);
+  expect((await call(client, "codex_result", { job_id: first.job_id })).merge).toBeUndefined();
+  writeFileSync(join(cwd, "later-target.txt"), "later\n");
+  commit(repo);
+  const target = git(repo, "rev-parse", "HEAD");
+  await client.close();
+  client = await connect(state);
+  const dependent = await submit(client, cwd, { goal: "write:beta", depends_on: first.job_id, verify_commands: ["test -f alpha.txt && test -f beta.txt && test -f later-target.txt"] });
+  const status = await done(client, dependent.job_id);
+  if (discard) {
+    expect(status.state).toBe("error");
+    expect(status.error).toContain("discarded");
+    expect(status.error).toContain(latest.isolation.branch);
+    expect(status.turns).toBe(0);
+  } else {
+    expect(status.state).toBe("done");
+    expect(status.evidence.passed).toBe(true);
+    expect(status.isolation.base_commit).toBe(target);
+    expect(status.isolation.target_branch).toBe("main");
+    expect(JSON.parse(readFileSync(join(status.isolation.worktree_path, "sub dir/alpha.txt"), "utf8")).rounds).toBe(2);
+    expect(status.evidence.changes.files.map((f: any) => f.path)).toEqual(["sub dir/beta.txt"]);
+  }
+});
+
+test("sync resolves the target tip at dequeue, after submission", async () => {
+  const { repo, cwd } = repository();
+  const client = await connect(scratch(), 1);
+  const first = await submit(client, cwd);
+  const original = await done(client, first.job_id);
+  const blocker = await submit(client, cwd, { goal: "write:beta", verify_commands: ["sleep 0.5; test -f beta.txt"] });
+  const next = await call(client, "codex_rework", { job_id: first.job_id, sync_target: true,
+    findings: ["write:alpha"], failed_conditions: [], verify_commands: ["test -f alpha.txt && test -f target.txt"] });
+  expect(next.state).toBe("queued");
+  writeFileSync(join(cwd, "target.txt"), "target moved after rework submission\n");
+  commit(repo);
+  const target = git(repo, "rev-parse", "HEAD");
+  const status = await done(client, next.job_id);
+  expect(status.state).toBe("done");
+  expect(status.sync).toMatchObject({ status: "clean", target_commit: target });
+  expect(status.isolation.base_commit).toBe(target);
+  expect(status.evidence.passed).toBe(true);
+  expect(status.evidence.changes.files.map((f: any) => f.path)).toEqual(["sub dir/alpha.txt"]);
+  expect(original.isolation.base_commit).not.toBe(target);
+  await done(client, blocker.job_id);
+});
+
+test("non-conflict sync git failure errors before worker launch and preserves both trees", async () => {
+  const { repo, cwd } = repository();
+  const client = await connect(scratch());
+  const first = await submit(client, cwd);
+  const original = await done(client, first.job_id);
+  writeFileSync(join(cwd, "target.txt"), "target\n");
+  commit(repo);
+  writeFileSync(join(original.isolation.worktree_path, "sub dir/target.txt"), "untracked overlap\n");
+  const source = treeState(repo);
+  const worker = treeState(original.isolation.worktree_path);
+  const next = await call(client, "codex_rework", { job_id: first.job_id, sync_target: true, findings: ["write:alpha"], failed_conditions: [] });
+  const status = await done(client, next.job_id);
+  expect(status.state).toBe("error");
+  expect(status.turns).toBe(0);
+  expect(status.error).toContain("would be overwritten by merge");
+  expect(treeState(repo)).toEqual(source);
+  expect(treeState(original.isolation.worktree_path)).toEqual(worker);
+});
+
+test("pending markers survive ordinary rework and restart until a later rework resolves them", async () => {
+  const { repo, cwd, client, first, state, target } = await conflictFixture();
+  const initial = await call(client, "codex_rework", { job_id: first.job_id, sync_target: true,
+    findings: ["write:alpha leave:conflict"], failed_conditions: [], verify_commands: ["test -f alpha.txt"] });
+  const initialStatus = await done(client, initial.job_id);
+  expect(initialStatus.evidence.passed).toBe(false);
+  expect(initialStatus.sync.unresolved).toEqual(["sub dir/alpha.txt"]);
+  await client.close();
+  const restarted = await connect(state);
+  const source = treeState(repo);
+  const ordinary = await call(restarted, "codex_rework", { job_id: first.job_id,
+    findings: ["write:alpha leave:conflict observe:sync"], failed_conditions: [] });
+  const status = await done(restarted, ordinary.job_id);
+  expect(status.state).toBe("done");
+  expect(status.sync).toEqual(initialStatus.sync);
+  expect(status.isolation.base_commit).toBe(target);
+  expect(status.evidence.commands[0].exit_code).toBe(0);
+  expect(status.evidence.passed).toBe(false);
+  expect(status.evidence.error).toContain("sub dir/alpha.txt");
+  expect(outcomes(state).find((o) => o.job_id === ordinary.job_id)).toMatchObject({ sync: status.sync,
+    caught_by: expect.arrayContaining(["conflict_unresolved"]) });
+  const observation = JSON.parse(readFileSync(join(status.isolation.worktree_path, "sub dir/ignored.txt"), "utf8"));
+  expect(observation.prompt).toContain('Merged target "main"');
+  expect(observation.prompt).toContain('"sub dir/alpha.txt"');
+  expect(observation.unmerged).toBe("");
+  const refused = await raw(restarted, "codex_merge", { job_id: first.job_id });
+  expect(refused.isError).toBe(true);
+  expect(refused.data.status).toBe("refused");
+  expect(treeState(repo)).toEqual(source);
+  const resolved = await call(restarted, "codex_rework", { job_id: ordinary.job_id,
+    findings: ["write:alpha resolve:pending observe:sync"], failed_conditions: [],
+    verify_commands: ["grep -q '\"resolved\":true' alpha.txt && test -f target.txt && test -f target.check"] });
+  const resolution = await done(restarted, resolved.job_id);
+  expect(resolution.state).toBe("done");
+  expect(resolution.sync).toMatchObject({ status: "conflict", target_commit: target, files: ["sub dir/alpha.txt"], unresolved: [] });
+  expect(resolution.evidence.passed).toBe(true);
+  expect(resolution.evidence.base_commit).toBe(target);
+  expect(resolution.evidence.changes.files).toEqual([{ path: "sub dir/alpha.txt", status: "modified", class: "production" }]);
+  expect(outcomes(state).find((o) => o.job_id === resolved.job_id).caught_by).not.toContain("conflict_unresolved");
+  expect(treeState(repo)).toEqual(source);
+  expect((await call(restarted, "codex_merge", { job_id: first.job_id })).status).toBe("merged");
+  expect(JSON.parse(readFileSync(join(cwd, "alpha.txt"), "utf8")).resolved).toBe(true);
+  expect(readFileSync(join(cwd, "target.txt"), "utf8")).toBe("target production\n");
+});
+
+for (const failure of ["die", "stall"]) for (const syncTarget of [false, true]) {
+  test(`${failure} during conflict recovers with ${syncTarget ? "sync_target" : "ordinary"} rework without replacing the pending merge`, async () => {
+    const { repo, cwd, client, first, state, target, original } = await conflictFixture(
+      failure === "stall" ? { C2C_IDLE_TIMEOUT_MS: "700" } : {});
+    const broken = await call(client, "codex_rework", { job_id: first.job_id, sync_target: true,
+      findings: [`write:alpha ${failure}:conflict observe:sync`], failed_conditions: [] });
+    const failed = await done(client, broken.job_id);
+    expect(failed.state).toBe(failure === "die" ? "error" : "timeout");
+    expect(failed.turns).toBe(1);
+    expect(failed.sync).toMatchObject({ status: "conflict", target_commit: target, files: ["sub dir/alpha.txt"], unresolved: [] });
+    expect(failed.isolation.base_commit).toBe(target);
+    const tree = failed.isolation.worktree_path;
+    const oldTip = git(tree, "rev-parse", "HEAD");
+    expect(git(tree, "rev-parse", "MERGE_HEAD")).toBe(target);
+    expect(git(tree, "diff", "--name-only", "--diff-filter=U")).toBe("sub dir/alpha.txt");
+    // A second sync must continue MERGE_HEAD, even though the target now has a newer tip.
+    writeFileSync(join(cwd, "later-target.txt"), "newer target\n");
+    commit(repo);
+    expect(git(repo, "rev-parse", "HEAD")).not.toBe(target);
+    const source = treeState(repo);
+    await client.close();
+    const restarted = await connect(state);
+    const recovery = await call(restarted, "codex_rework", { job_id: first.job_id,
+      ...(syncTarget ? { sync_target: true } : {}), findings: ["write:alpha resolve:conflict observe:sync"], failed_conditions: [],
+      verify_commands: ["grep -q '\"resolved\":true' alpha.txt && test -f target.txt && test -f target.check"] });
+    const recovered = await done(restarted, recovery.job_id);
+    expect(recovered.state).toBe("done");
+    expect(recovered.sync).toEqual({ target_branch: "main", target_commit: target, status: "conflict", files: ["sub dir/alpha.txt"], unresolved: [] });
+    expect(recovered.evidence.passed).toBe(true);
+    expect(recovered.isolation.base_commit).toBe(target);
+    expect(recovered.evidence.base_commit).toBe(target);
+    expect(recovered.evidence.changes.files).toEqual([{ path: "sub dir/alpha.txt", status: "modified", class: "production" }]);
+    expect(git(tree, "rev-parse", "HEAD^1")).toBe(oldTip);
+    expect(git(tree, "rev-parse", "HEAD^2")).toBe(target);
+    expect(git(tree, "status", "--porcelain")).toBe("");
+    expect(existsSync(join(git(tree, "rev-parse", "--absolute-git-dir"), "MERGE_HEAD"))).toBe(false);
+    const observation = JSON.parse(readFileSync(join(tree, "sub dir/ignored.txt"), "utf8"));
+    expect(observation.unmerged).toBe("sub dir/alpha.txt");
+    expect(observation.head).toBe(oldTip);
+    expect(observation.prompt).toContain('"sub dir/alpha.txt"');
+    expect(outcomes(state).find((o) => o.job_id === recovery.job_id).sync).toEqual(recovered.sync);
+    expect(treeState(repo)).toEqual(source);
+    expect((await call(restarted, "codex_merge", { job_id: first.job_id })).status).toBe("merged");
+    expect(JSON.parse(readFileSync(join(cwd, "alpha.txt"), "utf8"))).toMatchObject({ target: true, resolved: true, threadId: original.thread_id });
+    expect(readFileSync(join(cwd, "target.txt"), "utf8")).toBe("target production\n");
+    expect(readFileSync(join(cwd, "later-target.txt"), "utf8")).toBe("newer target\n");
+  });
+}
+
+for (const resolution of ["setext", "marker"]) test(`conflict resolution with ${resolution} uses only exact opening and closing markers`, async () => {
+  const { repo, cwd, client, first, state, target } = await conflictFixture();
+  const rework = await call(client, "codex_rework", { job_id: first.job_id, sync_target: true,
+    findings: [`write:alpha resolution:${resolution}`], failed_conditions: [], verify_commands: ["test -f alpha.txt && test -f target.txt"] });
+  const status = await done(client, rework.job_id);
+  expect(status.state).toBe("done");
+  expect(status.evidence.commands[0].exit_code).toBe(0);
+  expect(status.evidence.base_commit).toBe(target);
+  expect(status.sync.unresolved).toEqual(resolution === "marker" ? ["sub dir/alpha.txt"] : []);
+  expect(status.evidence.passed).toBe(resolution === "setext");
+  expect(status.evidence.changes.files.map((f: any) => f.path)).toEqual(["sub dir/alpha.txt"]);
+  const merge = await raw(client, "codex_merge", { job_id: first.job_id });
+  expect(merge.data.status).toBe(resolution === "setext" ? "merged" : "refused");
+  expect(outcomes(state).find((o) => o.job_id === rework.job_id).caught_by.includes("conflict_unresolved")).toBe(resolution === "marker");
+  if (resolution === "setext") {
+    expect(readFileSync(join(cwd, "alpha.txt"), "utf8")).toContain("Title\n=======\n|||||||\n");
+    expect(git(repo, "merge-base", "--is-ancestor", target, "HEAD")).toBe("");
+  }
+});
+
+test("sync_target combines inherited pending files with newly conflicted files", async () => {
+  const { repo, cwd, client, first, target } = await conflictFixture();
+  const initial = await call(client, "codex_rework", { job_id: first.job_id, sync_target: true,
+    findings: ["write:alpha leave:conflict"], failed_conditions: [] });
+  const pending = await done(client, initial.job_id);
+  expect(pending.sync.unresolved).toEqual(["sub dir/alpha.txt"]);
+  writeFileSync(join(pending.isolation.worktree_path, "sub dir/production.txt"), "job version\n");
+  commit(pending.isolation.worktree_path);
+  writeFileSync(join(cwd, "production.txt"), "target version\n");
+  commit(repo);
+  const newTarget = git(repo, "rev-parse", "HEAD");
+  expect(newTarget).not.toBe(target);
+  const next = await call(client, "codex_rework", { job_id: initial.job_id, sync_target: true,
+    findings: ["write:alpha leave:conflict observe:sync"], failed_conditions: [] });
+  const status = await done(client, next.job_id);
+  expect(status.state).toBe("done");
+  expect(status.sync).toEqual({ status: "conflict", target_branch: "main", target_commit: newTarget,
+    files: ["sub dir/alpha.txt", "sub dir/production.txt"], unresolved: ["sub dir/alpha.txt", "sub dir/production.txt"] });
+  expect(status.evidence.passed).toBe(false);
+  expect(status.isolation.base_commit).toBe(newTarget);
+  const observation = JSON.parse(readFileSync(join(status.isolation.worktree_path, "sub dir/ignored.txt"), "utf8"));
+  expect(observation.unmerged).toBe("sub dir/production.txt");
+  expect(observation.prompt).toContain('"sub dir/alpha.txt"');
+  expect(observation.prompt).toContain('"sub dir/production.txt"');
+  expect((await raw(client, "codex_merge", { job_id: first.job_id })).data.status).toBe("refused");
+});
+
+test("ordinary rework concludes a merge started outside sync before taking evidence", async () => {
+  const { repo, cwd } = repository();
+  const client = await connect(scratch());
+  const first = await submit(client, cwd);
+  const original = await done(client, first.job_id);
+  writeFileSync(join(cwd, "alpha.txt"), JSON.stringify({ target: true, rounds: 0 }));
+  commit(repo);
+  const target = git(repo, "rev-parse", "HEAD");
+  const tree = original.isolation.worktree_path;
+  expect(() => git(tree, "-c", "user.name=Test", "-c", "user.email=test@example.com", "merge", "--no-ff", "--no-commit", target)).toThrow();
+  expect(git(tree, "rev-parse", "MERGE_HEAD")).toBe(target);
+  const mergeHead = join(git(tree, "rev-parse", "--absolute-git-dir"), "MERGE_HEAD");
+  const next = await call(client, "codex_rework", { job_id: first.job_id, findings: ["write:alpha resolve:conflict"], failed_conditions: [],
+    verify_commands: [`test ! -f '${mergeHead}' && grep -q '\"resolved\":true' alpha.txt`] });
+  const status = await done(client, next.job_id);
+  expect(status.state).toBe("done");
+  expect(status.sync).toBeUndefined();
+  expect(status.evidence.passed).toBe(true);
+  expect(git(tree, "rev-parse", "HEAD^2")).toBe(target);
+  expect(git(tree, "status", "--porcelain")).toBe("");
+  expect(existsSync(join(git(tree, "rev-parse", "--absolute-git-dir"), "MERGE_HEAD"))).toBe(false);
+  expect((await call(client, "codex_merge", { job_id: first.job_id })).status).toBe("merged");
 });
