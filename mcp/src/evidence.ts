@@ -113,13 +113,22 @@ const pathspecs = (paths: string[]) => paths.map((path) => `:(glob)${path}`);
 
 // Ask git from the job cwd so globs are cwd-relative. --full-name keeps all
 // reported paths repo-root relative, including deleted and untracked files.
-async function matchingFiles(cwd: string, base: string, paths?: string[]): Promise<Set<string>> {
+export async function matchingFiles(cwd: string, base: string, paths?: string[]): Promise<Set<string>> {
   if (!paths?.length) return new Set();
   const specs = pathspecs(paths);
   return new Set([
     ...names(await git(cwd, ["ls-files", "--full-name", "--cached", "--others", "--exclude-standard", "-z", "--", ...specs])),
     ...names(await git(cwd, ["diff", "--no-relative", "--name-only", "--no-renames", "-z", base, "--", ...specs])),
   ]);
+}
+
+/** All branch/worktree changes, including deletions and non-ignored untracked files. */
+export async function changedFiles(repo: string, base: string): Promise<Set<string>> {
+  const outputs = await Promise.all([
+    git(repo, ["diff", "--no-relative", "--name-only", "--no-renames", "-z", base, "--"]),
+    git(repo, ["ls-files", "--full-name", "--others", "--exclude-standard", "-z"]),
+  ]);
+  return new Set(outputs.flatMap(names));
 }
 
 async function collectChanges(repo: string, cwd: string, base: string, opts: EvidenceOptions): Promise<ChangeEvidence> {

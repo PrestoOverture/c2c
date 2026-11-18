@@ -209,6 +209,8 @@ Python 3.12，Poetry。从项目根目录运行。
 | `codex_estimate`  | 只读的任务前成本预估：渲染后的 prompt 规模（包含 `verify_commands`、`setup_commands`、`test_paths` 和 `scope`）、thread-goal objective 相对 `GOAL_OBJECTIVE_MAX` 的规模，以及本机已完成任务的 token 统计。 |
 | `codex_config`    | 只读查看 Codex 当前模型、版本和配置。                                                                                |
 
+`codex_status` 和 `codex_result` 通过建议字段 `scope_overlap: [{ job_id, files }]` 提示同仓库其他未合并隔离任务与本任务计划或改动文件的交集（无交集为 `[]`，原地任务省略），计算失败时附带 `scope_overlap_error`。
+
 
 任务会持久化（`C2C_STATE_DIR`），因此状态查询、结果获取和返工在 server 重启后依然可用。超出并发上限的任务按 FIFO 排队；停滞看门狗会在运行中的任务失去进展时主动上报。关于如何写出"一次过审"的合同，参见实战指南 [PATTERNS.zh-CN.md](./PATTERNS.zh-CN.md)。
 

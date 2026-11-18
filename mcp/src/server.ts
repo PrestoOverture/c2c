@@ -14,6 +14,7 @@ import {
 } from "./contracts.ts";
 import { startJob, getJob, listJobs, getQueuePosition, mergeJob, type Job, type JobConfig } from "./jobs.ts";
 import { readCodexConfig } from "./config.ts";
+import { scopeOverlap } from "./scope-overlap.ts";
 
 /**
  * Reads an integer configuration value from environment variables, falling back to a default value if missing or invalid.
@@ -64,7 +65,7 @@ const objectiveBudgetDescription =
  * @param transcriptTail - Number of recent transcript log entries to include, defaulting to 15
  * @returns Formatted job status summary object suitable for client consumption
  */
-function jobSummary(job: Job, transcriptTail = 15) {
+async function jobSummary(job: Job, transcriptTail = 15) {
   return {
     job_id: job.id,
     kind: job.kind,
@@ -84,6 +85,7 @@ function jobSummary(job: Job, transcriptTail = 15) {
     ...(job.isolation ? { isolation: job.isolation } : {}),
     ...(job.merge ? { merge: job.merge } : {}),
     ...(job.sync ? { sync: job.sync } : {}),
+    ...await scopeOverlap(job, listJobs()),
     ...(!["done", "error", "timeout"].includes(job.state)
       ? { last_activity_at: job.lastActivityAt ?? null }
       : {}),
@@ -503,7 +505,7 @@ server.registerTool(
     description:
       "Status of a blocked, queued, running, or finished Codex job: dependency, state, queue position, thread id, " +
       "parent_job_id, root_job_id, rework_round, goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript. " +
-      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; absent for default jobs. Includes the latest merge attempt and sync (target_branch, target_commit, status, files, unresolved) when present.",
+      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; absent for default jobs. Includes the latest merge attempt and sync (target_branch, target_commit, status, files, unresolved) when present. Worktree jobs include advisory scope_overlap for planned/changed files shared with unmerged jobs in the same repository, with scope_overlap_error on failure.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
     },
@@ -511,7 +513,7 @@ server.registerTool(
   async (input) => {
     const job = getJob(input.job_id);
     if (!job) return textResult({ error: `unknown job_id ${input.job_id}` }, true);
-    return textResult(jobSummary(job));
+    return textResult(await jobSummary(job));
   },
 );
 
@@ -524,7 +526,7 @@ server.registerTool(
       "(Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is " +
       "itself a review failure), server verification evidence (including falsification.unfalsified and changes.tests_modified / out_of_scope / new_unclassified), and final goal state. Read evidence first for " +
       "mechanical pass/fail; review judges intent and constraints. Includes parent_job_id, root_job_id and rework_round. " +
-      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; evidence includes committed branch changes against that base. Includes the latest merge attempt and sync (target_branch, target_commit, status, files, unresolved) when present. Errors if the job is not finished.",
+      "Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; evidence includes committed branch changes against that base. Includes the latest merge attempt and sync (target_branch, target_commit, status, files, unresolved) when present. Worktree jobs include advisory scope_overlap for planned/changed files shared with unmerged jobs in the same repository, with scope_overlap_error on failure. Errors if the job is not finished.",
     inputSchema: {
       job_id: z.string().describe("Job id returned by codex_implement or codex_rework."),
     },
@@ -536,7 +538,7 @@ server.registerTool(
       return textResult({ error: `job ${job.id} is still ${job.state}; poll codex_status` }, true);
     }
     return textResult({
-      ...jobSummary(job, 5),
+      ...await jobSummary(job, 5),
       final_message: job.finalMessage ?? null,
       handoff: job.handoff ?? null,
     });
@@ -557,7 +559,7 @@ You are the **architect and reviewer**. Codex is the **implementer**. You draft 
 2. **You draft a Goal Contract** (format below), declaring test_paths for tests (including new tests) and scope for allowed production changes as git glob pathspecs relative to the job cwd. Show it to the user for approval.
 3. **You send it** — \`codex_estimate\` to check budget, then \`codex_implement\`. Pass verification commands as \`verify_commands\`, dependency setup as \`setup_commands\`, and the declared \`test_paths\` and \`scope\`.
 4. **You poll** — \`codex_status\` until terminal. Report progress to the user.
-5. **You review** — \`codex_result\`: read evidence first, then the handoff. Review judges intent (see Review below).
+5. **You review** — \`codex_result\`: read evidence first, then the handoff. Check advisory \`scope_overlap\` for planned/changed files shared with other unmerged isolated jobs. Review judges intent (see Review below).
 6. **User approves** your findings.
 
 If review fails → draft a **Delta Contract** → \`codex_rework\` (same \`job_id\`, thread resumes) → re-enter at step 4.

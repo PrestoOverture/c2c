@@ -7,7 +7,7 @@ Everything the c2c MCP server puts in front of Claude Code, verbatim. Read this 
 | Layer | When Claude sees it | Size |
 |---|---|---|
 | [Server instructions](#1-server-instructions) | Automatically, injected into the system prompt on connect | 926 chars |
-| [`c2c-workflow` Prompt](#2-the-c2c-workflow-prompt) | Only when the user runs `/mcp__<server>__c2c-workflow` | 3804 chars |
+| [`c2c-workflow` Prompt](#2-the-c2c-workflow-prompt) | Only when the user runs `/mcp__<server>__c2c-workflow` | 3903 chars |
 | [Tool descriptions](#3-tool-descriptions) | Automatically, as tool definitions | 7 tools |
 
 ## 1. Server instructions
@@ -37,7 +37,7 @@ You are the **architect and reviewer**. Codex is the **implementer**. You draft 
 2. **You draft a Goal Contract** (format below), declaring test_paths for tests (including new tests) and scope for allowed production changes as git glob pathspecs relative to the job cwd. Show it to the user for approval.
 3. **You send it** — `codex_estimate` to check budget, then `codex_implement`. Pass verification commands as `verify_commands`, dependency setup as `setup_commands`, and the declared `test_paths` and `scope`.
 4. **You poll** — `codex_status` until terminal. Report progress to the user.
-5. **You review** — `codex_result`: read evidence first, then the handoff. Review judges intent (see Review below).
+5. **You review** — `codex_result`: read evidence first, then the handoff. Check advisory `scope_overlap` for planned/changed files shared with other unmerged isolated jobs. Review judges intent (see Review below).
 6. **User approves** your findings.
 
 If review fails → draft a **Delta Contract** → `codex_rework` (same `job_id`, thread resumes) → re-enter at step 4.
@@ -154,12 +154,12 @@ Read-only view of the Codex CLI model, default reasoning effort, version, and cu
 
 ### `codex_status`
 
-Status of a blocked, queued, running, or finished Codex job: dependency, state, queue position, thread id, parent_job_id, root_job_id, rework_round, goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript. Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; absent for default jobs. Includes the latest merge attempt and sync (target_branch, target_commit, status, files, unresolved) when present.
+Status of a blocked, queued, running, or finished Codex job: dependency, state, queue position, thread id, parent_job_id, root_job_id, rework_round, goal state (status/tokens), turn count, server verification evidence, and a tail of the activity transcript. Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; absent for default jobs. Includes the latest merge attempt and sync (target_branch, target_commit, status, files, unresolved) when present. Worktree jobs include advisory scope_overlap for planned/changed files shared with unmerged jobs in the same repository, with scope_overlap_error on failure.
 
 - `job_id` — Job id returned by codex_implement or codex_rework.
 
 ### `codex_result`
 
-Final result of a finished job: Codex's final message, the parsed structured handoff (Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is itself a review failure), server verification evidence (including falsification.unfalsified and changes.tests_modified / out_of_scope / new_unclassified), and final goal state. Read evidence first for mechanical pass/fail; review judges intent and constraints. Includes parent_job_id, root_job_id and rework_round. Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; evidence includes committed branch changes against that base. Includes the latest merge attempt and sync (target_branch, target_commit, status, files, unresolved) when present. Errors if the job is not finished.
+Final result of a finished job: Codex's final message, the parsed structured handoff (Changed Files / Validation / Success Conditions / Risks & Deviations — a missing section is itself a review failure), server verification evidence (including falsification.unfalsified and changes.tests_modified / out_of_scope / new_unclassified), and final goal state. Read evidence first for mechanical pass/fail; review judges intent and constraints. Includes parent_job_id, root_job_id and rework_round. Opt-in isolation metadata includes mode, worktree_path, branch, base_commit, target_branch, source_dirty and note; evidence includes committed branch changes against that base. Includes the latest merge attempt and sync (target_branch, target_commit, status, files, unresolved) when present. Worktree jobs include advisory scope_overlap for planned/changed files shared with unmerged jobs in the same repository, with scope_overlap_error on failure. Errors if the job is not finished.
 
 - `job_id` — Job id returned by codex_implement or codex_rework.
