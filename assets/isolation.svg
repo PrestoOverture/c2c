@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1060 240" width="1060" height="240" role="img" aria-label="Isolation and merge"><title>Isolation and merge</title>
+<style>
+  text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; }
+  .card { fill: #ffffff; stroke: #d0d7de; stroke-width: 1; }
+  .t { fill: #1f2328; font-weight: 600; }
+  .m { fill: #59636e; }
+  .ln { stroke: #8c959f; stroke-width: 1.5; fill: none; }
+  .ah { fill: #8c959f; }
+  .cl { fill: #c15f3c; } .cx { fill: #0969da; } .sv { fill: #1a7f37; }
+  .lnc { stroke: #c15f3c; stroke-width: 1.5; fill: none; stroke-dasharray: 5 4; }
+  .ahc { fill: #c15f3c; }
+  .lbl { fill: #59636e; font-size: 12.5px; }
+  .lblc { fill: #c15f3c; font-size: 12.5px; }
+  @media (prefers-color-scheme: dark) {
+    .card { fill: #161b22; stroke: #3d444d; }
+    .t { fill: #e6edf3; } .m, .lbl { fill: #9198a1; }
+    .ln { stroke: #6e7681; } .ah { fill: #6e7681; }
+    .cl, .ahc, .lblc { fill: #e08a68; } .lnc { stroke: #e08a68; }
+    .cx { fill: #4493f8; } .sv { fill: #3fb950; }
+  }
+</style>
+<defs>
+  <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ah"/></marker>
+  <marker id="ac" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="ahc"/></marker>
+</defs>
+<text x="15" y="30" class="lbl">Parallel jobs cannot interfere; only evidenced work is merged</text>
+<rect x="15" y="60" width="190" height="84" rx="10" class="card"/>
+<circle cx="29" cy="76" r="3.5" class="cx"/>
+<text x="38" y="80" class="cx" font-size="10.5" letter-spacing="0.6">CODEX × N</text>
+<text x="110.0" y="108" class="t" text-anchor="middle" font-size="13.5">One worktree each</text>
+<text x="110.0" y="128" class="m" text-anchor="middle" font-size="12">a branch per job</text>
+<line x1="208" y1="102.0" x2="222" y2="102.0" class="ln" marker-end="url(#a)"/>
+<rect x="225" y="60" width="190" height="84" rx="10" class="card"/>
+<circle cx="239" cy="76" r="3.5" class="sv"/>
+<text x="248" y="80" class="sv" font-size="10.5" letter-spacing="0.6">SERVER</text>
+<text x="320.0" y="108" class="t" text-anchor="middle" font-size="13.5">Overlap warning</text>
+<text x="320.0" y="128" class="m" text-anchor="middle" font-size="12">scope_overlap: same files</text>
+<line x1="418" y1="102.0" x2="432" y2="102.0" class="ln" marker-end="url(#a)"/>
+<rect x="435" y="60" width="190" height="84" rx="10" class="card"/>
+<circle cx="449" cy="76" r="3.5" class="sv"/>
+<text x="458" y="80" class="sv" font-size="10.5" letter-spacing="0.6">SERVER</text>
+<text x="530.0" y="108" class="t" text-anchor="middle" font-size="13.5">Serial merge</text>
+<text x="530.0" y="128" class="m" text-anchor="middle" font-size="12">codex_merge, evidence only</text>
+<line x1="628" y1="102.0" x2="642" y2="102.0" class="ln" marker-end="url(#a)"/>
+<rect x="645" y="60" width="190" height="84" rx="10" class="card"/>
+<circle cx="659" cy="76" r="3.5" class="sv"/>
+<text x="668" y="80" class="sv" font-size="10.5" letter-spacing="0.6">SERVER</text>
+<text x="740.0" y="108" class="t" text-anchor="middle" font-size="13.5">Verify merged tree</text>
+<text x="740.0" y="128" class="m" text-anchor="middle" font-size="12">then move target branch</text>
+<line x1="838" y1="102.0" x2="852" y2="102.0" class="ln" marker-end="url(#a)"/>
+<rect x="855" y="60" width="190" height="84" rx="10" class="card"/>
+<circle cx="869" cy="76" r="3.5" class="cl"/>
+<text x="878" y="80" class="cl" font-size="10.5" letter-spacing="0.6">RESULT</text>
+<text x="950.0" y="108" class="t" text-anchor="middle" font-size="13.5">Merged</text>
+<text x="950.0" y="128" class="m" text-anchor="middle" font-size="12">worktree + branch cleaned</text>
+<path d="M530.0,148 C530.0,208 110.0,208 110.0,150" class="lnc" marker-end="url(#ac)"/>
+<text x="320.0" y="226" class="lblc" text-anchor="middle">conflict / post-merge failure → rework on the target (sync_target)</text>
+</svg>
