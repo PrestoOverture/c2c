@@ -130,7 +130,7 @@ Resume the Codex thread from a previous implement job and hand it a Delta Contra
 - `findings` — What is wrong, with file/line references.
 - `failed_conditions` — The specific Success Conditions from the original contract that did not pass.
 - `constraints` (optional) — Additional constraints beyond the originals.
-- `cwd` (optional) — Working directory for Codex. Defaults to the project directory.
+- `cwd` (optional) — Working directory for Codex. In-place rework inherits the latest job's cwd on the thread when omitted, falling back to the project directory if no cwd was recorded. Isolated rework always reuses its isolation cwd.
 - `context_files` (optional) — Files or directories Codex should read before implementing.
 - `verify_commands` (optional) — Shell commands the server re-runs after Codex exits in a clean working-tree snapshot; each must exit 0. Read evidence first; review judges intent.
 - `setup_commands` (optional) — Shell commands run before verification and falsification in each snapshot, and before merged-tree verification (e.g. install dependencies); stop on first failure. With no verify_commands, nothing runs.

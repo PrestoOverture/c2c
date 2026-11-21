@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from "bun:test";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -92,6 +92,73 @@ async function until<T>(read: () => Promise<T>, ready: (value: T) => boolean): P
 const status = (client: Client, id: string) => call(client, "codex_status", { job_id: id });
 const done = (client: Client, id: string) => until(() => status(client, id), (s) => ["done", "error", "timeout"].includes(s.state));
 const contract = { goal: "Implement the fixture", constraints: [], success_conditions: ["All conditions pass"] };
+
+test("in-place rework by job ID inherits the cwd for context, worker, and evidence", async () => {
+  const { dir, repo, cwd: sourceCwd } = repository();
+  const { repo: defaultRepo, cwd: defaultCwd } = repository();
+  const cwd = realpathSync(sourceCwd);
+  git(defaultRepo, "commit", "--allow-empty", "-qm", "server default");
+  const base = git(repo, "rev-parse", "HEAD").trim();
+  expect(git(defaultRepo, "rev-parse", "HEAD").trim()).not.toBe(base);
+  writeFileSync(join(cwd, "reference.md"), "parent context");
+  writeFileSync(join(defaultCwd, "reference.md"), "server default context");
+  const client = await connect(dir, { CODEX_CWD: defaultCwd, CODEX_ARGS: join(mcpDir, "test/isolation-worker.ts") });
+  const first = await call(client, "codex_implement", {
+    ...contract, goal: "write:implemented", cwd, verify_commands: ["test -f implemented.txt"],
+  });
+  expect(await done(client, first.job_id)).toMatchObject({ state: "done", evidence: { passed: true, base_commit: base } });
+
+  const rework = await call(client, "codex_rework", {
+    job_id: first.job_id, findings: ["write:reworked"], failed_conditions: [], context_files: [{ path: "reference.md" }],
+    verify_commands: ["test -f implemented.txt && test -f reworked.txt"],
+  });
+  expect(await done(client, rework.job_id)).toMatchObject({
+    state: "done", parent_job_id: first.job_id, evidence: { passed: true, base_commit: base },
+    context_files: [join(cwd, "reference.md")],
+  });
+  expect(JSON.parse(readFileSync(join(cwd, "reworked.txt"), "utf8"))).toMatchObject({ cwd, threadCwd: cwd });
+  expect(existsSync(join(defaultCwd, "reworked.txt"))).toBe(false);
+});
+
+test("in-place rework restores its cwd after restart and persists an explicit override in the lineage", async () => {
+  const { dir, cwd: sourceCwd } = repository();
+  const { cwd: overrideCwd } = repository();
+  const cwd = realpathSync(sourceCwd);
+  const overriddenCwd = realpathSync(overrideCwd);
+  const env = { CODEX_CWD: scratch(), CODEX_ARGS: join(mcpDir, "test/isolation-worker.ts") };
+  const firstClient = await connect(dir, env);
+  const first = await call(firstClient, "codex_implement", { ...contract, goal: "write:implemented", cwd });
+  const implemented = await done(firstClient, first.job_id);
+  expect(implemented.state).toBe("done");
+  await firstClient.close();
+  clients.splice(clients.indexOf(firstClient), 1);
+
+  const client = await connect(dir, env);
+  const thread = { thread_id: implemented.thread_id, failed_conditions: [] };
+  const restored = await call(client, "codex_rework", { ...thread, findings: ["write:restored"],
+    verify_commands: ["test -f implemented.txt && test -f restored.txt"],
+  });
+  expect(await done(client, restored.job_id)).toMatchObject({ state: "done", evidence: { passed: true } });
+  expect(JSON.parse(readFileSync(join(cwd, "restored.txt"), "utf8"))).toMatchObject({ cwd, threadCwd: cwd });
+
+  const override = await call(client, "codex_rework", { ...thread, findings: ["write:overridden"], cwd: overriddenCwd,
+    verify_commands: ["test -f overridden.txt"],
+  });
+  expect(await done(client, override.job_id)).toMatchObject({ state: "done", evidence: { passed: true } });
+  expect(JSON.parse(readFileSync(join(overriddenCwd, "overridden.txt"), "utf8")))
+    .toMatchObject({ cwd: overriddenCwd, threadCwd: overriddenCwd });
+  await client.close();
+  clients.splice(clients.indexOf(client), 1);
+
+  const restarted = await connect(dir, env);
+  const next = await call(restarted, "codex_rework", {
+    job_id: first.job_id, findings: ["write:followup"], failed_conditions: [],
+    verify_commands: ["test -f overridden.txt && test -f followup.txt"],
+  });
+  expect(await done(restarted, next.job_id)).toMatchObject({ state: "done", parent_job_id: override.job_id, evidence: { passed: true } });
+  expect(JSON.parse(readFileSync(join(overriddenCwd, "followup.txt"), "utf8")))
+    .toMatchObject({ cwd: overriddenCwd, threadCwd: overriddenCwd });
+});
 
 test("snapshot preserves staged/unstaged tracked edits, binary changes, deletion, untracked names and symlinks, and subdirectory cwd", async () => {
   const { repo, cwd } = repository();

@@ -39,7 +39,7 @@ function config(cwd?: string): JobConfig {
   return {
     bin: process.env.CODEX_BIN ?? "codex",
     args: (process.env.CODEX_ARGS ?? "app-server").split(" ").filter(Boolean),
-    cwd: cwd ?? process.env.CODEX_CWD ?? process.cwd(),
+    cwd: resolve(cwd ?? process.env.CODEX_CWD ?? process.cwd()),
     model: process.env.CODEX_MODEL || undefined,
     approvalPolicy: process.env.CODEX_APPROVAL_POLICY ?? "never",
     permissions: process.env.CODEX_PERMISSIONS || undefined,
@@ -403,7 +403,7 @@ server.registerTool(
         .array(z.string())
         .describe("The specific Success Conditions from the original contract that did not pass."),
       constraints: z.array(z.string()).optional().describe("Additional constraints beyond the originals."),
-      cwd: z.string().optional().describe("Working directory for Codex. Defaults to the project directory."),
+      cwd: z.string().optional().describe("Working directory for Codex. In-place rework inherits the latest job's cwd on the thread when omitted, falling back to the project directory if no cwd was recorded. Isolated rework always reuses its isolation cwd."),
       context_files: contextFiles.optional().describe("Files or directories Codex should read before implementing."),
       ...verificationInputs,
       reasoning_effort: reasoningEffort.optional().describe("Optional Codex reasoning effort; omitted uses the Codex default."),
@@ -411,20 +411,23 @@ server.registerTool(
   },
   async (input) => {
     let threadId = input.thread_id;
-    const prev = input.job_id ? getJob(input.job_id) : threadId
-      ? listJobs().filter((job) => job.threadId === threadId)
-        .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt))[0]
-      : undefined;
-    const jobConfig = config(prev?.isolation ? prev.isolationCwd : input.cwd);
+    const requested = input.job_id ? getJob(input.job_id) : undefined;
+    const parentThreadId = input.job_id ? requested?.threadId : threadId;
+    const parent = parentThreadId && !requested?.isolation
+      ? listJobs().filter((job) => job.threadId === parentThreadId)
+        .sort((a, b) => Date.parse(b.startedAt) - Date.parse(a.startedAt) || (b.reworkRound ?? 0) - (a.reworkRound ?? 0))[0] ?? requested
+      : requested;
+    const jobConfig = config(parent?.isolation ? parent.isolationCwd : input.cwd ?? parent?.cwd);
     const resolvedContext = await resolveContextFiles(input.context_files, jobConfig.cwd);
     if (resolvedContext.missing.length) return missingContextFiles(resolvedContext.missing);
-    if (!threadId && input.job_id && !prev) return textResult({ error: `unknown job_id ${input.job_id}` }, true);
-    const verifyCommands = input.verify_commands ?? prev?.verify_commands;
-    const setupCommands = input.setup_commands ?? prev?.setup_commands;
-    const testPaths = input.test_paths ?? prev?.test_paths;
-    const scope = input.scope ?? prev?.scope;
+    if (!threadId && input.job_id && !requested) return textResult({ error: `unknown job_id ${input.job_id}` }, true);
+    const contractJob = requested ?? parent;
+    const verifyCommands = input.verify_commands ?? contractJob?.verify_commands;
+    const setupCommands = input.setup_commands ?? contractJob?.setup_commands;
+    const testPaths = input.test_paths ?? contractJob?.test_paths;
+    const scope = input.scope ?? contractJob?.scope;
     if (!threadId && input.job_id) {
-      threadId = prev?.threadId;
+      threadId = requested?.threadId;
     }
     if (!threadId) {
       return textResult({ error: "provide job_id (of the implement job) or thread_id" }, true);
@@ -443,7 +446,7 @@ server.registerTool(
         scope,
       }),
       resumeThreadId: threadId,
-      parentJobId: input.job_id ?? prev?.id,
+      parentJobId: parent?.id ?? input.job_id,
       contextFiles: resolvedContext.files?.map((file) => file.path),
       verify_commands: verifyCommands,
       setup_commands: setupCommands,

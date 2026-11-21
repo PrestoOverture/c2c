@@ -113,6 +113,8 @@ export interface Job {
   test_paths?: string[];
   scope?: string[];
   evidence?: Evidence | null;
+  /** Resolved execution directory, absent from records saved by older servers. */
+  cwd?: string;
   isolation?: Isolation;
   merge?: MergeResult;
   sync?: TargetSync;
@@ -317,6 +319,7 @@ export function startJob(opts: StartJobOptions): Job {
     test_paths: opts.test_paths,
     scope: opts.scope,
     evidence: null,
+    cwd: opts.config.cwd,
     ...(opts.kind === "rework" && parent?.isolation
       ? { isolation: { ...parent.isolation }, isolationCwd: parent.isolationCwd }
       : {}),
@@ -616,6 +619,7 @@ async function runJob(job: Job, opts: StartJobOptions) {
     const prepared = await prepareIsolation(opts.config.cwd, job.id, defaultStateDir(), dependency?.isolation, latestDependency?.merge?.status === "merged");
     job.isolation = prepared.isolation;
     job.isolationCwd = prepared.cwd;
+    job.cwd = prepared.cwd;
     opts = { ...opts, config: { ...opts.config, cwd: prepared.cwd } };
     store.save(job);
   }
